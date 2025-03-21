@@ -4,12 +4,16 @@ const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
 
+// Determine if we're building for GitHub Pages
+const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+const publicPath = isGitHubPages ? '/ALTEREGO-pwa/' : '/';
+
 module.exports = {
   entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
-    publicPath: '/'
+    publicPath: publicPath
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
