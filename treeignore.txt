@@ -1,6 +1,0 @@
-Python
-Ollama
-package-lock.json
-release-builds
-node_modules
-dist
