@@ -3,26 +3,39 @@ import { createRoot } from 'react-dom/client';
 import App from './components/App';
 import { ApiProvider } from './context/ApiContext';
 
-// Register service worker with ability to disable
-const ENABLE_SERVICE_WORKER = false; // Set to false temporarily to debug refresh issues
-
-if ('serviceWorker' in navigator && ENABLE_SERVICE_WORKER) {
+// Register service worker with proper error handling
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
+    // Use a path relative to the origin to ensure consistency
+    const swUrl = `${window.location.origin}/service-worker.js`;
+    
+    navigator.serviceWorker.register(swUrl)
       .then(registration => {
         console.log('ServiceWorker registration successful with scope:', registration.scope);
+        
+        // Handle updates more gracefully
+        registration.onupdatefound = () => {
+          const installingWorker = registration.installing;
+          if (installingWorker) {
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed') {
+                if (navigator.serviceWorker.controller) {
+                  console.log('New content is available; please refresh.');
+                  // Optionally show a notification to the user instead of auto-refreshing
+                  if (confirm('New version available! Click OK to update.')) {
+                    window.location.reload();
+                  }
+                } else {
+                  console.log('Content is cached for offline use.');
+                }
+              }
+            };
+          }
+        };
       })
       .catch(error => {
         console.error('Error during service worker registration:', error);
       });
-  });
-} else if ('serviceWorker' in navigator && !ENABLE_SERVICE_WORKER) {
-  // Unregister any existing service workers to stop the refresh cycle
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    for (let registration of registrations) {
-      registration.unregister();
-      console.log('ServiceWorker unregistered for debugging');
-    }
   });
 }
 

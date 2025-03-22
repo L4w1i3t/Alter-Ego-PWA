@@ -6,7 +6,8 @@ const webpack = require('webpack');
 
 // Determine if we're building for GitHub Pages
 const isGitHubPages = process.env.GITHUB_PAGES === 'true';
-const publicPath = isGitHubPages ? '/ALTEREGO-pwa/' : '/';
+// Use the correct repository name for GitHub Pages
+const publicPath = isGitHubPages ? '/Alter-Ego-PWA/' : '/';
 
 module.exports = {
   entry: './src/index.tsx',
@@ -27,7 +28,7 @@ module.exports = {
           {
             loader: 'ts-loader',
             options: {
-              transpileOnly: true, // Speed up compilation
+              transpileOnly: true,
               experimentalWatchApi: true,
             },
           },
@@ -45,10 +46,13 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './public/index.html',
+      // Use the root index.html instead of the one in public
+      template: './index.html',
+      filename: 'index.html',
+      inject: true
     }),
     new ForkTsCheckerWebpackPlugin({
-      async: true, // Run type checking in a separate process
+      async: true,
     }),
     new CopyWebpackPlugin({
       patterns: [
@@ -63,20 +67,25 @@ module.exports = {
         {
           from: 'service-worker.js',
           to: 'service-worker.js'
+        },
+        // Also copy the debug tool
+        {
+          from: 'public/debug-tool.js',
+          to: 'debug-tool.js'
         }
       ],
     }),
-    // Add the DefinePlugin to define process.env
     new webpack.DefinePlugin({
       'process.env': JSON.stringify({
         NODE_ENV: process.env.NODE_ENV || 'development',
-        PUBLIC_URL: ''
+        PUBLIC_URL: publicPath.slice(0, -1) // Remove trailing slash
       })
     }),
   ],
   devServer: {
+    // Point to the root directory instead of public
     static: {
-      directory: path.join(__dirname, 'public'),
+      directory: path.join(__dirname, './'),
     },
     compress: true,
     port: 3000,

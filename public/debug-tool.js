@@ -1,54 +1,91 @@
-// Debug script to catch infinite refresh cycles
 (function() {
-    const startTime = Date.now();
-    const reloadHistory = JSON.parse(localStorage.getItem('reloadHistory') || '[]');
+    const REFRESH_THRESHOLD = 5; // Number of refreshes within time window to consider a loop
+    const TIME_WINDOW_MS = 10000; // 10 seconds
     
-    // Add this page load to the history
-    reloadHistory.push(startTime);
+    // Get refresh timestamps from localStorage
+    const getRefreshTimestamps = () => {
+      try {
+        const stored = localStorage.getItem('refresh_timestamps');
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error('Error reading refresh timestamps:', e);
+        return [];
+      }
+    };
     
-    // Only keep the last 10 entries
-    if (reloadHistory.length > 10) {
-      reloadHistory.shift();
-    }
+    // Save refresh timestamps to localStorage
+    const saveRefreshTimestamps = (timestamps) => {
+      try {
+        localStorage.setItem('refresh_timestamps', JSON.stringify(timestamps));
+      } catch (e) {
+        console.error('Error saving refresh timestamps:', e);
+      }
+    };
     
-    localStorage.setItem('reloadHistory', JSON.stringify(reloadHistory));
-    
-    // Check for rapid reloads (less than 2 seconds apart)
-    if (reloadHistory.length >= 3) {
-      const lastThreeLoads = reloadHistory.slice(-3);
-      const tooFast = lastThreeLoads.every((time, i, arr) => {
-        if (i === 0) return true;
-        return (time - arr[i-1]) < 2000; // Less than 2 seconds
-      });
+    // Record current refresh
+    const recordRefresh = () => {
+      const now = Date.now();
+      const timestamps = getRefreshTimestamps();
       
-      if (tooFast) {
-        // Emergency break for infinite refresh cycle
-        console.error('INFINITE REFRESH DETECTED! Breaking the cycle...');
-        // Unregister service workers
-        if ('serviceWorker' in navigator) {
+      // Add current timestamp
+      timestamps.push(now);
+      
+      // Remove timestamps outside the time window
+      const recentTimestamps = timestamps.filter(ts => (now - ts) < TIME_WINDOW_MS);
+      
+      // Save updated timestamps
+      saveRefreshTimestamps(recentTimestamps);
+      
+      // Check for refresh loop
+      if (recentTimestamps.length >= REFRESH_THRESHOLD) {
+        // We're in a refresh loop - stop it and show a warning
+        console.error('REFRESH LOOP DETECTED! Stopping automatic refresh.');
+        
+        // Clear refresh timestamps to break the cycle
+        localStorage.removeItem('refresh_timestamps');
+        
+        // Show alert after short delay to ensure page has time to load
+        setTimeout(() => {
+          alert(`Refresh loop detected! The page has refreshed ${recentTimestamps.length} times in the last ${TIME_WINDOW_MS/1000} seconds. This has been stopped to prevent further looping. Check the console for more details.`);
+        }, 500);
+        
+        // Log possible causes
+        console.warn(`
+  Possible causes of refresh loops:
+  1. Service worker registration issues
+  2. HTML meta refresh tags
+  3. JavaScript window.location.reload() calls
+  4. Browser extensions
+  5. Server-side redirects
+  
+  Try:
+  - Checking your service worker
+  - Disabling browser extensions
+  - Clearing application cache
+  - Checking for automatic redirects
+  `);
+        
+        // Prevent further refresh attempts from service worker
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
           navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let registration of registrations) {
+            registrations.forEach(registration => {
+              console.log('Unregistering service worker to break refresh loop');
               registration.unregister();
-              console.log('Emergency: ServiceWorker unregistered to stop refresh cycle');
-            }
+            });
           });
         }
         
-        // Show diagnostic info
-        document.body.innerHTML = `
-          <div style="padding: 20px; font-family: monospace; color: #0f0; background: #000;">
-            <h1>Infinite Refresh Cycle Detected</h1>
-            <p>The page was reloading too rapidly, so we stopped it.</p>
-            <p>Reload timestamps (last 10): ${reloadHistory.map(t => new Date(t).toISOString()).join('<br>')}</p>
-            <p>Service workers have been unregistered to prevent further issues.</p>
-            <button onclick="localStorage.removeItem('reloadHistory'); location.reload()">
-              Clear History & Try Again
-            </button>
-          </div>
-        `;
-        
-        // Prevent any script loading that might cause another refresh
-        window.stop();
+        return true; // Loop detected
       }
-    }
+      
+      return false; // No loop detected
+    };
+    
+    // Run when page loads
+    window.addEventListener('load', () => {
+      // Record this refresh, but only log if no loop is detected
+      if (!recordRefresh()) {
+        console.log('Page loaded normally, no refresh loop detected');
+      }
+    });
   })();
