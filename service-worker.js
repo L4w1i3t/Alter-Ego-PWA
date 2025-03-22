@@ -1,12 +1,9 @@
 const CACHE_NAME = 'alter-ego-ai-cache-v1';
 const urlsToCache = [
-  './',
-  './index.html',
-  './bundle.js',
-  './manifest.json',
-  './assets/favicon.ico',
-  './assets/icons/icon-192x192.png',
-  './assets/icons/icon-512x512.png'
+  '/',
+  '/index.html',
+  '/bundle.js',
+  '/manifest.json'
 ];
 
 // Don't use skipWaiting to prevent abrupt takeover

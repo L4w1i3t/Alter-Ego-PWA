@@ -7,11 +7,7 @@
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit",
-    "serve-build": "npx serve -s dist",
-    "deploy": "npm run build && npm run serve-build",
-    "deploy:github": "cross-env GITHUB_PAGES=true npm run build",
-    "install-deps": "npm install"
+    "typecheck": "tsc --noEmit"
   },
   "author": "L4w1i3t",
   "license": "MIT",
