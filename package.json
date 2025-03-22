@@ -7,7 +7,11 @@
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "serve-build": "npx serve -s dist",
+    "deploy": "npm run build && npm run serve-build",
+    "deploy:github": "cross-env GITHUB_PAGES=true npm run build",
+    "install-deps": "npm install"
   },
   "author": "L4w1i3t",
   "license": "MIT",
@@ -21,6 +25,7 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "copy-webpack-plugin": "^13.0.0",
+    "cross-env": "^7.0.3",
     "css-loader": "^6.8.1",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "html-webpack-plugin": "^5.5.3",

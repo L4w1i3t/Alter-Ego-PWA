@@ -6,8 +6,13 @@ import { ApiProvider } from './context/ApiContext';
 // Register service worker with proper error handling
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Use a path relative to the origin to ensure consistency
-    const swUrl = `${window.location.origin}/service-worker.js`;
+    // Determine the base path for the service worker
+    const basePath = window.location.pathname.endsWith('/') 
+      ? window.location.pathname 
+      : window.location.pathname + '/';
+    
+    // Use a path relative to the site's base path
+    const swUrl = `${basePath}service-worker.js`;
     
     navigator.serviceWorker.register(swUrl)
       .then(registration => {

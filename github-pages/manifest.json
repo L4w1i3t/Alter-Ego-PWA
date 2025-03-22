@@ -1,0 +1,21 @@
+{
+  "name": "ALTER EGO",
+  "short_name": "ALTEREGO",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "description": "A desktop AI program that uses NLP to allow you to textually or verbally converse with anyone you want--literally.",
+  "icons": [
+    {
+      "src": "public/assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "public/assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
