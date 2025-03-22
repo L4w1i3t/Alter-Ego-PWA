@@ -5,7 +5,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
 
 // Determine if we're building for GitHub Pages
-const isGitHubPages = process.env.GITHUB_PAGES === 'true' || process.env.NODE_ENV === 'test';
+const isGitHubPages = process.env.GITHUB_PAGES === 'true';
 // Use the correct repository name for GitHub Pages
 const publicPath = isGitHubPages ? '/Alter-Ego-PWA/' : '/';
 
