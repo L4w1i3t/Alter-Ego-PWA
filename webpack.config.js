@@ -50,7 +50,6 @@ module.exports = {
     new ForkTsCheckerWebpackPlugin({
       async: true, // Run type checking in a separate process
     }),
-    // In the CopyWebpackPlugin configuration:
     new CopyWebpackPlugin({
       patterns: [
         { 
@@ -64,11 +63,6 @@ module.exports = {
         {
           from: 'service-worker.js',
           to: 'service-worker.js'
-        },
-        // Make sure icons directory exists and is copied
-        {
-          from: 'public/assets/icons',
-          to: 'assets/icons'
         }
       ],
     }),

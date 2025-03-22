@@ -19,7 +19,27 @@ const AppContainer = styled.div`
   overflow: hidden;
 `;
 
+// Counter to track component renders
+let renderCount = 0;
+
 const App: React.FC = () => {
+  // Log mounting for debugging
+  useEffect(() => {
+    console.log(`App component mounted (render #${++renderCount})`);
+    
+    // Capture reload events
+    const beforeUnloadHandler = () => {
+      console.log('Page is about to reload/unload');
+    };
+    
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    
+    return () => {
+      console.log('App component unmounting');
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+    };
+  }, []);
+  
   const [showSettings, setShowSettings] = useState(false);
   const [showModelSelection, setShowModelSelection] = useState(true);
   const [showWarmingUp, setShowWarmingUp] = useState(false);
@@ -52,17 +72,21 @@ const App: React.FC = () => {
     // Load settings from localStorage or set defaults
     const savedSettings = localStorage.getItem('alterEgoSettings');
     if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      if (settings.selectedModel) {
-        setSelectedModel(settings.selectedModel);
-        setShowModelSelection(false);
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (settings.selectedModel) {
+          setSelectedModel(settings.selectedModel);
+          setShowModelSelection(false);
+        }
+      } catch (e) {
+        console.error('Error parsing saved settings:', e);
       }
     }
     
     // For development, optionally bypass the model selection screen
-    if (process.env.NODE_ENV === 'development') {
-      // Uncomment the next line to skip model selection during development
-      // setShowModelSelection(false);
+    const skipModelSelection = false; // For debugging
+    if (skipModelSelection) {
+      setShowModelSelection(false);
     }
   }, []);
 
