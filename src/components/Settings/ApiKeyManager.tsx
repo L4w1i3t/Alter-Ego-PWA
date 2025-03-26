@@ -4,6 +4,7 @@ import { loadApiKeys, saveApiKeys, ApiKeys } from '../../utils/storageUtils';
 
 const Container = styled.div`
   color: #0f0;
+  max-width: 100%;
 `;
 
 const Title = styled.h2`
@@ -35,6 +36,14 @@ const Description = styled.p`
   color: #0f09;
 `;
 
+const InfoBox = styled.div`
+  padding: 0.8em;
+  border: 1px solid #00f;
+  background-color: #000020;
+  margin-bottom: 1.5em;
+  font-size: 0.9em;
+`;
+
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: space-between;
@@ -55,12 +64,12 @@ const Button = styled.button`
 `;
 
 const SaveButton = styled(Button)``;
-
 const BackButton = styled(Button)``;
 
-const StatusMessage = styled.p`
+const StatusMessage = styled.p<{ success?: boolean }>`
   margin-top: 1em;
   font-weight: bold;
+  color: ${props => props.success ? '#0f0' : '#f00'};
   transition: opacity 0.5s ease;
 `;
 
@@ -74,6 +83,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
     ELEVENLABS_API_KEY: ''
   });
   const [status, setStatus] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [showStatus, setShowStatus] = useState(false);
   
   useEffect(() => {
@@ -92,22 +102,46 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
   
   const handleSave = () => {
     try {
+      // Basic validation for OpenAI key format (starts with "sk-")
+      if (keys.OPENAI_API_KEY && !keys.OPENAI_API_KEY.startsWith('sk-')) {
+        setStatus('OpenAI API key should start with "sk-"');
+        setIsSuccess(false);
+        setShowStatus(true);
+        setTimeout(() => setShowStatus(false), 5000);
+        return;
+      }
+
       saveApiKeys(keys);
       setStatus('API keys saved successfully!');
+      setIsSuccess(true);
       setShowStatus(true);
       setTimeout(() => {
         setShowStatus(false);
       }, 3000);
     } catch (error) {
       setStatus('Error saving API keys.');
+      setIsSuccess(false);
       setShowStatus(true);
       console.error('Failed to save API keys:', error);
     }
   };
   
+  // Function to mask API keys for display
+  const maskApiKey = (key: string): string => {
+    if (!key) return '';
+    if (key.length <= 8) return '*'.repeat(key.length);
+    return key.substring(0, 4) + '*'.repeat(key.length - 8) + key.substring(key.length - 4);
+  };
+  
   return (
     <Container>
       <Title>Manage API Keys</Title>
+      
+      <InfoBox>
+        You'll need API keys to use certain features of ALTER EGO. 
+        The OpenAI API key is required for using OpenAI models, and 
+        the ElevenLabs key is needed for voice synthesis.
+      </InfoBox>
       
       <FormGroup>
         <Label htmlFor="OPENAI_API_KEY">OpenAI API Key:</Label>
@@ -120,7 +154,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           placeholder="sk-..."
         />
         <Description>
-          Required for OpenAI models. Get your API key from the OpenAI dashboard.
+          Required for OpenAI models. Get your API key from the <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0af' }}>OpenAI dashboard</a>.
         </Description>
       </FormGroup>
       
@@ -135,7 +169,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           placeholder="..."
         />
         <Description>
-          Required for ElevenLabs voice synthesis. Get your API key from the ElevenLabs website.
+          Required for ElevenLabs voice synthesis. Get your API key from the <a href="https://elevenlabs.io/" target="_blank" rel="noopener noreferrer" style={{ color: '#0af' }}>ElevenLabs website</a>.
         </Description>
       </FormGroup>
       
@@ -145,7 +179,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       </ButtonContainer>
       
       {showStatus && status && (
-        <StatusMessage>{status}</StatusMessage>
+        <StatusMessage success={isSuccess}>{status}</StatusMessage>
       )}
     </Container>
   );

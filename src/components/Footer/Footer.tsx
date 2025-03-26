@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { loadVoiceModels, VoiceModel } from '../../utils/storageUtils';
+import { EVENTS } from '../../utils/events';
 
 const FooterContainer = styled.footer`
   display: flex;
@@ -11,10 +13,11 @@ const FooterContainer = styled.footer`
 `;
 
 const FooterLeft = styled.div`
+  display: flex;
+  align-items: center;
 `;
 
-const FooterRight = styled.div`
-`;
+const FooterRight = styled.div``;
 
 const VoiceModelSelector = styled.select`
   background-color: #000;
@@ -27,6 +30,26 @@ const VoiceModelSelector = styled.select`
     background-color: #000;
     color: #0f0;
   }
+  
+  option.elevenlabs-option {
+    color: #0af;
+  }
+  
+  option.browser-option {
+    color: #0f0;
+  }
+`;
+
+const VoiceProviderIcon = styled.span<{ provider?: string }>`
+  color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+  margin-right: 0.5em;
+  font-size: 1.2em;
+`;
+
+const VoiceInfo = styled.span<{ provider?: string }>`
+  color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+  margin-left: 0.5em;
+  font-size: 0.8em;
 `;
 
 interface FooterProps {
@@ -40,23 +63,108 @@ const Footer: React.FC<FooterProps> = ({
   voiceModel,
   onVoiceModelChange 
 }) => {
+  const [availableModels, setAvailableModels] = useState<Record<string, VoiceModel>>({});
+  const [currentProvider, setCurrentProvider] = useState<string>('none');
+  
+  // Function to update models from localStorage
+  const loadVoiceModelData = () => {
+    const models = loadVoiceModels();
+    setAvailableModels(models);
+    
+    // Update provider if needed
+    if (voiceModel !== 'None') {
+      if (models[voiceModel]) {
+        setCurrentProvider(models[voiceModel].provider);
+      } else {
+        // If the current model was deleted, reset to 'none'
+        setCurrentProvider('none');
+        if (onVoiceModelChange) {
+          onVoiceModelChange('None');
+        }
+      }
+    }
+  };
+  
+  useEffect(() => {
+    // Initial load
+    loadVoiceModelData();
+    
+    // Listen for changes to voice models
+    const handleVoiceModelsUpdated = () => {
+      loadVoiceModelData();
+    };
+    
+    window.addEventListener(EVENTS.VOICE_MODELS_UPDATED, handleVoiceModelsUpdated);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener(EVENTS.VOICE_MODELS_UPDATED, handleVoiceModelsUpdated);
+    };
+  }, []);  // Empty dependency array means this runs once on mount
+  
+  // Update provider when voiceModel changes
+  useEffect(() => {
+    if (voiceModel !== 'None' && availableModels[voiceModel]) {
+      setCurrentProvider(availableModels[voiceModel].provider);
+    } else {
+      setCurrentProvider('none');
+    }
+  }, [voiceModel, availableModels]);
+  
   const handleVoiceModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newModelId = e.target.value;
+    
+    // Update the provider display
+    if (newModelId !== 'None' && availableModels[newModelId]) {
+      setCurrentProvider(availableModels[newModelId].provider);
+    } else {
+      setCurrentProvider('none');
+    }
+    
     if (onVoiceModelChange) {
-      onVoiceModelChange(e.target.value);
+      onVoiceModelChange(newModelId);
+    }
+  };
+
+  const getProviderIcon = (provider: string) => {
+    switch (provider) {
+      case 'elevenlabs':
+        return '🌟';
+      case 'browser':
+        return '🔊';
+      default:
+        return '🔇';
     }
   };
 
   return (
     <FooterContainer>
       <FooterLeft>
-        Voice Model: 
+        <VoiceProviderIcon provider={currentProvider}>
+          {getProviderIcon(currentProvider)}
+        </VoiceProviderIcon>
+        Voice: 
         <VoiceModelSelector 
           value={voiceModel} 
           onChange={handleVoiceModelChange}
         >
-          <option value="None">None</option>
-          {/* Additional voice models would be loaded dynamically */}
+          <option className="none-option" value="None">None</option>
+          {Object.values(availableModels).map(model => (
+            <option 
+              key={model.id} 
+              value={model.id} 
+              className={model.provider === 'elevenlabs' ? 'elevenlabs-option' : 'browser-option'}
+            >
+              {model.name}
+            </option>
+          ))}
         </VoiceModelSelector>
+        
+        {currentProvider !== 'none' && (
+          <VoiceInfo provider={currentProvider}>
+            ({currentProvider === 'elevenlabs' ? 'Premium' : 'Browser'})
+          </VoiceInfo>
+        )}
       </FooterLeft>
       <FooterRight>
         Active Character: <span>{activeCharacter}</span>

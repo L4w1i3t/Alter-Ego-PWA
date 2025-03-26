@@ -1,4 +1,5 @@
 // Storage utility functions for PWA version of ALTER EGO
+import { ElevenlabsVoiceSettings } from './elevenlabsApi';
 
 // Types for stored data
 export interface VoiceModel {
@@ -28,6 +29,15 @@ export interface VoiceModel {
       content: string;
       timestamp: string;
     }[];
+  }
+
+  export interface VoiceModel {
+    id: string;
+    name: string;
+    description: string;
+    provider: string;  // 'elevenlabs' or 'browser'
+    voiceId?: string;  // For ElevenLabs voices
+    settings?: Partial<ElevenlabsVoiceSettings>;
   }
   
   // Voice models

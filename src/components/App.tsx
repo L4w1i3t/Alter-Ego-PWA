@@ -9,7 +9,8 @@ import ModelSelection from './Sections/ModelSelection';
 import WarmingUp from './Sections/WarmingUp';
 import CharacterSelector from './Sections/CharacterSelector'; 
 import { GlobalStyles } from '../styles/GlobalStyles';
-import { loadSettings, saveSettings, loadPersonas, getPersona } from '../utils/storageUtils';
+import { loadSettings, saveSettings, loadPersonas, getPersona, loadVoiceModels, loadApiKeys } from '../utils/storageUtils';
+import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
 
 const AppContainer = styled.div`
   display: flex;
@@ -54,6 +55,51 @@ const App: React.FC = () => {
   const [currentPersonaContent, setCurrentPersonaContent] = useState("");
   const [voiceModel, setVoiceModel] = useState("None");
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  
+  // Voice synthesis utilities
+  const synthesizeVoice = async (text: string, voiceModelId: string) => {
+    if (voiceModelId === 'None' || !text) return;
+    
+    const models = loadVoiceModels();
+    const model = models[voiceModelId];
+    
+    if (!model) return;
+    
+    try {
+      if (model.provider === 'browser') {
+        // Use browser's built-in speech synthesis
+        const utterance = new SpeechSynthesisUtterance(text);
+        window.speechSynthesis.speak(utterance);
+      } else if (model.provider === 'elevenlabs') {
+        try {
+          // Get API key and make sure it exists
+          const { ELEVENLABS_API_KEY } = loadApiKeys();
+          if (!ELEVENLABS_API_KEY) {
+            throw new Error('ElevenLabs API key is not set');
+          }
+          
+          // Call ElevenLabs API with proper settings
+          const audioBlob = await textToSpeech(
+            text,
+            model.voiceId || '',
+            model.settings || { stability: 0.5, similarity_boost: 0.5 }
+          );
+          
+          if (audioBlob) {
+            await playAudio(audioBlob);
+          }
+        } catch (apiError) {
+          console.error('Error with ElevenLabs API:', apiError);
+          // Fall back to browser speech synthesis on error
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.text = `ElevenLabs error. Fallback voice: ${text}`;
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    } catch (error) {
+      console.error('Error synthesizing speech:', error);
+    }
+  };
   
   const handleModelSelection = (model: string) => {
     setSelectedModel(model);
@@ -165,6 +211,28 @@ const App: React.FC = () => {
       setVoiceModel(settings.voiceModel);
     }
   }, []);
+  
+  // Add effect to listen for AI responses and synthesize voice
+  useEffect(() => {
+    const handleQueryResponse = (event: CustomEvent<any>) => {
+      if (!event.detail) return;
+      
+      const { response } = event.detail;
+      
+      // If a voice model is selected, synthesize the response
+      if (voiceModel && voiceModel !== 'None') {
+        synthesizeVoice(response, voiceModel);
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('query-response', handleQueryResponse as EventListener);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('query-response', handleQueryResponse as EventListener);
+    };
+  }, [voiceModel]);
 
   return (
     <AppContainer>
