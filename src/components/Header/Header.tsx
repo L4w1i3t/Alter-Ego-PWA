@@ -5,22 +5,21 @@ const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1vh 2vw;
+  padding: 0.8em;
+  background-color: #000;
   border-bottom: 1px solid #0f0;
 `;
 
 const LoadCharacterButton = styled.button`
-  font-family: inherit;
+  background-color: #000;
   color: #0f0;
-  background: #000;
   border: 1px solid #0f0;
   padding: 0.5em 1em;
-  border-radius: 0.2em;
-  
+  cursor: pointer;
+
   &:hover {
-    background: #0f0;
+    background-color: #0f0;
     color: #000;
-    cursor: pointer;
   }
 `;
 
@@ -29,7 +28,7 @@ const MenuIcon = styled.div`
   cursor: pointer;
   
   &:hover {
-    color: #fff;
+    color: #8f8;
   }
 `;
 

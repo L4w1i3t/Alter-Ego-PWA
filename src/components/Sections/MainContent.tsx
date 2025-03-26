@@ -99,22 +99,49 @@ const AvatarImage = styled.img`
   filter: hue-rotate(90deg) saturate(3) brightness(1.2);
 `;
 
+const AvatarPlaceholder = styled.div`
+  font-size: 5rem;
+  color: #0f0;
+  text-align: center;
+`;
+
 interface Message {
   isUser: boolean;
   text: string;
 }
 
-interface MainContentProps {}
+interface MainContentProps {
+  personaContent?: string;
+  activeCharacter?: string;
+}
 
-const MainContent: React.FC<MainContentProps> = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    { isUser: false, text: "Hello, and welcome to ALTER EGO!" }
-  ]);
+const MainContent: React.FC<MainContentProps> = ({ 
+  personaContent = "", 
+  activeCharacter = "ALTER EGO" 
+}) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [userEmotions, setUserEmotions] = useState<string[]>([]);
   const [responseEmotions, setResponseEmotions] = useState<string[]>([]);
   const [currentEmotion, setCurrentEmotion] = useState<string>("neutral");
   const [avatarLoadError, setAvatarLoadError] = useState(false);
+  
+  // Initialize with welcome message only when component first mounts
+  useEffect(() => {
+    const welcomeMessage = `Hello, and welcome to ${activeCharacter}!`;
+    setMessages([{ isUser: false, text: welcomeMessage }]);
+    // This effect should only run once when the component mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Update character name in messages if it changes
+  useEffect(() => {
+    // This only updates the display name in messages without adding a new welcome message
+    if (activeCharacter) {
+      // Force a re-render to update character name in displayed messages
+      setMessages(prevMessages => [...prevMessages]);
+    }
+  }, [activeCharacter]);
   
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -175,12 +202,12 @@ const MainContent: React.FC<MainContentProps> = () => {
               {message.isUser ? (
                 <UserMessage>YOU: {message.text}</UserMessage>
               ) : (
-                <AIMessage>ALTER EGO: {message.text}</AIMessage>
+                <AIMessage>{activeCharacter}: {message.text}</AIMessage>
               )}
             </MessageContainer>
           ))}
           {isThinking && (
-            <ThinkingMessage>ALTER EGO is thinking...</ThinkingMessage>
+            <ThinkingMessage>{activeCharacter} is thinking...</ThinkingMessage>
           )}
         </ResponseBox>
         <DetectedEmotionsSection>
@@ -203,18 +230,22 @@ const MainContent: React.FC<MainContentProps> = () => {
         </DetectedEmotionsSection>
       </ResponseArea>
       <AvatarArea>
-        <AvatarImage 
-          src={`/assets/avatar/DEFAULT/${currentEmotion}.png`}
-          alt={`Avatar showing ${currentEmotion}`} 
-          onError={(e) => {
-            console.error("Failed to load avatar image:", e);
-            setAvatarLoadError(true);
-            // Fallback to neutral if the current emotion fails to load
-            if (currentEmotion !== "neutral") {
-              setCurrentEmotion("neutral");
-            }
-          }}
-        />
+        {!avatarLoadError ? (
+          <AvatarImage 
+            src={`/assets/avatar/ALTER EGO/${currentEmotion}.png`}
+            alt={`Avatar showing ${currentEmotion}`} 
+            onError={(e) => {
+              console.error("Failed to load avatar image:", e);
+              setAvatarLoadError(true);
+              // Fallback to neutral if the current emotion fails to load
+              if (currentEmotion !== "neutral") {
+                setCurrentEmotion("neutral");
+              }
+            }}
+          />
+        ) : (
+          <AvatarPlaceholder>👤</AvatarPlaceholder>
+        )}
       </AvatarArea>
     </MainContentContainer>
   );

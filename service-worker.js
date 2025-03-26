@@ -1,106 +1,172 @@
-const CACHE_NAME = 'alter-ego-ai-cache-v1';
-const urlsToCache = [
+// The version of your cache
+const CACHE_VERSION = 1;
+const CACHE_NAME = `alter-ego-cache-v${CACHE_VERSION}`;
+
+// Assets to cache for offline use
+const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/bundle.js',
-  '/manifest.json'
+  '/static/js/main.bundle.js',
+  '/static/css/main.css',
+  '/manifest.json',
+  '/favicon.ico',
 ];
 
-// Don't use skipWaiting to prevent abrupt takeover
+// Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Service worker cache opened');
-        return cache.addAll(urlsToCache)
-          .catch(err => {
-            console.warn('Pre-caching failed:', err);
-            // Continue anyway
-            return Promise.resolve();
-          });
+      .then((cache) => {
+        console.log('Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
       })
+      .then(() => self.skipWaiting())
   );
-  // Do not force activation - allow natural lifecycle
-  // self.skipWaiting(); 
 });
 
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    // Clear old caches
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames
+          .filter(name => name !== CACHE_NAME)
+          .map(name => caches.delete(name))
       );
-    })
-    .then(() => {
-      console.log('Service worker activated');
-      // Only claim clients after clearing old caches
+    }).then(() => {
+      console.log('Service Worker activated');
       return self.clients.claim();
     })
   );
 });
 
+// Fetch event - respond from cache or network
 self.addEventListener('fetch', (event) => {
-  // Special handling for navigation requests to prevent refresh loops
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => {
-          return caches.match('/index.html');
-        })
-    );
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
-  
-  // Network-first strategy for API calls
+
+  // Handle API requests differently
   if (event.request.url.includes('/api/')) {
+    // For API requests, try network first, then fall back to offline message
     event.respondWith(
       fetch(event.request)
         .catch(() => {
-          return caches.match(event.request);
+          // Return a custom offline response for API requests
+          return new Response(
+            JSON.stringify({
+              error: "You're offline. Please check your connection.",
+              isOffline: true,
+            }),
+            {
+              headers: { 'Content-Type': 'application/json' },
+              status: 503,
+            }
+          );
         })
     );
     return;
   }
-  
-  // Cache-first strategy for static assets
+
+  // For static assets, use cache-first strategy
   event.respondWith(
     caches.match(event.request)
-      .then((response) => {
-        // Return cached response if found
-        if (response) {
-          return response;
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        
-        // Clone the request
-        const fetchRequest = event.request.clone();
-        
-        // Make network request and cache the response
-        return fetch(fetchRequest).then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+
+        // Not in cache, try to fetch it
+        return fetch(event.request)
+          .then((response) => {
+            // Don't cache non-successful responses
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response as it can only be consumed once
+            const responseToCache = response.clone();
+
+            // Add the new resource to the cache
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+
             return response;
-          }
-          
-          // Clone the response
-          const responseToCache = response.clone();
-          
-          // Add to cache
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            })
-            .catch(err => {
-              console.warn('Failed to cache:', err);
-            });
+          })
+          .catch(() => {
+            // If fetch fails (offline), return the offline page for navigation requests
+            if (event.request.mode === 'navigate') {
+              return caches.match('/');
+            }
             
-          return response;
-        });
+            // Just return a simple error for other resources
+            return new Response('Network error occurred', {
+              status: 503,
+              headers: { 'Content-Type': 'text/plain' }
+            });
+          });
       })
   );
 });
+
+// Handle communication from the client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Background sync for offline message sending
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-messages') {
+    event.waitUntil(syncMessages());
+  }
+});
+
+// Function to sync messages when online
+async function syncMessages() {
+  try {
+    // Open the IndexedDB database
+    const dbName = 'alterEgoStorage';
+    const dbVersion = 1;
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, dbVersion);
+      request.onerror = reject;
+      request.onsuccess = (event) => resolve(event.target.result);
+    });
+
+    // Get pending messages from the store
+    const transaction = db.transaction(['pendingMessages'], 'readwrite');
+    const store = transaction.objectStore('pendingMessages');
+    const messages = await new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onerror = reject;
+      request.onsuccess = (event) => resolve(event.target.result);
+    });
+
+    // Process each pending message
+    for (const message of messages) {
+      try {
+        const response = await fetch(message.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message.data),
+        });
+
+        if (response.ok) {
+          // If successful, remove the message from the store
+          store.delete(message.id);
+        }
+      } catch (error) {
+        console.error('Failed to sync message:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error during sync:', error);
+  }
+}

@@ -4,40 +4,59 @@ import styled from 'styled-components';
 const FooterContainer = styled.footer`
   display: flex;
   justify-content: space-between;
-  padding: 1vh 2vw;
+  padding: 0.5em 1em;
+  background-color: #000;
   border-top: 1px solid #0f0;
-  font-size: 0.9em;
+  font-size: 0.8em;
 `;
 
 const FooterLeft = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 `;
 
 const FooterRight = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 `;
 
-const FooterSpan = styled.span`
-  font-weight: bold;
+const VoiceModelSelector = styled.select`
+  background-color: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+  padding: 0.2em;
+  margin-left: 0.5em;
+
+  option {
+    background-color: #000;
+    color: #0f0;
+  }
 `;
 
 interface FooterProps {
   activeCharacter: string;
   voiceModel: string;
+  onVoiceModelChange?: (model: string) => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ activeCharacter, voiceModel }) => {
+const Footer: React.FC<FooterProps> = ({ 
+  activeCharacter, 
+  voiceModel,
+  onVoiceModelChange 
+}) => {
+  const handleVoiceModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (onVoiceModelChange) {
+      onVoiceModelChange(e.target.value);
+    }
+  };
+
   return (
     <FooterContainer>
       <FooterLeft>
-        <FooterSpan>Voice Model: <span>{voiceModel}</span><br/></FooterSpan>
-        {/* Speech Recognition disabled for now
-        <FooterSpan>Speech Recognition (F4): <span className="sr-status sr-off">OFF</span></FooterSpan>
-        */}
+        Voice Model: 
+        <VoiceModelSelector 
+          value={voiceModel} 
+          onChange={handleVoiceModelChange}
+        >
+          <option value="None">None</option>
+          {/* Additional voice models would be loaded dynamically */}
+        </VoiceModelSelector>
       </FooterLeft>
       <FooterRight>
         Active Character: <span>{activeCharacter}</span>

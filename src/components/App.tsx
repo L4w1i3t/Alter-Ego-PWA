@@ -7,7 +7,9 @@ import Footer from './Footer/Footer';
 import Settings from './Settings/Settings';
 import ModelSelection from './Sections/ModelSelection';
 import WarmingUp from './Sections/WarmingUp';
+import CharacterSelector from './Sections/CharacterSelector'; 
 import { GlobalStyles } from '../styles/GlobalStyles';
+import { loadSettings, saveSettings, loadPersonas, getPersona } from '../utils/storageUtils';
 
 const AppContainer = styled.div`
   display: flex;
@@ -40,53 +42,127 @@ const App: React.FC = () => {
     };
   }, []);
   
+  // UI state
   const [showSettings, setShowSettings] = useState(false);
-  const [showModelSelection, setShowModelSelection] = useState(true);
+  const [showModelSelection, setShowModelSelection] = useState(false); // Default to not showing
   const [showWarmingUp, setShowWarmingUp] = useState(false);
+  const [showCharacterSelector, setShowCharacterSelector] = useState(false);
+  
+  // App state
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [activeCharacter, setActiveCharacter] = useState("ALTER EGO");
-  const [voiceModel, setVoiceModel] = useState("Loading...");
+  const [currentPersonaContent, setCurrentPersonaContent] = useState("");
+  const [voiceModel, setVoiceModel] = useState("None");
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   
   const handleModelSelection = (model: string) => {
     setSelectedModel(model);
     setShowModelSelection(false);
-    setShowWarmingUp(true);
     
-    // Simulate warming up process
-    let progress = 10;
-    const interval = setInterval(() => {
-      progress += 5;
-      const progressBar = document.getElementById('warmup-progress-bar');
-      if (progressBar) {
-        progressBar.style.width = `${progress}%`;
-      }
+    // Only show warming up on first load
+    if (isFirstLoad) {
+      setShowWarmingUp(true);
       
-      if (progress >= 100) {
-        clearInterval(interval);
-        setShowWarmingUp(false);
-      }
-    }, 300);
+      // Simulate warming up process
+      let progress = 10;
+      const interval = setInterval(() => {
+        progress += 5;
+        const progressBar = document.getElementById('warmup-progress-bar');
+        if (progressBar) {
+          progressBar.style.width = `${progress}%`;
+        }
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          setShowWarmingUp(false);
+          setIsFirstLoad(false);
+        }
+      }, 300);
+    }
+    
+    // Save the selected model to settings
+    saveSettings({
+      selectedModel: model,
+      activeCharacter,
+      voiceModel
+    });
+  };
+  
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    
+    // Save the selected model to settings
+    saveSettings({
+      selectedModel: model,
+      activeCharacter,
+      voiceModel
+    });
+  };
+  
+  const handleLoadCharacterClick = () => {
+    setShowCharacterSelector(true);
+  };
+  
+  const handleCharacterSelected = (characterName: string) => {
+    setActiveCharacter(characterName);
+    
+    // Load the persona content
+    const persona = getPersona(characterName);
+    if (persona) {
+      setCurrentPersonaContent(persona.content);
+    } else {
+      setCurrentPersonaContent("");
+    }
+    
+    // Save to settings
+    saveSettings({
+      selectedModel,
+      activeCharacter: characterName,
+      voiceModel
+    });
+    
+    setShowCharacterSelector(false);
+  };
+  
+  const handleCloseCharacterSelector = () => {
+    setShowCharacterSelector(false);
+  };
+  
+  const handleVoiceModelChange = (modelName: string) => {
+    setVoiceModel(modelName);
+    
+    // Save to settings
+    saveSettings({
+      selectedModel,
+      activeCharacter,
+      voiceModel: modelName
+    });
   };
   
   useEffect(() => {
-    // Load settings from localStorage or set defaults
-    const savedSettings = localStorage.getItem('alterEgoSettings');
-    if (savedSettings) {
-      try {
-        const settings = JSON.parse(savedSettings);
-        if (settings.selectedModel) {
-          setSelectedModel(settings.selectedModel);
-          setShowModelSelection(false);
-        }
-      } catch (e) {
-        console.error('Error parsing saved settings:', e);
+    // Load settings from localStorage
+    const settings = loadSettings();
+    
+    if (settings.selectedModel) {
+      setSelectedModel(settings.selectedModel);
+      setIsFirstLoad(false); // We have a selected model, so not first load
+    } else {
+      // Only show model selection if no model has been selected yet
+      setShowModelSelection(true);
+    }
+    
+    if (settings.activeCharacter) {
+      setActiveCharacter(settings.activeCharacter);
+      
+      // Load the persona content
+      const persona = getPersona(settings.activeCharacter);
+      if (persona) {
+        setCurrentPersonaContent(persona.content);
       }
     }
     
-    // For development, optionally bypass the model selection screen
-    const skipModelSelection = false; // For debugging
-    if (skipModelSelection) {
-      setShowModelSelection(false);
+    if (settings.voiceModel) {
+      setVoiceModel(settings.voiceModel);
     }
   }, []);
 
@@ -104,20 +180,34 @@ const App: React.FC = () => {
       
       <Header 
         onSettingsClick={() => setShowSettings(!showSettings)} 
-        onLoadCharacter={() => console.log("Load character clicked")}
+        onLoadCharacter={handleLoadCharacterClick}
       />
       
       <QuerySection />
       
-      <MainContent />
+      <MainContent 
+        personaContent={currentPersonaContent}
+        activeCharacter={activeCharacter}
+      />
       
       <Footer 
         activeCharacter={activeCharacter}
         voiceModel={voiceModel}
+        onVoiceModelChange={handleVoiceModelChange}
       />
       
       {showSettings && (
-        <Settings onClose={() => setShowSettings(false)} />
+        <Settings 
+          onClose={() => setShowSettings(false)} 
+          onModelChange={handleModelChange}
+        />
+      )}
+      
+      {showCharacterSelector && (
+        <CharacterSelector
+          onSelect={handleCharacterSelected}
+          onClose={handleCloseCharacterSelector}
+        />
       )}
     </AppContainer>
   );
