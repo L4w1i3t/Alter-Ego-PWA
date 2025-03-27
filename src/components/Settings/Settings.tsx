@@ -28,10 +28,47 @@ const SettingsPanel = styled.div`
   padding: 2em;
   border-radius: 0.5em;
   position: relative;
-  width: 300px;
+  width: 500px; /* Increased from 300px */
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
+`;
+
+const SettingsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+  margin-bottom: 1.5em;
+`;
+
+const SettingsCategory = styled.div`
+  border: 1px solid #0f03;
+  padding: 1em;
+  border-radius: 0.3em;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: #0f01;
+    border-color: #0f0;
+  }
+`;
+
+const CategoryTitle = styled.h3`
+  margin: 0;
+  margin-bottom: 0.5em;
+  font-size: 1em;
+`;
+
+const CategoryDescription = styled.p`
+  margin: 0;
+  font-size: 0.8em;
+  color: #0f09;
+`;
+
+const CategoryIcon = styled.div`
+  font-size: 1.5em;
+  margin-bottom: 0.5em;
 `;
 
 const SettingsTitle = styled.h2`
@@ -198,32 +235,69 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
         return (
           <>
             <SettingsTitle>Settings</SettingsTitle>
-            <SettingsList>
-              <SettingsItem onClick={() => handleMenuClick('Manage API Keys')}>
-                Manage API Keys
-              </SettingsItem>
-              <SettingsItem onClick={() => handleMenuClick('Manage Voice Models')}>
-                Manage Voice Models
-              </SettingsItem>
-              <SettingsItem onClick={() => handleMenuClick('Manage Personas')}>
-                Manage Personas
-              </SettingsItem>
-              <SettingsItem onClick={() => handleMenuClick('Chat History')}>
-                Chat History
-              </SettingsItem>
-              <SettingsItem onClick={() => handleMenuClick('Clear Memory')}>
-                Clear Memory
-              </SettingsItem>
-              <SettingsItem onClick={() => handleMenuClick('Software Details')}>
-                Software Details
-              </SettingsItem>
+            
+            <SettingsGrid>
+              <SettingsCategory onClick={() => handleMenuClick('Manage API Keys')}>
+                <CategoryIcon>🔑</CategoryIcon>
+                <CategoryTitle>API Keys</CategoryTitle>
+                <CategoryDescription>
+                  Configure OpenAI and ElevenLabs API keys
+                </CategoryDescription>
+              </SettingsCategory>
               
-              <Divider />
+              <SettingsCategory onClick={() => handleMenuClick('Manage Voice Models')}>
+                <CategoryIcon>🔊</CategoryIcon>
+                <CategoryTitle>Voice Models</CategoryTitle>
+                <CategoryDescription>
+                  Add and configure voice synthesis models
+                </CategoryDescription>
+              </SettingsCategory>
               
-              <DangerSettingsItem onClick={() => handleMenuClick('Factory Reset')}>
-                Factory Reset
-              </DangerSettingsItem>
-            </SettingsList>
+              <SettingsCategory onClick={() => handleMenuClick('Manage Personas')}>
+                <CategoryIcon>👤</CategoryIcon>
+                <CategoryTitle>Personas</CategoryTitle>
+                <CategoryDescription>
+                  Create and edit AI character personas
+                </CategoryDescription>
+              </SettingsCategory>
+              
+              <SettingsCategory onClick={() => handleMenuClick('Chat History')}>
+                <CategoryIcon>💬</CategoryIcon>
+                <CategoryTitle>Chat History</CategoryTitle>
+                <CategoryDescription>
+                  View and export conversation history
+                </CategoryDescription>
+              </SettingsCategory>
+              
+              <SettingsCategory onClick={() => handleMenuClick('Clear Memory')}>
+                <CategoryIcon>🧹</CategoryIcon>
+                <CategoryTitle>Clear Memory</CategoryTitle>
+                <CategoryDescription>
+                  Reset conversation context and memory
+                </CategoryDescription>
+              </SettingsCategory>
+              
+              <SettingsCategory onClick={() => handleMenuClick('Software Details')}>
+                <CategoryIcon>ℹ️</CategoryIcon>
+                <CategoryTitle>Software Details</CategoryTitle>
+                <CategoryDescription>
+                  View version info and credits
+                </CategoryDescription>
+              </SettingsCategory>
+            </SettingsGrid>
+            
+            <Divider />
+            
+            <SettingsCategory 
+              onClick={() => handleMenuClick('Factory Reset')}
+              style={{ borderColor: '#f00', color: '#f00' }}
+            >
+              <CategoryIcon>⚠️</CategoryIcon>
+              <CategoryTitle>Factory Reset</CategoryTitle>
+              <CategoryDescription style={{ color: '#f007' }}>
+                Delete all data and restore default settings
+              </CategoryDescription>
+            </SettingsCategory>
             
             <ModelSelection>
               <ModelTitle>AI Provider:</ModelTitle>

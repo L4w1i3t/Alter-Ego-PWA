@@ -6,7 +6,7 @@ import { dispatchAppEvent, EVENTS } from '../../utils/events';
 
 const Container = styled.div`
   color: #0f0;
-  max-width: 100%;
+  width: 100%;
 `;
 
 const Title = styled.h2`
@@ -14,58 +14,62 @@ const Title = styled.h2`
   font-size: 1.2em;
 `;
 
-const VoiceModelList = styled.div`
-  max-height: 200px;
+const VoiceModelGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1em;
+  margin-bottom: 1.5em;
+  max-height: 300px;
   overflow-y: auto;
-  margin-bottom: 1em;
-  border: 1px solid #0f04;
+  padding: 0.5em;
+  border: 1px solid #0f03;
+  border-radius: 0.3em;
 `;
 
-const VoiceModelItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8em;
-  border-bottom: 1px solid #0f03;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
+const VoiceModelCard = styled.div<{ provider?: string }>`
+  border: 1px solid ${props => props.provider === 'elevenlabs' ? '#0af3' : '#0f03'};
+  background-color: ${props => props.provider === 'elevenlabs' ? '#001022' : '#001000'};
+  padding: 1em;
+  border-radius: 0.3em;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  
   &:hover {
-    background-color: #0f01;
+    border-color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+    background-color: ${props => props.provider === 'elevenlabs' ? '#001830' : '#002000'};
   }
-`;
-
-const ModelInfo = styled.div`
-  flex-grow: 1;
 `;
 
 const ModelName = styled.div`
   font-weight: bold;
-  margin-bottom: 0.3em;
+  margin-bottom: 0.5em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #0f0;
 `;
 
 const ModelDescription = styled.div`
   font-size: 0.8em;
   color: #0f09;
+  margin-bottom: 0.5em;
+  max-height: 2.4em;
+  overflow: hidden;
 `;
 
-const ModelProvider = styled.div<{ provider?: string }>`
-  font-size: 0.75em;
+const ProviderBadge = styled.div<{ provider?: string }>`
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+  font-size: 1.2em;
   color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
-  display: flex;
-  align-items: center;
 `;
 
-const ProviderIcon = styled.span`
-  margin-right: 0.5em;
-  font-size: 1.1em;
-`;
-
-const ButtonGroup = styled.div`
+const ActionButtons = styled.div`
   display: flex;
   gap: 0.5em;
+  margin-top: 0.8em;
 `;
 
 const Button = styled.button`
@@ -75,6 +79,7 @@ const Button = styled.button`
   padding: 0.3em 0.6em;
   font-size: 0.8em;
   cursor: pointer;
+  border-radius: 0.2em;
   
   &:hover {
     background: #0f0;
@@ -82,90 +87,153 @@ const Button = styled.button`
   }
 `;
 
-const TestButton = styled(Button)`
-  border-color: #00f;
-  color: #00f;
+const IconButton = styled.button<{ color?: string }>`
+  background: transparent;
+  color: ${props => props.color || '#0f0'};
+  border: 1px solid ${props => props.color || '#0f0'};
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 0.2em;
+  cursor: pointer;
+  font-size: 0.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
   
   &:hover {
-    background: #00f;
+    background: ${props => props.color || '#0f0'};
     color: #000;
   }
 `;
 
-const DeleteButton = styled(Button)`
-  border-color: #f00;
+const TestButton = styled(IconButton)`
+  color: #00f;
+  border-color: #00f;
+`;
+
+const EditButton = styled(IconButton)`
+  color: #ff0;
+  border-color: #ff0;
+`;
+
+const DeleteButton = styled(IconButton)`
   color: #f00;
-  
-  &:hover {
-    background: #f00;
-    color: #000;
-  }
+  border-color: #f00;
 `;
 
 const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 2em;
-  text-align: center;
   color: #0f06;
+  text-align: center;
+  height: 150px;
+  border: 1px dashed #0f03;
+  border-radius: 0.3em;
+`;
+
+const EmptyIcon = styled.div`
+  font-size: 2em;
+  margin-bottom: 0.5em;
 `;
 
 const InfoBox = styled.div`
-  padding: 0.8em;
+  padding: 1em;
   border: 1px solid #00f;
   background-color: #000020;
   margin-bottom: 1.5em;
   font-size: 0.9em;
+  line-height: 1.4;
+  border-radius: 0.3em;
 `;
 
 const ErrorBox = styled.div`
-  padding: 0.8em;
+  padding: 1em;
   border: 1px solid #f00;
   background-color: #200000;
   margin-bottom: 1.5em;
   font-size: 0.9em;
   color: #f00;
+  line-height: 1.4;
+  border-radius: 0.3em;
 `;
 
 const FormContainer = styled.div`
   margin-top: 1em;
-  border: 1px solid #0f03;
-  padding: 1em;
+  padding: 1.5em;
+  border: 1px solid #0f04;
+  border-radius: 0.3em;
+  background-color: #000800;
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 0.8em;
+  margin-bottom: 1.2em;
 `;
 
 const Label = styled.label`
   display: block;
-  margin-bottom: 0.3em;
+  margin-bottom: 0.5em;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.5em;
+  padding: 0.7em;
   background: #000;
   color: #0f0;
   border: 1px solid #0f0;
+  border-radius: 0.2em;
+  margin-bottom: 0.5em;
+  font-family: monospace;
 `;
 
-const Select = styled.select`
+const TextArea = styled.textarea`
   width: 100%;
-  padding: 0.5em;
+  height: 80px;
+  padding: 0.7em;
   background: #000;
   color: #0f0;
   border: 1px solid #0f0;
+  border-radius: 0.2em;
+  font-family: monospace;
+  resize: vertical;
 `;
 
-const ProviderOptionContainer = styled.div`
+const TabContainer = styled.div`
   display: flex;
-  margin-bottom: 1em;
   border-bottom: 1px solid #0f03;
-  padding-bottom: 1em;
+  margin-bottom: 1.5em;
 `;
 
-const ProviderOption = styled.div<{ selected?: boolean, provider?: string }>`
+const Tab = styled.div<{ active?: boolean }>`
+  padding: 0.6em 1em;
+  cursor: pointer;
+  border: 1px solid ${props => props.active ? '#0f0' : 'transparent'};
+  border-bottom: none;
+  background: ${props => props.active ? '#001500' : 'transparent'};
+  color: ${props => props.active ? '#0f0' : '#0f08'};
+  border-top-left-radius: 0.3em;
+  border-top-right-radius: 0.3em;
+  margin-right: 0.5em;
+  
+  &:hover {
+    color: #0f0;
+    background: ${props => props.active ? '#001500' : '#000500'};
+  }
+`;
+
+const ProviderSelectionContainer = styled.div`
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1.5em;
+`;
+
+const ProviderCard = styled.div<{ selected?: boolean, provider?: string }>`
   flex: 1;
-  padding: 1em;
+  padding: 1.5em 1em;
   border: 2px solid ${props => props.selected 
     ? (props.provider === 'elevenlabs' ? '#0af' : '#0f0') 
     : '#333'};
@@ -174,19 +242,18 @@ const ProviderOption = styled.div<{ selected?: boolean, provider?: string }>`
     : '#000'};
   text-align: center;
   cursor: pointer;
-  margin: 0 0.5em;
+  border-radius: 0.5em;
+  transition: all 0.2s ease;
   
   &:hover {
     background-color: ${props => props.provider === 'elevenlabs' ? '#001830' : '#002000'};
+    border-color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
   }
-  
-  &:first-child {
-    margin-left: 0;
-  }
-  
-  &:last-child {
-    margin-right: 0;
-  }
+`;
+
+const ProviderIcon = styled.div`
+  font-size: 2em;
+  margin-bottom: 0.5em;
 `;
 
 const ProviderTitle = styled.div<{ provider?: string }>`
@@ -199,11 +266,7 @@ const ProviderTitle = styled.div<{ provider?: string }>`
 const ProviderDescription = styled.div`
   font-size: 0.8em;
   color: #aaa;
-`;
-
-const ProviderIcon2 = styled.div`
-  font-size: 2em;
-  margin-bottom: 0.5em;
+  line-height: 1.4;
 `;
 
 const RequiredTag = styled.span`
@@ -226,66 +289,208 @@ const OptionalTag = styled.span`
   vertical-align: middle;
 `;
 
-const TextArea = styled.textarea`
-  width: 100%;
-  height: 80px;
-  padding: 0.5em;
-  background: #000;
-  color: #0f0;
-  border: 1px solid #0f0;
-  font-family: monospace;
-  resize: vertical;
+const SliderContainer = styled.div`
+  margin-top: 0.5em;
+`;
+
+const SliderValue = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  margin-top: 0.3em;
+  color: #0f08;
+`;
+
+const SliderValueNumber = styled.span`
+  color: #0af;
+  font-weight: bold;
 `;
 
 const FooterButtons = styled.div`
-  margin-top: 1em;
+  margin-top: 1.5em;
   display: flex;
   justify-content: space-between;
 `;
 
 const ActionButton = styled(Button)`
-  padding: 0.5em 1em;
+  padding: 0.5em 1.2em;
+  font-size: 0.9em;
 `;
 
 const BackButton = styled(ActionButton)``;
 const AddButton = styled(ActionButton)``;
-const SaveButton = styled(ActionButton)``;
-const CancelButton = styled(ActionButton)``;
+const SaveButton = styled(ActionButton)`
+  background-color: #001500;
+  
+  &:hover {
+    background-color: #0f0;
+  }
+`;
+const CancelButton = styled(ActionButton)`
+  background-color: #150000;
+  border-color: #f00;
+  color: #f00;
+  
+  &:hover {
+    background-color: #f00;
+    color: #000;
+  }
+`;
 
 const StatusMessage = styled.p<{ success?: boolean }>`
   margin-top: 1em;
   text-align: center;
   font-weight: bold;
   color: ${props => props.success ? '#0f0' : '#f00'};
+  padding: 0.5em;
+  background-color: ${props => props.success ? '#0f01' : '#f001'};
+  border-radius: 0.3em;
 `;
 
 const VoiceBrowserButton = styled(Button)`
   margin-top: 1em;
   width: 100%;
+  padding: 0.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  background-color: ${props => props.disabled ? '#001' : '#001030'};
+  border-color: #0af;
+  color: #0af;
+  
+  &:hover:not(:disabled) {
+    background-color: #0af;
+    color: #000;
+  }
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 `;
 
 const VoiceBrowser = styled.div`
-  margin-top: 1em;
-  border: 1px solid #0f0;
+  margin-top: 1.5em;
+  border: 1px solid #0af;
   padding: 1em;
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
+  border-radius: 0.3em;
+  background-color: #000818;
 `;
 
-// For browser speech synthesis voice options
+const VoiceItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8em;
+  border-bottom: 1px solid #0af3;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: #001030;
+  }
+`;
+
+const VoiceInfo = styled.div`
+  flex-grow: 1;
+`;
+
+const VoiceName = styled.div`
+  font-weight: bold;
+  margin-bottom: 0.3em;
+  color: #0af;
+`;
+
+const VoiceDescription = styled.div`
+  font-size: 0.8em;
+  color: #0af9;
+`;
+
+const SelectButton = styled(Button)`
+  border-color: #0af;
+  color: #0af;
+  
+  &:hover {
+    background: #0af;
+    color: #000;
+  }
+`;
+
 const BrowserVoiceSection = styled.div`
-  margin-top: 1em;
+  margin-top: 1.5em;
   border-top: 1px solid #0f03;
   padding-top: 1em;
 `;
 
-const BrowserVoiceSelector = styled.select`
-  width: 100%;
+const BrowserVoiceGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5em;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 1em;
   padding: 0.5em;
-  background: #000;
-  color: #0f0;
-  border: 1px solid #0f0;
-  margin-bottom: 1em;
+  border: 1px solid #0f03;
+  border-radius: 0.3em;
+`;
+
+const BrowserVoiceOption = styled.div<{ selected?: boolean }>`
+  padding: 0.8em;
+  border: 1px solid ${props => props.selected ? '#0f0' : '#0f03'};
+  background-color: ${props => props.selected ? '#001500' : '#000'};
+  border-radius: 0.3em;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${props => props.selected ? '#001500' : '#000500'};
+    border-color: #0f0;
+  }
+`;
+
+const BrowserVoiceName = styled.div`
+  font-weight: bold;
+  margin-bottom: 0.2em;
+`;
+
+const BrowserVoiceDetails = styled.div`
+  font-size: 0.8em;
+  color: #0f08;
+`;
+
+const BrowserVoiceTag = styled.span<{ isLocal?: boolean }>`
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  background-color: ${props => props.isLocal ? '#0f02' : '#00f2'};
+  color: ${props => props.isLocal ? '#0f0' : '#00f'};
+  border-radius: 0.2em;
+  font-size: 0.7em;
+  margin-left: 0.5em;
+`;
+
+const LoadingSpinner = styled.div`
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid #0af;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5em;
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 `;
 
 interface VoiceModelManagerProps {
@@ -303,6 +508,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
   const [availableVoices, setAvailableVoices] = useState<any[]>([]);
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedBrowserVoice, setSelectedBrowserVoice] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'general' | 'settings'>('general');
   
   useEffect(() => {
     // Load existing voice models
@@ -372,11 +578,13 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       }
     });
     setIsEditing(false);
+    setActiveTab('general');
   };
   
   const handleEdit = (model: VoiceModel) => {
     setEditingModel({ ...model });
     setIsEditing(true);
+    setActiveTab('general');
     
     // If it's a browser voice, set the selected browser voice
     if (model.provider === 'browser' && model.voiceId) {
@@ -483,10 +691,14 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       // Clear the voiceId when switching providers
       voiceId: ''
     });
+    
+    // Reset selected browser voice when changing providers
+    if (provider === 'browser') {
+      setSelectedBrowserVoice('');
+    }
   };
   
-  const handleSelectBrowserVoice = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const voiceURI = e.target.value;
+  const handleSelectBrowserVoice = (voiceURI: string) => {
     setSelectedBrowserVoice(voiceURI);
     
     if (editingModel) {
@@ -547,23 +759,15 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
   
   const handleCancel = () => {
     setEditingModel(null);
+    setSelectedBrowserVoice('');
   };
   
-  const getProviderDisplay = (provider: string): JSX.Element => {
+  // Get provider icon for cards
+  const getProviderIcon = (provider: string): JSX.Element => {
     if (provider === 'elevenlabs') {
-      return (
-        <ModelProvider provider="elevenlabs">
-          <ProviderIcon>🌟</ProviderIcon>
-          ElevenLabs (Premium)
-        </ModelProvider>
-      );
+      return <ProviderBadge provider="elevenlabs">🌟</ProviderBadge>;
     } else {
-      return (
-        <ModelProvider provider="browser">
-          <ProviderIcon>🔊</ProviderIcon>
-          Browser Speech
-        </ModelProvider>
-      );
+      return <ProviderBadge provider="browser">🔊</ProviderBadge>;
     }
   };
   
@@ -579,196 +783,304 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       
       {elevenlabsKeyExists && !editingModel && (
         <InfoBox>
-          Voice models allow ALTER EGO to speak using different voices. You can add ElevenLabs premium voices or use free browser speech synthesis.
+          Voice models allow ALTER EGO to speak using different voices. You can add ElevenLabs premium voices for higher quality output or use free browser speech synthesis for basic functionality.
         </InfoBox>
       )}
       
-      <VoiceModelList>
-        {Object.keys(models).length === 0 ? (
-          <EmptyState>No voice models added yet.</EmptyState>
-        ) : (
-          Object.values(models).map(model => (
-            <VoiceModelItem key={model.id}>
-              <ModelInfo>
-                <ModelName>{model.name}</ModelName>
-                <ModelDescription>{model.description || 'No description'}</ModelDescription>
-                {getProviderDisplay(model.provider)}
-              </ModelInfo>
-              <ButtonGroup>
-                <TestButton onClick={() => handleTestVoice(model)}>Test</TestButton>
-                <Button onClick={() => handleEdit(model)}>Edit</Button>
-                <DeleteButton onClick={() => handleDelete(model.id)}>Delete</DeleteButton>
-              </ButtonGroup>
-            </VoiceModelItem>
-          ))
-        )}
-      </VoiceModelList>
-      
-      {editingModel ? (
+      {!editingModel ? (
+        <>
+          <VoiceModelGrid>
+            {Object.keys(models).length === 0 ? (
+              <EmptyState>
+                <EmptyIcon>🔊</EmptyIcon>
+                <div>No voice models added yet.</div>
+              </EmptyState>
+            ) : (
+              Object.values(models).map(model => (
+                <VoiceModelCard 
+                  key={model.id} 
+                  provider={model.provider}
+                  onClick={() => handleEdit(model)}
+                >
+                  {getProviderIcon(model.provider)}
+                  <ModelName>{model.name}</ModelName>
+                  <ModelDescription>{model.description || 'No description'}</ModelDescription>
+                  <ActionButtons>
+                    <TestButton 
+                      color="#00f" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTestVoice(model);
+                      }} 
+                      title="Test Voice"
+                    >
+                      🔈
+                    </TestButton>
+                    <EditButton 
+                      color="#ff0" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(model);
+                      }} 
+                      title="Edit"
+                    >
+                      ✏️
+                    </EditButton>
+                    <DeleteButton 
+                      color="#f00" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(model.id);
+                      }} 
+                      title="Delete"
+                    >
+                      ×
+                    </DeleteButton>
+                  </ActionButtons>
+                </VoiceModelCard>
+              ))
+            )}
+          </VoiceModelGrid>
+          
+          <FooterButtons>
+            <BackButton onClick={onBack}>Back</BackButton>
+            <AddButton onClick={handleAddNew}>Add New Voice Model</AddButton>
+          </FooterButtons>
+        </>
+      ) : (
         <FormContainer>
-          <FormGroup>
-            <Label htmlFor="name">Name: <RequiredTag>Required</RequiredTag></Label>
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              value={editingModel.name}
-              onChange={handleChange}
-              placeholder="e.g., British Male"
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="description">Description: <OptionalTag>Optional</OptionalTag></Label>
-            <TextArea
-              id="description"
-              name="description"
-              value={editingModel.description}
-              onChange={handleChange}
-              placeholder="A brief description of this voice model"
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <Label>Provider:</Label>
-            <ProviderOptionContainer>
-              <ProviderOption 
-                selected={editingModel.provider === 'browser'} 
-                provider="browser"
-                onClick={() => handleSelectProvider('browser')}
+          <TabContainer>
+            <Tab 
+              active={activeTab === 'general'} 
+              onClick={() => setActiveTab('general')}
+            >
+              General
+            </Tab>
+            {editingModel.provider === 'elevenlabs' && (
+              <Tab 
+                active={activeTab === 'settings'} 
+                onClick={() => setActiveTab('settings')}
               >
-                <ProviderIcon2>🔊</ProviderIcon2>
-                <ProviderTitle provider="browser">Browser Speech</ProviderTitle>
-                <ProviderDescription>Free, works offline, quality varies by browser</ProviderDescription>
-              </ProviderOption>
-              
-              <ProviderOption 
-                selected={editingModel.provider === 'elevenlabs'} 
-                provider="elevenlabs"
-                onClick={() => handleSelectProvider('elevenlabs')}
-              >
-                <ProviderIcon2>🌟</ProviderIcon2>
-                <ProviderTitle provider="elevenlabs">ElevenLabs</ProviderTitle>
-                <ProviderDescription>Premium quality, requires API key</ProviderDescription>
-              </ProviderOption>
-            </ProviderOptionContainer>
-          </FormGroup>
+                Voice Settings
+              </Tab>
+            )}
+          </TabContainer>
           
-          {editingModel.provider === 'elevenlabs' ? (
+          {activeTab === 'general' ? (
             <>
               <FormGroup>
-                <Label htmlFor="voiceId">Voice ID: <RequiredTag>Required</RequiredTag></Label>
+                <Label htmlFor="name">Voice Model Name: <RequiredTag>Required</RequiredTag></Label>
                 <Input
                   type="text"
-                  id="voiceId"
-                  name="voiceId"
-                  value={editingModel.voiceId || ''}
+                  id="name"
+                  name="name"
+                  value={editingModel.name}
                   onChange={handleChange}
-                  placeholder="ElevenLabs Voice ID"
+                  placeholder="e.g., British Male"
                 />
               </FormGroup>
               
               <FormGroup>
-                <Label htmlFor="settings.stability">Stability: {editingModel.settings?.stability || 0.5}</Label>
-                <Input
-                  type="range"
-                  id="settings.stability"
-                  name="settings.stability"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={editingModel.settings?.stability || 0.5}
+                <Label htmlFor="description">Description: <OptionalTag>Optional</OptionalTag></Label>
+                <TextArea
+                  id="description"
+                  name="description"
+                  value={editingModel.description}
                   onChange={handleChange}
+                  placeholder="A brief description of this voice model"
                 />
               </FormGroup>
               
               <FormGroup>
-                <Label htmlFor="settings.similarity_boost">Similarity Boost: {editingModel.settings?.similarity_boost || 0.5}</Label>
-                <Input
-                  type="range"
-                  id="settings.similarity_boost"
-                  name="settings.similarity_boost"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={editingModel.settings?.similarity_boost || 0.5}
-                  onChange={handleChange}
-                />
+                <Label>Voice Provider:</Label>
+                <ProviderSelectionContainer>
+                  <ProviderCard 
+                    selected={editingModel.provider === 'browser'} 
+                    provider="browser"
+                    onClick={() => handleSelectProvider('browser')}
+                  >
+                    <ProviderIcon>🔊</ProviderIcon>
+                    <ProviderTitle provider="browser">Browser Speech</ProviderTitle>
+                    <ProviderDescription>
+                      Free, works offline, available on all devices.
+                      Quality varies by browser and platform.
+                    </ProviderDescription>
+                  </ProviderCard>
+                  
+                  <ProviderCard 
+                    selected={editingModel.provider === 'elevenlabs'} 
+                    provider="elevenlabs"
+                    onClick={() => handleSelectProvider('elevenlabs')}
+                  >
+                    <ProviderIcon>🌟</ProviderIcon>
+                    <ProviderTitle provider="elevenlabs">ElevenLabs</ProviderTitle>
+                    <ProviderDescription>
+                      Premium quality AI voice synthesis.
+                      Requires API key and internet connection.
+                    </ProviderDescription>
+                  </ProviderCard>
+                </ProviderSelectionContainer>
               </FormGroup>
               
-              <VoiceBrowserButton 
-                onClick={fetchElevenLabsVoices}
-                disabled={loadingVoices || !elevenlabsKeyExists}
-              >
-                {loadingVoices ? 'Loading...' : 'Browse ElevenLabs Voices'}
-              </VoiceBrowserButton>
-              
-              {!elevenlabsKeyExists && (
-                <ErrorBox>
-                  ElevenLabs API key is required to use premium voices. Please add your API key in "Manage API Keys".
-                </ErrorBox>
-              )}
-              
-              {availableVoices.length > 0 && (
-                <VoiceBrowser>
-                  {availableVoices.map(voice => (
-                    <VoiceModelItem key={voice.voice_id} onClick={() => {
-                      // Set the selected voice ID
-                      setEditingModel({
-                        ...editingModel,
-                        voiceId: voice.voice_id,
-                        name: editingModel.name || voice.name,
-                        description: editingModel.description || `${voice.name} - ${voice.labels?.accent || 'Unknown accent'}`
-                      });
-                    }}>
-                      <ModelInfo>
-                        <ModelName>{voice.name}</ModelName>
-                        <ModelDescription>
-                          {Object.entries(voice.labels || {}).map(([key, value]) => `${key}: ${value}`).join(', ')}
-                        </ModelDescription>
-                      </ModelInfo>
-                      <Button>Select</Button>
-                    </VoiceModelItem>
-                  ))}
-                </VoiceBrowser>
+              {editingModel.provider === 'elevenlabs' ? (
+                <FormGroup>
+                  <Label htmlFor="voiceId">ElevenLabs Voice ID: <RequiredTag>Required</RequiredTag></Label>
+                  <Input
+                    type="text"
+                    id="voiceId"
+                    name="voiceId"
+                    value={editingModel.voiceId || ''}
+                    onChange={handleChange}
+                    placeholder="Enter ElevenLabs Voice ID"
+                  />
+                  
+                  <VoiceBrowserButton 
+                    onClick={fetchElevenLabsVoices}
+                    disabled={loadingVoices || !elevenlabsKeyExists}
+                  >
+                    {loadingVoices ? (
+                      <>
+                        <LoadingSpinner />
+                        Loading Voices...
+                      </>
+                    ) : (
+                      <>
+                        <span>📋</span>
+                        Browse Available ElevenLabs Voices
+                      </>
+                    )}
+                  </VoiceBrowserButton>
+                  
+                  {!elevenlabsKeyExists && (
+                    <ErrorBox>
+                      ElevenLabs API key is required to use premium voices. 
+                      Please add your API key in "Manage API Keys".
+                    </ErrorBox>
+                  )}
+                  
+                  {availableVoices.length > 0 && (
+                    <VoiceBrowser>
+                      {availableVoices.map(voice => (
+                        <VoiceItem key={voice.voice_id} onClick={() => {
+                          setEditingModel({
+                            ...editingModel,
+                            voiceId: voice.voice_id,
+                            name: editingModel.name || voice.name,
+                            description: editingModel.description || `${voice.name} - ${voice.labels?.accent || 'Unknown accent'}`
+                          });
+                        }}>
+                          <VoiceInfo>
+                            <VoiceName>{voice.name}</VoiceName>
+                            <VoiceDescription>
+                              {Object.entries(voice.labels || {})
+                                .map(([key, value]) => `${key}: ${value}`)
+                                .join(', ')}
+                            </VoiceDescription>
+                          </VoiceInfo>
+                          <SelectButton>Select</SelectButton>
+                        </VoiceItem>
+                      ))}
+                    </VoiceBrowser>
+                  )}
+                </FormGroup>
+              ) : (
+                <BrowserVoiceSection>
+                  <Label>Select Browser Voice: <RequiredTag>Required</RequiredTag></Label>
+                  
+                  {browserVoices.length === 0 ? (
+                    <InfoBox>
+                      No browser voices detected. Voice support may vary depending on your browser and operating system.
+                    </InfoBox>
+                  ) : (
+                    <BrowserVoiceGrid>
+                      {browserVoices.map(voice => (
+                        <BrowserVoiceOption
+                          key={voice.voiceURI}
+                          selected={selectedBrowserVoice === voice.voiceURI}
+                          onClick={() => handleSelectBrowserVoice(voice.voiceURI)}
+                        >
+                          <BrowserVoiceName>
+                            {voice.name}
+                            <BrowserVoiceTag isLocal={voice.localService}>
+                              {voice.localService ? 'Local' : 'Remote'}
+                            </BrowserVoiceTag>
+                          </BrowserVoiceName>
+                          <BrowserVoiceDetails>
+                            {voice.lang}
+                          </BrowserVoiceDetails>
+                        </BrowserVoiceOption>
+                      ))}
+                    </BrowserVoiceGrid>
+                  )}
+                </BrowserVoiceSection>
               )}
             </>
           ) : (
-            <BrowserVoiceSection>
+            // Settings tab for ElevenLabs
+            <>
               <FormGroup>
-                <Label htmlFor="browserVoice">Select Browser Voice: <RequiredTag>Required</RequiredTag></Label>
-                <BrowserVoiceSelector
-                  id="browserVoice"
-                  value={selectedBrowserVoice}
-                  onChange={handleSelectBrowserVoice}
-                >
-                  <option value="">Select a voice...</option>
-                  {browserVoices.map(voice => (
-                    <option key={voice.voiceURI} value={voice.voiceURI}>
-                      {voice.name} ({voice.lang}, {voice.localService ? 'Local' : 'Remote'})
-                    </option>
-                  ))}
-                </BrowserVoiceSelector>
+                <Label htmlFor="settings.stability">
+                  Stability: Affects variation in voice output
+                </Label>
+                <SliderContainer>
+                  <Input
+                    type="range"
+                    id="settings.stability"
+                    name="settings.stability"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={editingModel.settings?.stability || 0.5}
+                    onChange={handleChange}
+                  />
+                  <SliderValue>
+                    <span>Less stable</span>
+                    <SliderValueNumber>
+                      {editingModel.settings?.stability?.toFixed(2) || "0.50"}
+                    </SliderValueNumber>
+                    <span>More stable</span>
+                  </SliderValue>
+                </SliderContainer>
               </FormGroup>
               
-              {browserVoices.length === 0 && (
-                <InfoBox>
-                  No browser voices detected. Voice support may vary depending on your browser and operating system.
-                </InfoBox>
-              )}
-            </BrowserVoiceSection>
+              <FormGroup>
+                <Label htmlFor="settings.similarity_boost">
+                  Similarity Boost: How closely to match the original voice
+                </Label>
+                <SliderContainer>
+                  <Input
+                    type="range"
+                    id="settings.similarity_boost"
+                    name="settings.similarity_boost"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={editingModel.settings?.similarity_boost || 0.5}
+                    onChange={handleChange}
+                  />
+                  <SliderValue>
+                    <span>More variation</span>
+                    <SliderValueNumber>
+                      {editingModel.settings?.similarity_boost?.toFixed(2) || "0.50"}
+                    </SliderValueNumber>
+                    <span>More similar</span>
+                  </SliderValue>
+                </SliderContainer>
+              </FormGroup>
+              
+              <InfoBox>
+                <strong>Voice Settings Guide:</strong><br/>
+                <strong>Stability</strong> - Higher values create consistent output but may sound monotonous. Lower values add more emotion but may be unpredictable.<br/>
+                <strong>Similarity Boost</strong> - Higher values make the voice sound closer to the original voice sample, lower values allow more creativity.
+              </InfoBox>
+            </>
           )}
           
-          <ButtonGroup>
-            <SaveButton onClick={handleSave}>Save</SaveButton>
+          <FooterButtons>
             <CancelButton onClick={handleCancel}>Cancel</CancelButton>
-          </ButtonGroup>
+            <SaveButton onClick={handleSave}>Save Voice Model</SaveButton>
+          </FooterButtons>
         </FormContainer>
-      ) : (
-        <FooterButtons>
-          <BackButton onClick={onBack}>Back</BackButton>
-          <AddButton onClick={handleAddNew}>Add New Voice Model</AddButton>
-        </FooterButtons>
       )}
       
       {status && <StatusMessage success={isSuccess}>{status}</StatusMessage>}

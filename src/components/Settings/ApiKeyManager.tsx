@@ -13,7 +13,7 @@ const Title = styled.h2`
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1em;
+  margin-bottom: 1.5em; /* Increased spacing between form groups */
 `;
 
 const Label = styled.label`
@@ -23,25 +23,28 @@ const Label = styled.label`
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.5em;
+  padding: 0.7em;
   background: #000;
   color: #0f0;
   border: 1px solid #0f0;
+  border-radius: 0.2em;
   font-family: monospace;
 `;
 
 const Description = styled.p`
   font-size: 0.8em;
-  margin-top: 0.3em;
+  margin-top: 0.5em;
   color: #0f09;
+  line-height: 1.4; /* Improved readability */
 `;
 
 const InfoBox = styled.div`
-  padding: 0.8em;
+  padding: 1em;
   border: 1px solid #00f;
   background-color: #000020;
-  margin-bottom: 1.5em;
+  margin-bottom: 2em;
   font-size: 0.9em;
+  line-height: 1.5; /* Improved readability */
 `;
 
 const ButtonContainer = styled.div`

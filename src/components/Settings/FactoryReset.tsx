@@ -14,13 +14,16 @@ const Title = styled.h2`
 const WarningText = styled.div`
   color: #f00;
   margin-bottom: 1.5em;
-  padding: 1em;
+  padding: 1.2em;
   border: 1px solid #f00;
   background-color: #200000;
+  border-radius: 0.3em;
+  line-height: 1.5;
 `;
 
 const DetailsText = styled.p`
-  margin-bottom: 1em;
+  margin-bottom: 1.2em;
+  line-height: 1.5;
 `;
 
 const ButtonContainer = styled.div`
@@ -53,9 +56,10 @@ const ResetButton = styled(Button)`
 `;
 
 const ConfirmationPrompt = styled.div`
-  margin-top: 1.5em;
-  padding: 1em;
+  margin-top: 2em;
+  padding: 1.2em;
   border: 1px solid #f00;
+  border-radius: 0.3em;
   background-color: #200000;
 `;
 
@@ -67,11 +71,12 @@ const ConfirmationText = styled.p`
 
 const ConfirmationInput = styled.input`
   width: 100%;
-  padding: 0.5em;
+  padding: 0.7em;
   background: #000;
   color: #f00;
   border: 1px solid #f00;
-  margin-bottom: 1em;
+  border-radius: 0.2em;
+  margin-bottom: 1.5em;
 `;
 
 const StatusMessage = styled.p`
