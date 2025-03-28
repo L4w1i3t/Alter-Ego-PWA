@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { sendMessageToAI } from '../services/aiService';
+import { sendMessageToAI, AIConfig } from '../services/aiService';
+
+// Define message type
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 // Define context types
 interface ApiContextType {
-  sendQuery: (query: string) => Promise<{
+  sendQuery: (query: string, systemPrompt?: string, config?: Partial<AIConfig>) => Promise<{
     response: string;
     userEmotions: string[];
     responseEmotions: string[];
@@ -11,6 +17,8 @@ interface ApiContextType {
   }>;
   isLoading: boolean;
   error: string | null;
+  conversationHistory: Message[];
+  clearConversation: () => void;
 }
 
 // Create context with default values
@@ -23,6 +31,8 @@ const ApiContext = createContext<ApiContextType>({
   }),
   isLoading: false,
   error: null,
+  conversationHistory: [],
+  clearConversation: () => {}
 });
 
 // Provider component
@@ -33,18 +43,37 @@ interface ApiProviderProps {
 export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
+
+  // Function to clear conversation history
+  const clearConversation = () => {
+    setConversationHistory([]);
+  };
 
   // Function to send a query to the AI
-  const sendQuery = async (query: string) => {
+  const sendQuery = async (
+    query: string, 
+    systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant.",
+    config?: Partial<AIConfig>
+  ) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Call the AI service
-      const response = await sendMessageToAI(query);
+      // Call the AI service with history and config
+      const response = await sendMessageToAI(query, systemPrompt, conversationHistory, config);
       
-      // For now, generate dummy emotions
-      // In the real application, these would come from the backend
+      // Update conversation history with properly typed roles
+      const updatedHistory: Message[] = [
+        ...conversationHistory,
+        { role: 'user', content: query },
+        { role: 'assistant', content: response }
+      ];
+      
+      // Keep only the last 20 messages to avoid token limits but provide enough context
+      setConversationHistory(updatedHistory.slice(-20));
+      
+      // For now, generate dummy emotions - this can be enhanced later
       const userEmotions = ['curiosity'];
       const responseEmotions = ['neutral'];
       const emotion = 'neutral';
@@ -65,7 +94,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   };
 
   return (
-    <ApiContext.Provider value={{ sendQuery, isLoading, error }}>
+    <ApiContext.Provider value={{ sendQuery, isLoading, error, conversationHistory, clearConversation }}>
       {children}
     </ApiContext.Provider>
   );

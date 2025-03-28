@@ -2,25 +2,45 @@
 const CACHE_VERSION = 1;
 const CACHE_NAME = `alter-ego-cache-v${CACHE_VERSION}`;
 
-// Assets to cache for offline use
+// Assets to cache for offline use - these need to match your actual file paths
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/static/js/main.bundle.js',
-  '/static/css/main.css',
-  '/manifest.json',
-  '/favicon.ico',
+  '/bundle.js', // Adjust based on your actual bundle filename
+  '/assets/favicon.ico',
+  '/manifest.json'
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets with error handling
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
+      .then(async (cache) => {
         console.log('Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        
+        // More robust approach - add files individually to handle failures
+        const addedAssets = await Promise.allSettled(
+          STATIC_ASSETS.map(url => 
+            cache.add(url).catch(err => {
+              console.warn(`Couldn't cache asset ${url}:`, err);
+              return false;
+            })
+          )
+        );
+        
+        const failures = addedAssets.filter(result => result.status === 'rejected');
+        if (failures.length > 0) {
+          console.warn(`Failed to cache ${failures.length} assets, but service worker will continue`);
+        }
+        
+        return true; // Proceed even if some assets couldn't be cached
       })
       .then(() => self.skipWaiting())
+      .catch(error => {
+        console.error('Service worker installation failed:', error);
+        // Continue with service worker installation even if caching fails
+        return self.skipWaiting();
+      })
   );
 });
 
@@ -91,8 +111,10 @@ self.addEventListener('fetch', (event) => {
             // Add the new resource to the cache
             caches.open(CACHE_NAME)
               .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
+                cache.put(event.request, responseToCache)
+                  .catch(err => console.warn('Failed to update cache for', event.request.url, err));
+              })
+              .catch(err => console.warn('Failed to open cache for update', err));
 
             return response;
           })
@@ -157,7 +179,7 @@ async function syncMessages() {
           },
           body: JSON.stringify(message.data),
         });
-
+        
         if (response.ok) {
           // If successful, remove the message from the store
           store.delete(message.id);

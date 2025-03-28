@@ -103,11 +103,20 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
     }));
   };
   
-  const handleSave = () => {
+  const handleSaveKeys = () => {
     try {
       // Basic validation for OpenAI key format (starts with "sk-")
       if (keys.OPENAI_API_KEY && !keys.OPENAI_API_KEY.startsWith('sk-')) {
         setStatus('OpenAI API key should start with "sk-"');
+        setIsSuccess(false);
+        setShowStatus(true);
+        setTimeout(() => setShowStatus(false), 5000);
+        return;
+      }
+
+      // Validate ElevenLabs key is not empty if provided
+      if (keys.ELEVENLABS_API_KEY && keys.ELEVENLABS_API_KEY.trim() === '') {
+        setStatus('ElevenLabs API key cannot be empty');
         setIsSuccess(false);
         setShowStatus(true);
         setTimeout(() => setShowStatus(false), 5000);
@@ -178,7 +187,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       
       <ButtonContainer>
         <BackButton onClick={onBack}>Back</BackButton>
-        <SaveButton onClick={handleSave}>Save</SaveButton>
+        <SaveButton onClick={handleSaveKeys}>Save</SaveButton>
       </ButtonContainer>
       
       {showStatus && status && (
