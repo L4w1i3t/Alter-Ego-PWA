@@ -140,6 +140,11 @@ export interface VoiceModel {
   export function saveChatHistory(history: ChatHistoryEntry[]): void {
     localStorage.setItem('alterEgo_chatHistory', JSON.stringify(history));
   }
+
+  export function getPersonaChatHistory(personaName: string): ChatHistoryEntry | null {
+    const allHistory = loadChatHistory();
+    return allHistory.find(entry => entry.persona === personaName) || null;
+  }
   
   // Clear Memory
   export function clearMemory(): void {

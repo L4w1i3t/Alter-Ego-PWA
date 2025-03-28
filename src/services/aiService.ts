@@ -48,7 +48,7 @@ export const getUsageStats = (): { total: number, byModel: Record<string, number
   return getTokenUsageStats();
 };
 
-// Updated AI service to use OpenAI with configurations
+// Updated AI service to use OpenAI with configurations and persona
 export const sendMessageToAI = async (
   message: string,
   systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant.",
@@ -69,7 +69,10 @@ export const sendMessageToAI = async (
       ...config
     };
     
-    // Call the OpenAI API with configuration
+    // Log the persona being used (for debugging)
+    console.log(`Using persona: ${systemPrompt.substring(0, 50)}...`);
+    
+    // Call the OpenAI API with configuration and persona
     const response = await generateChatCompletion(
       systemPrompt,
       message,

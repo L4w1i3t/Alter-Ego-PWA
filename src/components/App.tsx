@@ -8,6 +8,7 @@ import Settings from './Settings/Settings';
 import ModelSelection from './Sections/ModelSelection';
 import WarmingUp from './Sections/WarmingUp';
 import CharacterSelector from './Sections/CharacterSelector'; 
+import { useApi } from '../context/ApiContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import { loadSettings, saveSettings, loadPersonas, getPersona, loadVoiceModels, loadApiKeys } from '../utils/storageUtils';
 import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
@@ -26,6 +27,9 @@ const AppContainer = styled.div`
 let renderCount = 0;
 
 const App: React.FC = () => {
+
+  const { setCurrentPersona } = useApi();
+  
   // Log mounting for debugging
   useEffect(() => {
     console.log(`App component mounted (render #${++renderCount})`);
@@ -152,6 +156,9 @@ const App: React.FC = () => {
   const handleCharacterSelected = (characterName: string) => {
     setActiveCharacter(characterName);
     
+    // Update the current persona in the API context
+    setCurrentPersona(characterName);
+    
     // Load the persona content
     const persona = getPersona(characterName);
     if (persona) {
@@ -200,6 +207,9 @@ const App: React.FC = () => {
     if (settings.activeCharacter) {
       setActiveCharacter(settings.activeCharacter);
       
+      // Set the current persona in the API context
+      setCurrentPersona(settings.activeCharacter);
+      
       // Load the persona content
       const persona = getPersona(settings.activeCharacter);
       if (persona) {
@@ -210,7 +220,7 @@ const App: React.FC = () => {
     if (settings.voiceModel) {
       setVoiceModel(settings.voiceModel);
     }
-  }, []);
+  }, [setCurrentPersona]);
   
   // Add effect to listen for AI responses and synthesize voice
   useEffect(() => {
@@ -251,7 +261,10 @@ const App: React.FC = () => {
         onLoadCharacter={handleLoadCharacterClick}
       />
       
-      <QuerySection />
+      <QuerySection 
+        personaContent={currentPersonaContent}
+        activeCharacter={activeCharacter}
+      />
       
       <MainContent 
         personaContent={currentPersonaContent}

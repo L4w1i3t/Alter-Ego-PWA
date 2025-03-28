@@ -52,9 +52,15 @@ const SendQueryButton = styled.button`
   }
 `;
 
-interface QuerySectionProps {}
+interface QuerySectionProps {
+  personaContent?: string;
+  activeCharacter?: string;
+}
 
-const QuerySection: React.FC<QuerySectionProps> = () => {
+const QuerySection: React.FC<QuerySectionProps> = ({ 
+  personaContent = "",
+  activeCharacter = "ALTER EGO"
+}) => {
   const [query, setQuery] = useState('');
   const { sendQuery, isLoading } = useApi();
   
@@ -70,8 +76,14 @@ const QuerySection: React.FC<QuerySectionProps> = () => {
       });
       window.dispatchEvent(queryEvent);
       
-      // Send the query to the API
-      const result = await sendQuery(currentQuery);
+      // Prepare the custom system prompt with the active persona's content
+      const systemPrompt = personaContent ? 
+        `You are ${activeCharacter}. ${personaContent}` :
+        `You are ${activeCharacter}, an intelligent and helpful AI assistant.`;
+      
+      // Send the query to the API with the personalized system prompt
+      // Make sure we're using the current persona's name to keep conversations separate
+      const result = await sendQuery(currentQuery, systemPrompt, undefined, activeCharacter);
       
       // Dispatch response event
       const responseEvent = new CustomEvent('query-response', {
