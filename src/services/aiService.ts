@@ -2,7 +2,7 @@ import { generateChatCompletion, getAvailableModels, getTokenUsageStats } from '
 import { loadApiKeys } from '../utils/storageUtils';
 
 // Interface for conversation history
-interface MessageHistory {
+export interface MessageHistory {
   role: 'user' | 'assistant';
   content: string;
 }

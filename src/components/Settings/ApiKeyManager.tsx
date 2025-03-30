@@ -191,7 +191,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       </ButtonContainer>
       
       {showStatus && status && (
-        <StatusMessage success={isSuccess}>{status}</StatusMessage>
+        <StatusMessage success={isSuccess || undefined}>{status}</StatusMessage>
       )}
     </Container>
   );

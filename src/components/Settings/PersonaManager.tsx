@@ -657,7 +657,7 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
         </div>
       ) : null}
       
-      {status && <StatusMessage success={isSuccess}>{status}</StatusMessage>}
+      {status && <StatusMessage success={isSuccess || undefined}>{status}</StatusMessage>}
     </Container>
   );
 };

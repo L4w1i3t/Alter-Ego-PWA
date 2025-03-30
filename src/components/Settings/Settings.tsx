@@ -141,17 +141,20 @@ const ModelOptions = styled.div`
   gap: 0.5em;
 `;
 
-const ModelButton = styled.button<{ isActive?: boolean }>`
-  flex: 1;
-  background: ${props => props.isActive ? '#0f0' : '#000'};
+// Fix the ModelButton styled component using shouldForwardProp
+const ModelButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isActive',
+})<{ isActive?: boolean }>`
+  padding: 0.5em 1em;
+  margin: 0 0.5em;
+  background: ${props => props.isActive ? '#0f0' : 'transparent'};
   color: ${props => props.isActive ? '#000' : '#0f0'};
   border: 1px solid #0f0;
-  padding: 0.5em;
   cursor: pointer;
   
   &:hover {
     background: ${props => props.isActive ? '#0f0' : '#0a0'};
-    color: ${props => props.isActive ? '#000' : '#000'};
+    color: #000;
   }
 `;
 

@@ -1083,7 +1083,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
         </FormContainer>
       )}
       
-      {status && <StatusMessage success={isSuccess}>{status}</StatusMessage>}
+      {status && <StatusMessage success={isSuccess || undefined}>{status}</StatusMessage>}
     </Container>
   );
 };
