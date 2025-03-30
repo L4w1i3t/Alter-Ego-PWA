@@ -112,17 +112,17 @@ const Footer: React.FC<FooterProps> = ({
   }, [voiceModel, availableModels]);
   
   const handleVoiceModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newmodel_id = e.target.value;
+    const newModelId = e.target.value;
     
     // Update the provider display
-    if (newmodel_id !== 'None' && availableModels[newmodel_id]) {
-      setCurrentProvider(availableModels[newmodel_id].provider);
+    if (newModelId !== 'None' && availableModels[newModelId]) {
+      setCurrentProvider(availableModels[newModelId].provider);
     } else {
       setCurrentProvider('none');
     }
     
     if (onVoiceModelChange) {
-      onVoiceModelChange(newmodel_id);
+      onVoiceModelChange(newModelId);
     }
   };
 

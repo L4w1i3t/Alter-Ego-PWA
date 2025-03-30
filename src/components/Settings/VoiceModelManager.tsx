@@ -571,7 +571,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       name: '',
       description: '',
       provider: 'browser', // Default to browser as it doesn't need an API key
-      voice_id: '',
+      voiceId: '',
       settings: {
         stability: 0.5,
         similarity_boost: 0.5
@@ -587,8 +587,8 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
     setActiveTab('general');
     
     // If it's a browser voice, set the selected browser voice
-    if (model.provider === 'browser' && model.voice_id) {
-      setSelectedBrowserVoice(model.voice_id);
+    if (model.provider === 'browser' && model.voiceId) {
+      setSelectedBrowserVoice(model.voiceId);
     }
   };
   
@@ -619,9 +619,9 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
           const utterance = new SpeechSynthesisUtterance(testText);
           
           // Set the voice if a specific one is selected
-          if (model.voice_id) {
+          if (model.voiceId) {
             const voices = window.speechSynthesis.getVoices();
-            const selectedVoice = voices.find(v => v.voiceURI === model.voice_id);
+            const selectedVoice = voices.find(v => v.voiceURI === model.voiceId);
             if (selectedVoice) {
               utterance.voice = selectedVoice;
             }
@@ -688,8 +688,8 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
     setEditingModel({
       ...editingModel,
       provider,
-      // Clear the voice_id when switching providers
-      voice_id: ''
+      // Clear the voiceId when switching providers
+      voiceId: ''
     });
     
     // Reset selected browser voice when changing providers
@@ -704,7 +704,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
     if (editingModel) {
       setEditingModel({
         ...editingModel,
-        voice_id: voiceURI
+        voiceId: voiceURI
       });
     }
   };
@@ -718,7 +718,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
     }
     
     // Additional validation for ElevenLabs voice models
-    if (editingModel.provider === 'elevenlabs' && !editingModel.voice_id) {
+    if (editingModel.provider === 'elevenlabs' && !editingModel.voiceId) {
       setStatus('Please provide a Voice ID for ElevenLabs voice models');
       setIsSuccess(false);
       setTimeout(() => setStatus(null), 3000);
@@ -726,7 +726,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
     }
     
     // For browser voice models, ensure a voice is selected
-    if (editingModel.provider === 'browser' && !editingModel.voice_id) {
+    if (editingModel.provider === 'browser' && !editingModel.voiceId) {
       setStatus('Please select a browser voice');
       setIsSuccess(false);
       setTimeout(() => setStatus(null), 3000);
@@ -924,12 +924,12 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
               
               {editingModel.provider === 'elevenlabs' ? (
                 <FormGroup>
-                  <Label htmlFor="voice_id">ElevenLabs Voice ID: <RequiredTag>Required</RequiredTag></Label>
+                  <Label htmlFor="voiceId">ElevenLabs Voice ID: <RequiredTag>Required</RequiredTag></Label>
                   <Input
                     type="text"
-                    id="voice_id"
-                    name="voice_id"
-                    value={editingModel.voice_id || ''}
+                    id="voiceId"
+                    name="voiceId"
+                    value={editingModel.voiceId || ''}
                     onChange={handleChange}
                     placeholder="Enter ElevenLabs Voice ID"
                   />
@@ -964,7 +964,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                         <VoiceItem key={voice.voice_id} onClick={() => {
                           setEditingModel({
                             ...editingModel,
-                            voice_id: voice.voice_id,
+                            voiceId: voice.voice_id,
                             name: editingModel.name || voice.name,
                             description: editingModel.description || `${voice.name} - ${voice.labels?.accent || 'Unknown accent'}`
                           });

@@ -2,7 +2,6 @@ import { loadApiKeys } from './storageUtils';
 
 // Constants
 const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
-const ELEVENLABS_MULTILINGUAL_MODEL = 'eleven_multilingual_v2';
 
 // Interfaces
 export interface ElevenlabsVoiceSettings {
@@ -12,7 +11,7 @@ export interface ElevenlabsVoiceSettings {
 
 interface TextToSpeechRequest {
   text: string;
-  model_id: string;
+  voice_id: string;
   voice_settings?: ElevenlabsVoiceSettings;
 }
 
@@ -21,9 +20,8 @@ interface TextToSpeechRequest {
  */
 export const textToSpeech = async (
   text: string,
-  voice_id: string,
-  settings?: Partial<ElevenlabsVoiceSettings>,
-  model_id: string = ELEVENLABS_MULTILINGUAL_MODEL // Default to multilingual model
+  voiceId: string,
+  settings?: Partial<ElevenlabsVoiceSettings>
 ): Promise<Blob | null> => {
   const { ELEVENLABS_API_KEY } = loadApiKeys();
   
@@ -32,7 +30,7 @@ export const textToSpeech = async (
     throw new Error('ElevenLabs API key is not set');
   }
   
-  const endpoint = `${ELEVENLABS_API_BASE}/text-to-speech/${voice_id}`;
+  const endpoint = `${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`;
   
   // Create a valid voice settings object with default values for any missing properties
   const voiceSettings: ElevenlabsVoiceSettings = {
@@ -42,7 +40,7 @@ export const textToSpeech = async (
   
   const payload: TextToSpeechRequest = {
     text,
-    model_id: model_id,
+    voice_id: voiceId,
     voice_settings: voiceSettings
   };
   

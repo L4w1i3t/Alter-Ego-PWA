@@ -61,11 +61,11 @@ const App: React.FC = () => {
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   
   // Voice synthesis utilities
-  const synthesizeVoice = async (text: string, voicemodel_id: string) => {
-    if (voicemodel_id === 'None' || !text) return;
+  const synthesizeVoice = async (text: string, voiceModelId: string) => {
+    if (voiceModelId === 'None' || !text) return;
     
     const models = loadVoiceModels();
-    const model = models[voicemodel_id];
+    const model = models[voiceModelId];
     
     if (!model) return;
     
@@ -85,7 +85,7 @@ const App: React.FC = () => {
           // Call ElevenLabs API with proper settings
           const audioBlob = await textToSpeech(
             text,
-            model.voice_id || 'eleven_multilingual_v2',
+            model.voiceId || '',
             model.settings || { stability: 0.5, similarity_boost: 0.5 }
           );
           
