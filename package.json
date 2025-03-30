@@ -2,7 +2,7 @@
   "name": "alter-ego-pwa",
   "version": "1.0.0",
   "description": "A PWA variant of L4w1i3t's ALTER EGO program.",
-  "main": "dist/index.html",
+  "main": "dist/index.js",
   "scripts": {
     "start-dev": "webpack serve --mode development",
     "start-prod": "webpack serve --mode production",

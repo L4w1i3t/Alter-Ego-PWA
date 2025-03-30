@@ -36,7 +36,7 @@ export interface VoiceModel {
     name: string;
     description: string;
     provider: string;  // 'elevenlabs' or 'browser'
-    voiceId?: string;  // For ElevenLabs voices
+    voice_id?: string;  // For ElevenLabs voices
     settings?: Partial<ElevenlabsVoiceSettings>;
   }
   
