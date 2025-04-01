@@ -16,7 +16,7 @@ export interface AIConfig {
 
 // Default configuration
 const defaultConfig: AIConfig = {
-  model: 'gpt-3.5-turbo',
+  model: 'gpt-4o-mini',
   temperature: 0.7,
   maxTokens: 1000
 };
@@ -69,7 +69,10 @@ export const sendMessageToAI = async (
       ...config
     };
     
-    // Log the persona being used (for debugging)
+    // Log the full system prompt including persona and DEFAULT_SYSTEM_PROMPT form openaiApi.ts
+    const fullSystemPrompt = `${systemPrompt} ${finalConfig.model}`;
+    console.log (`Full system prompt: ${fullSystemPrompt}`);
+    // Log JUST the persona being used (for debugging)
     console.log(`Using persona: ${systemPrompt.substring(0, 50)}...`);
     
     // Call the OpenAI API with configuration and persona

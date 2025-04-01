@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadVoiceModels, saveVoiceModels, VoiceModel, loadApiKeys } from '../../utils/storageUtils';
-import { getVoices } from '../../utils/elevenlabsApi';
+import { getVoices, ElevenlabsModel } from '../../utils/elevenlabsApi';
 import { dispatchAppEvent, EVENTS } from '../../utils/events';
 
 const Container = styled.div`
@@ -337,7 +337,9 @@ const CancelButton = styled(ActionButton)`
   }
 `;
 
-const StatusMessage = styled.p<{ success?: boolean }>`
+const StatusMessage = styled.p.withConfig({
+  shouldForwardProp: (prop) => prop !== 'success',
+})<{ success?: boolean }>`
   margin-top: 1em;
   text-align: center;
   font-weight: bold;
@@ -466,11 +468,11 @@ const BrowserVoiceDetails = styled.div`
   color: #0f08;
 `;
 
-const BrowserVoiceTag = styled.span<{ isLocal?: boolean }>`
+const BrowserVoiceTag = styled.span<{ islocal?: boolean }>`
   display: inline-block;
   padding: 0.1em 0.4em;
-  background-color: ${props => props.isLocal ? '#0f02' : '#00f2'};
-  color: ${props => props.isLocal ? '#0f0' : '#00f'};
+  background-color: ${props => props.islocal ? '#0f02' : '#00f2'};
+  color: ${props => props.islocal ? '#0f0' : '#00f'};
   border-radius: 0.2em;
   font-size: 0.7em;
   margin-left: 0.5em;
@@ -993,15 +995,15 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                     </InfoBox>
                   ) : (
                     <BrowserVoiceGrid>
-                      {browserVoices.map(voice => (
+                      {browserVoices.map((voice, index) => (
                         <BrowserVoiceOption
-                          key={voice.voiceURI}
+                          key={`${voice.voiceURI}-${index}`}
                           selected={selectedBrowserVoice === voice.voiceURI}
                           onClick={() => handleSelectBrowserVoice(voice.voiceURI)}
                         >
                           <BrowserVoiceName>
                             {voice.name}
-                            <BrowserVoiceTag isLocal={voice.localService}>
+                            <BrowserVoiceTag islocal={voice.localService}>
                               {voice.localService ? 'Local' : 'Remote'}
                             </BrowserVoiceTag>
                           </BrowserVoiceName>

@@ -100,7 +100,7 @@ interface ModelSettingsProps {
 
 const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
   const [config, setConfig] = useState<AIConfig>({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini',
     temperature: 0.7,
     maxTokens: 1000
   });

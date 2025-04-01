@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import styled from 'styled-components';
 import Header from './Header/Header';
 import QuerySection from './Sections/QuerySection';
@@ -61,11 +61,11 @@ const App: React.FC = () => {
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   
   // Voice synthesis utilities
-  const synthesizeVoice = async (text: string, voiceModelId: string) => {
-    if (voiceModelId === 'None' || !text) return;
+  const synthesizeVoice = async (text: string, voicemodel_id: string) => {
+    if (voicemodel_id === 'None' || !text) return;
     
     const models = loadVoiceModels();
-    const model = models[voiceModelId];
+    const model = models[voicemodel_id];
     
     if (!model) return;
     
@@ -85,7 +85,7 @@ const App: React.FC = () => {
           // Call ElevenLabs API with proper settings
           const audioBlob = await textToSpeech(
             text,
-            model.voiceId || '',
+            model.voiceId || 'eleven_multilingual_v2',
             model.settings || { stability: 0.5, similarity_boost: 0.5 }
           );
           
@@ -134,7 +134,8 @@ const App: React.FC = () => {
     saveSettings({
       selectedModel: model,
       activeCharacter,
-      voiceModel
+      voiceModel,
+      memoryBuffer: loadSettings().memoryBuffer // Preserve existing memoryBuffer value
     });
   };
   
@@ -145,7 +146,8 @@ const App: React.FC = () => {
     saveSettings({
       selectedModel: model,
       activeCharacter,
-      voiceModel
+      voiceModel,
+      memoryBuffer: loadSettings().memoryBuffer
     });
   };
   
@@ -171,7 +173,8 @@ const App: React.FC = () => {
     saveSettings({
       selectedModel,
       activeCharacter: characterName,
-      voiceModel
+      voiceModel,
+      memoryBuffer: loadSettings().memoryBuffer
     });
     
     setShowCharacterSelector(false);
@@ -188,7 +191,8 @@ const App: React.FC = () => {
     saveSettings({
       selectedModel,
       activeCharacter,
-      voiceModel: modelName
+      voiceModel: modelName,
+      memoryBuffer: loadSettings().memoryBuffer
     });
   };
   

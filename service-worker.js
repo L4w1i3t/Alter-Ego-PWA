@@ -2,6 +2,9 @@
 const CACHE_VERSION = 1;
 const CACHE_NAME = `alter-ego-cache-v${CACHE_VERSION}`;
 
+// Use a simpler cache name without timestamp to avoid creating new caches each time
+const CACHE_FULL_NAME = CACHE_NAME;
+
 // Assets to cache for offline use - these need to match your actual file paths
 const STATIC_ASSETS = [
   '/',
@@ -14,7 +17,7 @@ const STATIC_ASSETS = [
 // Install event - cache static assets with error handling
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(CACHE_FULL_NAME)
       .then(async (cache) => {
         console.log('Caching static assets');
         
@@ -50,7 +53,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter(name => name !== CACHE_NAME)
+          .filter(name => name !== CACHE_FULL_NAME)
           .map(name => caches.delete(name))
       );
     }).then(() => {
@@ -109,7 +112,7 @@ self.addEventListener('fetch', (event) => {
             const responseToCache = response.clone();
 
             // Add the new resource to the cache
-            caches.open(CACHE_NAME)
+            caches.open(CACHE_FULL_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache)
                   .catch(err => console.warn('Failed to update cache for', event.request.url, err));

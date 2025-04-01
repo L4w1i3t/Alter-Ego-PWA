@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { loadSettings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
 
 const MainContentContainer = styled.main`
   display: flex;
@@ -150,14 +151,21 @@ const MainContent: React.FC<MainContentProps> = ({
       responseBox.scrollTop = responseBox.scrollHeight;
     }
   }, [messages]);
+
+  // Load the memory limit from settings
+  const { memoryBuffer } = loadSettings();
   
   // Listen for user queries
   useEffect(() => {
     const handleUserQuery = (event: CustomEvent<{ query: string }>) => {
       const { query } = event.detail;
       
-      // Add user message
-      setMessages(prev => [...prev, { isUser: true, text: query }]);
+      // Add user message and limit history
+      setMessages(prev => {
+        const newMessages = [...prev, { isUser: true, text: query }];
+        // Only keep the most recent messages based on memoryBuffer
+        return newMessages.slice(-memoryBuffer * 2); // *2 because each exchange has user + AI message
+      });
       
       // Show thinking state
       setIsThinking(true);
@@ -178,8 +186,11 @@ const MainContent: React.FC<MainContentProps> = ({
       // Hide thinking state
       setIsThinking(false);
       
-      // Add AI response
-      setMessages(prev => [...prev, { isUser: false, text: response }]);
+      // Add AI response and limit history
+      setMessages(prev => {
+        const newMessages = [...prev, { isUser: false, text: response }];
+        return newMessages.slice(-memoryBuffer * 2);
+      });
     };
     
     // Add event listeners
@@ -191,7 +202,7 @@ const MainContent: React.FC<MainContentProps> = ({
       window.removeEventListener('user-query', handleUserQuery as EventListener);
       window.removeEventListener('query-response', handleQueryResponse as EventListener);
     };
-  }, []);
+  }, [memoryBuffer, activeCharacter]); // Include memoryBuffer in dependencies
   
   return (
     <MainContentContainer>

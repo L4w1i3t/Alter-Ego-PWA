@@ -110,6 +110,9 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
     }
     
     try {
+      // Set a flag to indicate reset is in progress
+      localStorage.setItem('alterEgo_resetInProgress', 'false');
+      
       factoryReset();
       setStatus('Factory reset completed successfully. Reloading app...');
       

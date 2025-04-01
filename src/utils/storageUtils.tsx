@@ -37,6 +37,7 @@ export interface VoiceModel {
     description: string;
     provider: string;  // 'elevenlabs' or 'browser'
     voiceId?: string;  // For ElevenLabs voices
+    modelId?: string;  // For ElevenLabs model selection
     settings?: Partial<ElevenlabsVoiceSettings>;
   }
   
@@ -180,7 +181,8 @@ export interface VoiceModel {
     saveSettings({
       selectedModel: null,  // This will trigger model selection screen
       activeCharacter: "ALTER EGO",
-      voiceModel: "None"
+      voiceModel: "None",
+      memoryBuffer: 3 // Reset to default memory buffer size
     });
   }
   
@@ -189,6 +191,7 @@ export interface VoiceModel {
     selectedModel: string | null;
     activeCharacter: string;
     voiceModel: string | null;
+    memoryBuffer: number; // Make sure this is consistently named memoryBuffer
   }
   
   export function loadSettings(): Settings {
@@ -197,18 +200,25 @@ export interface VoiceModel {
       return {
         selectedModel: null,
         activeCharacter: "ALTER EGO",
-        voiceModel: null
+        voiceModel: null,
+        memoryBuffer: 3 // Default to 3 messages
       };
     }
     
     try {
-      return JSON.parse(settings);
+      const parsedSettings = JSON.parse(settings);
+      // Ensure memoryBuffer exists in loaded settings
+      return {
+        ...parsedSettings,
+        memoryBuffer: parsedSettings.memoryBuffer ?? 3
+      };
     } catch (e) {
       console.error('Error parsing settings:', e);
       return {
         selectedModel: null,
         activeCharacter: "ALTER EGO",
-        voiceModel: null
+        voiceModel: null,
+        memoryBuffer: 3
       };
     }
   }

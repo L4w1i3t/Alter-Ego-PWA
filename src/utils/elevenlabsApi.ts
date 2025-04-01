@@ -3,14 +3,25 @@ import { loadApiKeys } from './storageUtils';
 // Constants
 const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
 
+// TTS Models
+export enum ElevenlabsModel {
+  ELEVEN_MULTILINGUAL_V2 = 'eleven_multilingual_v2',
+  ELEVEN_MONOLINGUAL_V1 = 'eleven_monolingual_v1',
+  ELEVEN_TURBO_V2 = 'eleven_turbo_v2',
+  ELEVEN_ENGLISH_V2 = 'eleven_english_v2'
+}
+
 // Interfaces
 export interface ElevenlabsVoiceSettings {
   stability: number;
   similarity_boost: number;
+  style: number; // New parameter for style control
+  use_speaker_boost: boolean; // New parameter for speaker boost
 }
 
-interface TextToSpeechRequest {
+export interface TextToSpeechRequest {
   text: string;
+  model_id: string; // Changed from voice_id to support model specification
   voice_id: string;
   voice_settings?: ElevenlabsVoiceSettings;
 }
@@ -21,7 +32,8 @@ interface TextToSpeechRequest {
 export const textToSpeech = async (
   text: string,
   voiceId: string,
-  settings?: Partial<ElevenlabsVoiceSettings>
+  settings?: Partial<ElevenlabsVoiceSettings>,
+  modelId: string = ElevenlabsModel.ELEVEN_MULTILINGUAL_V2 // Default to multilingual v2
 ): Promise<Blob | null> => {
   const { ELEVENLABS_API_KEY } = loadApiKeys();
   
@@ -35,11 +47,14 @@ export const textToSpeech = async (
   // Create a valid voice settings object with default values for any missing properties
   const voiceSettings: ElevenlabsVoiceSettings = {
     stability: settings?.stability ?? 0.5,
-    similarity_boost: settings?.similarity_boost ?? 0.5
+    similarity_boost: settings?.similarity_boost ?? 0.5,
+    style: settings?.style ?? 0.0, // Default style to neutral (0.0)
+    use_speaker_boost: settings?.use_speaker_boost ?? true // Default speaker boost to true
   };
   
   const payload: TextToSpeechRequest = {
     text,
+    model_id: modelId, // Specify the model ID
     voice_id: voiceId,
     voice_settings: voiceSettings
   };
@@ -96,6 +111,39 @@ export const getVoices = async () => {
     return await response.json();
   } catch (error) {
     console.error('Error getting ElevenLabs voices:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get available models from ElevenLabs API
+ */
+export const getModels = async () => {
+  const { ELEVENLABS_API_KEY } = loadApiKeys();
+  
+  if (!ELEVENLABS_API_KEY) {
+    console.error('ElevenLabs API key is not set');
+    throw new Error('ElevenLabs API key is not set');
+  }
+  
+  const endpoint = `${ELEVENLABS_API_BASE}/models`;
+  
+  try {
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`ElevenLabs API error: ${error.detail || response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting ElevenLabs models:', error);
     throw error;
   }
 };

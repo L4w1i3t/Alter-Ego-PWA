@@ -19,6 +19,18 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
+  performance: {
+    //hints: false, // Keeping this right now to disable large image warnings
+    maxEntrypointSize: 1024000, // 1 MB
+    maxAssetSize: 1024000, // 1 MB
+  },
+  cache: {
+    type: 'filesystem',
+    buildDependencies: {
+      config: [__filename]
+    },
+    cacheDirectory: path.resolve(__dirname, '.webpack_cache'),
+  },
   module: {
     rules: [
       {
@@ -30,6 +42,11 @@ module.exports = {
             options: {
               transpileOnly: true,
               experimentalWatchApi: true,
+              // Add these options
+              happyPackMode: true, // Better performance with thread-loader
+              compilerOptions: {
+                sourceMap: false // Disable source maps in development for faster builds
+              }
             },
           },
         ],
@@ -68,11 +85,6 @@ module.exports = {
           from: 'service-worker.js',
           to: 'service-worker.js'
         },
-        // Also copy the debug tool
-        {
-          from: 'public/debug-tool.js',
-          to: 'debug-tool.js'
-        }
       ],
     }),
     new webpack.DefinePlugin({
@@ -92,6 +104,14 @@ module.exports = {
     historyApiFallback: true,
     hot: true,
     open: true,
+
+    client: {
+      overlay: false, // Disable overlay for errors in the browser
+      progress: true, // Show progress in the console
+    },
+    devMiddleware: {
+      writeToDisk: false,
+    }
   },
-  stats: 'errors-only',
+  // stats: 'errors-only', // commented out for now to see all logs
 };

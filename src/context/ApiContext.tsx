@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { sendMessageToAI, AIConfig } from '../services/aiService';
-import { loadChatHistory, saveChatHistory, ChatHistoryEntry } from '../utils/storageUtils';
+import { loadChatHistory, saveChatHistory, ChatHistoryEntry, loadSettings } from '../utils/storageUtils';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define message type
@@ -75,7 +75,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         content: msg.content
       }));
       
-      setConversationHistory(messages);
+      // Apply memory buffer limit to loaded conversations
+      setConversationHistory(limitConversationHistory(messages));
     } else {
       // Create a new session for this persona
       const newSessionId = uuidv4();
@@ -93,6 +94,13 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       saveChatHistory([...allHistory, newSession]);
     }
   };
+
+  const limitConversationHistory = (messages: Message[]) => {
+    const { memoryBuffer } = loadSettings();
+    return messages.slice(-memoryBuffer * 2); // Keep only the last N exchanges
+  };
+
+  
   
   // Function to save the current conversation state
   const saveCurrentConversation = (messages: Message[]) => {
@@ -100,12 +108,15 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     
     const allHistory = loadChatHistory();
     
+    // Apply memory buffer limit before saving
+    const limitedMessages = limitConversationHistory(messages);
+    
     // Find and update the current session
     const updatedHistory = allHistory.map(entry => {
       if (entry.id === activeSessionId) {
         return {
           ...entry,
-          messages: messages.map(msg => ({
+          messages: limitedMessages.map(msg => ({
             role: msg.role,
             content: msg.content,
             timestamp: new Date().toISOString()
@@ -122,7 +133,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         id: activeSessionId,
         persona: currentPersona,
         timestamp: new Date().toISOString(),
-        messages: messages.map(msg => ({
+        messages: limitedMessages.map(msg => ({
           role: msg.role,
           content: msg.content,
           timestamp: new Date().toISOString()
@@ -169,7 +180,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   // Function to send a query to the AI
   const sendQuery = async (
     query: string, 
-    systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant.",
+    systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant. This is dummy text to fall back on.",
     config?: Partial<AIConfig>,
     personaName?: string
   ) => {
@@ -177,9 +188,6 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     // switch to that persona first (useful for direct API calls)
     if (personaName && personaName !== currentPersona) {
       handleSetCurrentPersona(personaName);
-      // Note: This won't immediately affect the history used below
-      // as state updates are asynchronous. For immediate effect, 
-      // we'd need to load the history synchronously, but that's a bigger change.
     }
     
     setIsLoading(true);
@@ -196,14 +204,14 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         { role: 'assistant', content: response }
       ];
       
-      // Keep only the last 20 messages to avoid token limits but provide enough context
-      const trimmedHistory = updatedHistory.slice(-20);
+      // Apply memory buffer limit instead of hardcoded 20 messages
+      const limitedHistory = limitConversationHistory(updatedHistory);
       
       // Update state
-      setConversationHistory(trimmedHistory);
+      setConversationHistory(limitedHistory);
       
       // Save the updated conversation
-      saveCurrentConversation(trimmedHistory);
+      saveCurrentConversation(limitedHistory);
       
       // For now, generate dummy emotions - this can be enhanced later
       const userEmotions = ['curiosity'];

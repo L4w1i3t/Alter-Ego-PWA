@@ -8,6 +8,7 @@ import ChatHistory from './ChatHistory';
 import ClearMemory from './ClearMemory';
 import FactoryReset from './FactoryReset';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
+import MemorySettings from './MemoryManager';
 
 const SettingsOverlay = styled.div`
   position: fixed;
@@ -230,6 +231,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
         return <ChatHistory onBack={handleBack} />;
       case 'Clear Memory':
         return <ClearMemory onBack={handleBack} />;
+      case 'Memory Settings':
+        return <MemorySettings onBack={handleBack} />;
       case 'Software Details':
         return <SoftwareDetails onBack={handleBack} />;
       case 'Factory Reset':
@@ -277,6 +280,14 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
                 <CategoryTitle>Clear Memory</CategoryTitle>
                 <CategoryDescription>
                   Reset conversation context and memory
+                </CategoryDescription>
+              </SettingsCategory>
+
+              <SettingsCategory onClick={() => handleMenuClick('Memory Settings')}>
+                <CategoryIcon>🧠</CategoryIcon>
+                <CategoryTitle>Memory Settings</CategoryTitle>
+                <CategoryDescription>
+                  Configure conversation memory size (FOR EXPERIENCED USERS)
                 </CategoryDescription>
               </SettingsCategory>
               

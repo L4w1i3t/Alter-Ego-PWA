@@ -103,10 +103,10 @@ export const logTokenUsage = (model: string, usage: OpenAIResponse['usage'], que
 export const getAvailableModels = (): string[] => {
   // These are commonly available models - this can be expanded in the future
   return [
-    'gpt-4o-mini',
+    'gpt-3.5-turbo',
     'gpt-4o',
     'gpt-4-turbo',
-    'gpt-3.5-turbo',
+    'gpt-4o-mini',
   ];
 };
 
@@ -114,7 +114,7 @@ export const generateChatCompletion = async (
   systemPrompt: string = '',
   userMessage: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
-  model: string = 'gpt-3.5-turbo',
+  model: string = 'gpt-4o-mini',
   temperature: number = 0.7,
   maxTokens: number = 1000
 ): Promise<string> => {

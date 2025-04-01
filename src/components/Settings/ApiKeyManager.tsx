@@ -69,7 +69,9 @@ const Button = styled.button`
 const SaveButton = styled(Button)``;
 const BackButton = styled(Button)``;
 
-const StatusMessage = styled.p<{ success?: boolean }>`
+const StatusMessage = styled.p.withConfig({
+  shouldForwardProp: (prop) => prop !== 'success',
+})<{ success?: boolean }>`
   margin-top: 1em;
   font-weight: bold;
   color: ${props => props.success ? '#0f0' : '#f00'};

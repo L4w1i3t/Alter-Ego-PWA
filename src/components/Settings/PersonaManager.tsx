@@ -258,7 +258,9 @@ const Tab = styled.div<{ active?: boolean }>`
   }
 `;
 
-const StatusMessage = styled.p<{ success?: boolean }>`
+const StatusMessage = styled.p.withConfig({
+  shouldForwardProp: (prop) => prop !== 'success',
+})<{ success?: boolean }>`
   margin-top: 1em;
   text-align: center;
   font-weight: bold;
