@@ -51,7 +51,7 @@ export const getUsageStats = (): { total: number, byModel: Record<string, number
 // Updated AI service to use OpenAI with configurations and persona
 export const sendMessageToAI = async (
   message: string,
-  systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant.",
+  systemPrompt: string = "You are ALTER EGO, an intelligent AI personality.",
   history: MessageHistory[] = [],
   config?: Partial<AIConfig>
 ): Promise<string> => {
@@ -69,13 +69,17 @@ export const sendMessageToAI = async (
       ...config
     };
     
-    // Log the full system prompt including persona and DEFAULT_SYSTEM_PROMPT form openaiApi.ts
+    // Log the full system prompt including persona and model
     const fullSystemPrompt = `${systemPrompt} ${finalConfig.model}`;
-    console.log (`Full system prompt: ${fullSystemPrompt}`);
+    console.log(`Full system prompt: ${fullSystemPrompt}`);
     // Log JUST the persona being used (for debugging)
     console.log(`Using persona: ${systemPrompt.substring(0, 50)}...`);
     
+    // Log the number of messages in history for debugging
+    console.log(`Using ${history.length} messages from history for AI context`);
+    
     // Call the OpenAI API with configuration and persona
+    // The history is already limited by the caller
     const response = await generateChatCompletion(
       systemPrompt,
       message,

@@ -341,7 +341,7 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
   const handleCreateNew = () => {
     setEditingPersona({
       name: '',
-      content: 'You are a helpful assistant.',
+      content: 'You are a helpful companion.',
       lastModified: new Date().toISOString()
     });
     setViewingPersona(null);

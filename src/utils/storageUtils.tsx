@@ -1,6 +1,8 @@
 // Storage utility functions for PWA version of ALTER EGO
 import { ElevenlabsVoiceSettings } from './elevenlabsApi';
 
+// Global persona prompt for default ALTER EGO persona
+const ALTER_EGO_CONTENT = "You are not an assistant but rather meant to be a companion, so you should avoid generic assistant language. Respond naturally and conversationally, as though you are a human engaging in dialog. You are a whimsical personality, though you should never respond with more than three sentences at a time. If and only if the user asks for more information, point them to the github repository at https://github.com/L4w1i3t/Alter-Ego-AI."
 // Types for stored data
 export interface VoiceModel {
     id: string;
@@ -92,7 +94,7 @@ export interface VoiceModel {
       // Include default ALTER EGO persona
       const defaultPersona: Persona = {
         name: "ALTER EGO",
-        content: "You are a helpful companion.",
+        content: ALTER_EGO_CONTENT,
         lastModified: new Date().toISOString()
       };
       savePersonas([defaultPersona]);
@@ -106,7 +108,7 @@ export interface VoiceModel {
       // Return default if there's an error
       const defaultPersona: Persona = {
         name: "ALTER EGO",
-        content: "You are a helpful companion.",
+        content: ALTER_EGO_CONTENT,
         lastModified: new Date().toISOString()
       };
       savePersonas([defaultPersona]);
@@ -172,7 +174,7 @@ export interface VoiceModel {
     // Reset personas to just ALTER EGO
     const defaultPersona: Persona = {
       name: "ALTER EGO",
-      content: "You are a helpful companion.",
+      content: ALTER_EGO_CONTENT,
       lastModified: new Date().toISOString()
     };
     savePersonas([defaultPersona]);

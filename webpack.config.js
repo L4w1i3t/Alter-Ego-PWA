@@ -102,7 +102,8 @@ module.exports = {
     compress: true,
     port: 3000,
     historyApiFallback: true,
-    hot: true,
+    hot: false,
+    liveReload: false,
     open: true,
 
     client: {

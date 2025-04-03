@@ -79,7 +79,7 @@ const QuerySection: React.FC<QuerySectionProps> = ({
       // Prepare the custom system prompt with the active persona's content
       const systemPrompt = personaContent ? 
         `You are ${activeCharacter}. ${personaContent}` :
-        `You are ${activeCharacter}, an intelligent and helpful AI assistant.`;
+        `You are ${activeCharacter}, an artificial intelligence. Please respond to the user's query.`;
       
       // Send the query to the API with the personalized system prompt
       // Make sure we're using the current persona's name to keep conversations separate

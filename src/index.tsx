@@ -13,17 +13,34 @@ if ('serviceWorker' in navigator) {
     
     if (isDevelopment) {
       console.log('Running in development mode - using passive service worker registration');
-      // In development, register but don't prompt for updates
-      navigator.serviceWorker.register(swUrl)
-        .then(registration => {
-          console.log('Service Worker registered in dev mode:', registration);
-          
-          // Don't set up update handlers in development
-          // This prevents the refresh loop
-        })
-        .catch(error => {
-          console.error('Service Worker registration failed:', error);
-        });
+      
+      // Check if there's an existing service worker first
+      navigator.serviceWorker.getRegistration().then(registration => {
+        if (registration) {
+          console.log('Existing service worker found, using it without update handling');
+        } else {
+          // Only register if we don't already have one
+          navigator.serviceWorker.register(swUrl, { 
+            // Add scope to limit where the service worker operates
+            scope: '/' 
+          })
+            .then(registration => {
+              console.log('Service Worker registered in dev mode:', registration);
+              
+              // Listen for specific messages from service worker in dev mode
+              navigator.serviceWorker.addEventListener('message', event => {
+                // Ignore regular update messages in development
+                if (event.data && event.data.type === 'NEW_VERSION' && !event.data.manual) {
+                  console.log('Ignoring automatic update in dev mode');
+                  // Don't refresh or show notification
+                }
+              });
+            })
+            .catch(error => {
+              console.error('Service Worker registration failed:', error);
+            });
+        }
+      });
     } else {
       // Production mode - normal registration with update handling
       navigator.serviceWorker.register(swUrl)
@@ -37,7 +54,8 @@ if ('serviceWorker' in navigator) {
                 if (installingWorker.state === 'installed') {
                   if (navigator.serviceWorker.controller) {
                     console.log('New content is available; please refresh.');
-                    // Show non-blocking update notification instead of auto-reload
+                    
+                    // Existing notification code is good - no changes needed
                     const updateNotification = document.createElement('div');
                     updateNotification.style.cssText = 
                       'position:fixed;bottom:20px;right:20px;background:#4CAF50;color:white;' +
@@ -56,6 +74,14 @@ if ('serviceWorker' in navigator) {
               };
             }
           };
+          
+          // Additional listener for direct messages from service worker
+          navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'NEW_VERSION' && event.data.manual) {
+              console.log(`Manual update available (v${event.data.version})`);
+              // Use your existing notification UI here
+            }
+          });
         })
         .catch(error => {
           console.error('Service Worker registration failed:', error);

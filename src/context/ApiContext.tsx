@@ -95,12 +95,16 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     }
   };
 
-  const limitConversationHistory = (messages: Message[]) => {
-    const { memoryBuffer } = loadSettings();
-    return messages.slice(-memoryBuffer * 2); // Keep only the last N exchanges
+  const limitConversationHistory = (messages: Message[], forAiContext: boolean = false) => {
+    // Only apply memory buffer limit when preparing context for AI requests
+    if (forAiContext) {
+      const { memoryBuffer } = loadSettings();
+      return messages.slice(-memoryBuffer * 2); // Keep only the last N exchanges for AI context
+    }
+    
+    // For display purposes, return all messages
+    return messages;
   };
-
-  
   
   // Function to save the current conversation state
   const saveCurrentConversation = (messages: Message[]) => {
@@ -108,15 +112,12 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     
     const allHistory = loadChatHistory();
     
-    // Apply memory buffer limit before saving
-    const limitedMessages = limitConversationHistory(messages);
-    
-    // Find and update the current session
+    // Save all messages, not just the limited ones
     const updatedHistory = allHistory.map(entry => {
       if (entry.id === activeSessionId) {
         return {
           ...entry,
-          messages: limitedMessages.map(msg => ({
+          messages: messages.map(msg => ({
             role: msg.role,
             content: msg.content,
             timestamp: new Date().toISOString()
@@ -127,13 +128,13 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       return entry;
     });
     
-    // If the session wasn't found (which shouldn't happen), add it
+    // If the session wasn't found, add it
     if (!updatedHistory.find(entry => entry.id === activeSessionId)) {
       updatedHistory.push({
         id: activeSessionId,
         persona: currentPersona,
         timestamp: new Date().toISOString(),
-        messages: limitedMessages.map(msg => ({
+        messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content,
           timestamp: new Date().toISOString()
@@ -178,60 +179,74 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   };
 
   // Function to send a query to the AI
-  const sendQuery = async (
-    query: string, 
-    systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant. This is dummy text to fall back on.",
-    config?: Partial<AIConfig>,
-    personaName?: string
-  ) => {
-    // If a specific persona is provided and it's different from current,
-    // switch to that persona first (useful for direct API calls)
-    if (personaName && personaName !== currentPersona) {
-      handleSetCurrentPersona(personaName);
-    }
+  // Function to send a query to the AI
+const sendQuery = async (
+  query: string, 
+  systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant. This is dummy text to fall back on.",
+  config?: Partial<AIConfig>,
+  personaName?: string
+) => {
+  // If a specific persona is provided and it's different from current,
+  // switch to that persona first (useful for direct API calls)
+  if (personaName && personaName !== currentPersona) {
+    handleSetCurrentPersona(personaName);
+  }
+  
+  setIsLoading(true);
+  setError(null);
+  
+  try {
+    // Add the new user message to history
+    const updatedFullHistory: Message[] = [
+      ...conversationHistory, 
+      { role: 'user' as const, content: query }
+    ];
     
-    setIsLoading(true);
-    setError(null);
+    // Apply memory buffer limitation ONLY for the AI context
+    const { memoryBuffer } = loadSettings();
+    // Take only the last N exchanges based on memory buffer setting
+    const limitedContextForAI = updatedFullHistory.slice(-memoryBuffer * 2);
     
-    try {
-      // Call the AI service with history and config
-      const response = await sendMessageToAI(query, systemPrompt, conversationHistory, config);
-      
-      // Update conversation history with properly typed roles
-      const updatedHistory: Message[] = [
-        ...conversationHistory,
-        { role: 'user', content: query },
-        { role: 'assistant', content: response }
-      ];
-      
-      // Apply memory buffer limit instead of hardcoded 20 messages
-      const limitedHistory = limitConversationHistory(updatedHistory);
-      
-      // Update state
-      setConversationHistory(limitedHistory);
-      
-      // Save the updated conversation
-      saveCurrentConversation(limitedHistory);
-      
-      // For now, generate dummy emotions - this can be enhanced later
-      const userEmotions = ['curiosity'];
-      const responseEmotions = ['neutral'];
-      const emotion = 'neutral';
-      
-      setIsLoading(false);
-      return { response, userEmotions, responseEmotions, emotion };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      setIsLoading(false);
-      return { 
-        response: `Error: ${errorMessage}`, 
-        userEmotions: [], 
-        responseEmotions: [],
-        emotion: 'neutral'
-      };
-    }
-  };
+    console.log(`Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`);
+    
+    // Convert Message[] to MessageHistory[] expected by sendMessageToAI
+    const messagesForAI = limitedContextForAI.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    // Call the AI service with limited history for context
+    const response = await sendMessageToAI(query, systemPrompt, messagesForAI, config);
+    
+    // Update conversation history with the AI's response
+    const finalHistory: Message[] = [
+      ...updatedFullHistory,
+      { role: 'assistant' as const, content: response }
+    ];
+    
+    // Save the complete conversation history
+    setConversationHistory(finalHistory);
+    saveCurrentConversation(finalHistory);
+    
+    // For now, generate dummy emotions - this can be enhanced later
+    const userEmotions = ['CURRENTLY UNAVAILABLE'];
+    const responseEmotions = ['CURRENTLY UNAVAILABLE'];
+    const emotion = 'neutral';
+    
+    setIsLoading(false);
+    return { response, userEmotions, responseEmotions, emotion };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    setError(errorMessage);
+    setIsLoading(false);
+    return { 
+      response: `Error: ${errorMessage}`, 
+      userEmotions: [], 
+      responseEmotions: [],
+      emotion: 'neutral'
+    };
+  }
+};
 
   return (
     <ApiContext.Provider value={{ 
