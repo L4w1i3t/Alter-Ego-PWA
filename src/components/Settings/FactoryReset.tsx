@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { factoryReset } from '../../utils/storageUtils';
+import { showSuccess, showError } from '../Common/NotificationManager';
 
 const Container = styled.div`
   color: #0f0;
@@ -93,7 +94,6 @@ interface FactoryResetProps {
 const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
-  const [status, setStatus] = useState<string | null>(null);
   
   const handleInitiateReset = () => {
     setShowConfirmation(true);
@@ -105,7 +105,7 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
   
   const handleReset = () => {
     if (confirmationText.toLowerCase() !== 'reset') {
-      setStatus('Please type "RESET" to confirm');
+      showError('Please type "RESET" to confirm');
       return;
     }
     
@@ -114,14 +114,14 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
       localStorage.setItem('alterEgo_resetInProgress', 'false');
       
       factoryReset();
-      setStatus('Factory reset completed successfully. Reloading app...');
+      showSuccess('Factory reset completed successfully. Reloading app...');
       
       // Reload the app after a brief delay
       setTimeout(() => {
         window.location.reload();
       }, 2000);
     } catch (error) {
-      setStatus(`Error during factory reset: ${error}`);
+      showError(`Error during factory reset: ${error}`);
       console.error('Factory reset error:', error);
     }
   };

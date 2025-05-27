@@ -4,11 +4,14 @@ import SoftwareDetails from './SoftwareDetails';
 import PersonaManager from './PersonaManager';
 import VoiceModelManager from './VoiceModelManager';
 import ApiKeyManager from './ApiKeyManager';
-import ChatHistory from './ChatHistory';
 import ClearMemory from './ClearMemory';
 import FactoryReset from './FactoryReset';
+import { DesktopInstall } from './DesktopInstall';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
 import MemorySettings from './MemoryManager';
+import MemoryAndHistory from './MemoryAndHistory';
+import OpenSourceWipInfo from './OpenSourceWipInfo';
+import { handleOpenSourceSelection, getOpenSourceStatus } from '../../utils/openSourceWip';
 
 const SettingsOverlay = styled.div`
   position: fixed;
@@ -140,23 +143,69 @@ const ModelOptions = styled.div`
   display: flex;
   justify-content: space-between;
   gap: 0.5em;
+  align-items: center;
+`;
+
+const WipInfoButton = styled.button`
+  background: transparent;
+  border: 1px solid #ff8800;
+  color: #ff8800;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 0.7em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.3em;
+  
+  &:hover {
+    background: #ff8800;
+    color: #000;
+  }
 `;
 
 // Fix the ModelButton styled component using shouldForwardProp
 const ModelButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isActive',
-})<{ isActive?: boolean }>`
+  shouldForwardProp: (prop) => !['isActive', 'isWip'].includes(prop),
+})<{ isActive?: boolean; isWip?: boolean }>`
   padding: 0.5em 1em;
   margin: 0 0.5em;
-  background: ${props => props.isActive ? '#0f0' : 'transparent'};
-  color: ${props => props.isActive ? '#000' : '#0f0'};
-  border: 1px solid #0f0;
+  background: ${props => {
+    if (props.isWip) return props.isActive ? '#ff8800' : 'transparent';
+    return props.isActive ? '#0f0' : 'transparent';
+  }};
+  color: ${props => {
+    if (props.isWip) return props.isActive ? '#000' : '#ff8800';
+    return props.isActive ? '#000' : '#0f0';
+  }};
+  border: 1px solid ${props => props.isWip ? '#ff8800' : '#0f0'};
   cursor: pointer;
+  position: relative;
   
   &:hover {
-    background: ${props => props.isActive ? '#0f0' : '#0a0'};
+    background: ${props => {
+      if (props.isWip) return '#ff8800';
+      return props.isActive ? '#0f0' : '#0a0';
+    }};
     color: #000;
   }
+  
+  ${props => props.isWip && `
+    &::after {
+      content: 'WIP';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #ff8800;
+      color: #000;
+      font-size: 0.6em;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+  `}
 `;
 
 const StatusMessage = styled.p`
@@ -169,11 +218,12 @@ const StatusMessage = styled.p`
 interface SettingsProps {
   onClose: () => void;
   onModelChange?: (model: string) => void;
+  initialView?: string;
 }
 
-const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
-  const [currentView, setCurrentView] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('ollama');
+const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView }) => {
+  const [currentView, setCurrentView] = useState<string | null>(initialView || null);
+  const [selectedModel, setSelectedModel] = useState<string>('Open Source');
   const [status, setStatus] = useState<string | null>(null);
   
   // Load the currently selected model
@@ -191,9 +241,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
   const handleBack = () => {
     setCurrentView(null);
   };
-  
-  const handleModelSelect = (model: string) => {
+    const handleModelSelect = (model: string) => {
     if (model === selectedModel) return;
+    
+    // Handle Open Source selection with WIP check
+    if (model === 'Open Source') {
+      const wipStatus = getOpenSourceStatus();
+      if (wipStatus.isWip) {
+        handleOpenSourceSelection();
+        return;
+      }
+    }
     
     setSelectedModel(model);
     
@@ -227,16 +285,18 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
         return <VoiceModelManager onBack={handleBack} />;
       case 'Manage Personas':
         return <PersonaManager onBack={handleBack} />;
-      case 'Chat History':
-        return <ChatHistory onBack={handleBack} />;
+      case 'Memory & History':
+        return <MemoryAndHistory onBack={handleBack} />;
       case 'Clear Memory':
-        return <ClearMemory onBack={handleBack} />;
-      case 'Memory Settings':
+        return <ClearMemory onBack={handleBack} />;      case 'Memory Settings':
         return <MemorySettings onBack={handleBack} />;
-      case 'Software Details':
+      case 'Desktop Install':
+        return <DesktopInstall onBack={handleBack} />;      case 'Software Details':
         return <SoftwareDetails onBack={handleBack} />;
       case 'Factory Reset':
         return <FactoryReset onBack={handleBack} />;
+      case 'OpenSourceWipInfo':
+        return <OpenSourceWipInfo onBack={handleBack} />;
       default:
         return (
           <>
@@ -267,11 +327,11 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
                 </CategoryDescription>
               </SettingsCategory>
               
-              <SettingsCategory onClick={() => handleMenuClick('Chat History')}>
-                <CategoryIcon>💬</CategoryIcon>
-                <CategoryTitle>Chat History</CategoryTitle>
+              <SettingsCategory onClick={() => handleMenuClick('Memory & History')}>
+                <CategoryIcon>📚</CategoryIcon>
+                <CategoryTitle>Memory & History</CategoryTitle>
                 <CategoryDescription>
-                  View and export conversation history
+                  Browse and search conversation history
                 </CategoryDescription>
               </SettingsCategory>
               
@@ -281,13 +341,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
                 <CategoryDescription>
                   Reset conversation context and memory
                 </CategoryDescription>
-              </SettingsCategory>
-
-              <SettingsCategory onClick={() => handleMenuClick('Memory Settings')}>
+              </SettingsCategory>              <SettingsCategory onClick={() => handleMenuClick('Memory Settings')}>
                 <CategoryIcon>🧠</CategoryIcon>
                 <CategoryTitle>Memory Settings</CategoryTitle>
                 <CategoryDescription>
-                  Configure conversation memory size (FOR EXPERIENCED USERS)
+                  Configure conversation memory size
+                </CategoryDescription>
+              </SettingsCategory>
+
+              <SettingsCategory onClick={() => handleMenuClick('Desktop Install')}>
+                <CategoryIcon>📱</CategoryIcon>
+                <CategoryTitle>Desktop Install</CategoryTitle>
+                <CategoryDescription>
+                  Install ALTER EGO as a desktop application
                 </CategoryDescription>
               </SettingsCategory>
               
@@ -311,17 +377,29 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange }) => {
               <CategoryDescription style={{ color: '#f007' }}>
                 Delete all data and restore default settings
               </CategoryDescription>
-            </SettingsCategory>
-            
-            <ModelSelection>
+            </SettingsCategory>            <ModelSelection>
               <ModelTitle>AI Provider:</ModelTitle>
               <ModelOptions>
-                <ModelButton 
-                  isActive={selectedModel === 'ollama'}
-                  onClick={() => handleModelSelect('ollama')}
-                >
-                  Ollama
-                </ModelButton>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <ModelButton 
+                    isActive={selectedModel === 'Open Source'}
+                    isWip={getOpenSourceStatus().isWip}
+                    onClick={() => handleModelSelect('Open Source')}
+                  >
+                    Open Source
+                  </ModelButton>
+                  {getOpenSourceStatus().isWip && (
+                    <WipInfoButton 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentView('OpenSourceWipInfo');
+                      }}
+                      title="Click for more information about Open Source WIP status"
+                    >
+                      i
+                    </WipInfoButton>
+                  )}
+                </div>
                 <ModelButton 
                   isActive={selectedModel === 'openai'}
                   onClick={() => handleModelSelect('openai')}

@@ -88,9 +88,13 @@ const MessageHeader = styled.div`
   margin-bottom: 0.3em;
 `;
 
-const MessageRole = styled.div<{ role: 'user' | 'assistant' }>`
+const MessageRole = styled.div<{ role: 'user' | 'assistant' | 'system' }>`
   font-weight: bold;
-  color: ${props => props.role === 'user' ? '#0f0' : '#0ff'};
+  color: ${props => 
+    props.role === 'user' ? '#0f0' : 
+    props.role === 'assistant' ? '#0ff' : 
+    '#ff0'  /* Yellow color for system messages */
+  };
 `;
 
 const MessageTime = styled.div`
@@ -231,7 +235,11 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ onBack }) => {
             <MessageContainer key={index}>
               <MessageHeader>
                 <MessageRole role={message.role}>
-                  {message.role === 'user' ? 'You' : selectedEntry.persona}
+                  {message.role === 'user' 
+                    ? 'You' 
+                    : message.role === 'system' 
+                      ? 'System' 
+                      : selectedEntry.persona}
                 </MessageRole>
                 <MessageTime>{formatDateTime(message.timestamp)}</MessageTime>
               </MessageHeader>

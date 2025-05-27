@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadPersonas, savePersonas, Persona } from '../../utils/storageUtils';
 import { dispatchAppEvent, EVENTS } from '../../utils/events';
+import ConfirmationDialog from '../Common/ConfirmationDialog';
+import { showSuccess, showError } from '../Common/NotificationManager';
 
 const Container = styled.div`
   color: #0f0;
@@ -241,7 +243,9 @@ const TabContainer = styled.div`
   margin-bottom: 1.5em;
 `;
 
-const Tab = styled.div<{ active?: boolean }>`
+const Tab = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active?: boolean }>`
   padding: 0.6em 1em;
   cursor: pointer;
   border: 1px solid ${props => props.active ? '#0f0' : 'transparent'};
@@ -251,20 +255,10 @@ const Tab = styled.div<{ active?: boolean }>`
   border-top-left-radius: 0.3em;
   border-top-right-radius: 0.3em;
   margin-right: 0.5em;
-  
-  &:hover {
+    &:hover {
     color: #0f0;
     background: ${props => props.active ? '#001500' : '#000500'};
   }
-`;
-
-const StatusMessage = styled.p.withConfig({
-  shouldForwardProp: (prop) => prop !== 'success',
-})<{ success?: boolean }>`
-  margin-top: 1em;
-  text-align: center;
-  font-weight: bold;
-  color: ${props => props.success ? '#0f0' : '#f00'};
 `;
 
 const PreviewContainer = styled.div`
@@ -327,10 +321,12 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'content'>('details');
   const [viewingPersona, setViewingPersona] = useState<Persona | null>(null);
+  
+  // Confirmation dialog state
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [personaToDelete, setPersonaToDelete] = useState<string>('');
   
   useEffect(() => {
     // Load personas
@@ -361,39 +357,45 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
     setViewingPersona({ ...persona });
     setIsEditing(false);
     setIsCreating(false);
-  };
-
-  const handleDelete = (personaName: string) => {
+  };  const handleDelete = (personaName: string) => {
     // Don't allow deleting the base ALTER EGO persona
     if (personaName === "ALTER EGO") {
-      setStatus('Cannot delete the default "ALTER EGO" persona');
-      setIsSuccess(false);
-      setTimeout(() => setStatus(null), 3000);
+      showError('Cannot delete the default "ALTER EGO" persona');
       return;
     }
     
-    if (window.confirm(`Are you sure you want to delete the persona "${personaName}"?`)) {
-      const updatedPersonas = personas.filter(p => p.name !== personaName);
-      savePersonas(updatedPersonas);
-      setPersonas(updatedPersonas);
-      
+    // Show confirmation dialog
+    setPersonaToDelete(personaName);
+    setShowDeleteConfirmation(true);
+  };
+  
+  const confirmDelete = () => {
+    const updatedPersonas = personas.filter(p => p.name !== personaToDelete);
+    savePersonas(updatedPersonas);
+    setPersonas(updatedPersonas);
       // Reset the editing state if we were editing this persona
-      if (editingPersona && editingPersona.name === personaName) {
-        setEditingPersona(null);
-      }
-      
-      // Reset the viewing state if we were viewing this persona
-      if (viewingPersona && viewingPersona.name === personaName) {
-        setViewingPersona(null);
-      }
-      
-      setStatus(`Persona "${personaName}" deleted successfully`);
-      setIsSuccess(true);
-      setTimeout(() => setStatus(null), 3000);
-      
-      // Dispatch event to notify that personas have been updated
-      dispatchAppEvent('personas-updated', { personas: updatedPersonas });
+    if (editingPersona && editingPersona.name === personaToDelete) {
+      setEditingPersona(null);
     }
+    
+    // Reset the viewing state if we were viewing this persona
+    if (viewingPersona && viewingPersona.name === personaToDelete) {
+      setViewingPersona(null);
+    }
+    
+    showSuccess(`Persona "${personaToDelete}" deleted successfully`);
+    
+    // Dispatch event to notify that personas have been updated
+    dispatchAppEvent('personas-updated', { personas: updatedPersonas });
+    
+    // Close dialog
+    setShowDeleteConfirmation(false);
+    setPersonaToDelete('');
+  };
+  
+  const cancelDelete = () => {
+    setShowDeleteConfirmation(false);
+    setPersonaToDelete('');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -406,22 +408,17 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
       lastModified: new Date().toISOString()
     });
   };
-
   const handleSave = () => {
     if (!editingPersona) return;
     
     if (!editingPersona.name.trim()) {
-      setStatus('Please provide a name for the persona');
-      setIsSuccess(false);
-      setTimeout(() => setStatus(null), 3000);
+      showError('Please provide a name for the persona');
       return;
     }
     
     // Check if the name already exists (for new personas)
     if (isCreating && personas.some(p => p.name === editingPersona.name)) {
-      setStatus(`A persona named "${editingPersona.name}" already exists`);
-      setIsSuccess(false);
-      setTimeout(() => setStatus(null), 3000);
+      showError(`A persona named "${editingPersona.name}" already exists`);
       return;
     }
     
@@ -433,9 +430,7 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
     savePersonas(updatedPersonas);
     setPersonas(updatedPersonas);
     
-    setStatus(`Persona "${editingPersona.name}" ${isEditing ? 'updated' : 'created'} successfully`);
-    setIsSuccess(true);
-    setTimeout(() => setStatus(null), 3000);
+    showSuccess(`Persona "${editingPersona.name}" ${isEditing ? 'updated' : 'created'} successfully`);
     
     setEditingPersona(null);
     setIsEditing(false);
@@ -655,11 +650,19 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
             <Button onClick={handleCancel}>Back</Button>
             <Button onClick={() => handleEdit(viewingPersona)}>Edit</Button>
             {/* Removed the Activate button as requested */}
-          </FormButtons>
-        </div>
+          </FormButtons>        </div>
       ) : null}
       
-      {status && <StatusMessage success={isSuccess || undefined}>{status}</StatusMessage>}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        title="Delete Persona"
+        message={`Are you sure you want to delete the persona "${personaToDelete}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </Container>
   );
 };

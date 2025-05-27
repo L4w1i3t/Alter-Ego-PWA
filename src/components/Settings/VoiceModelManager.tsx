@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { loadVoiceModels, saveVoiceModels, VoiceModel, loadApiKeys } from '../../utils/storageUtils';
 import { getVoices, ElevenlabsModel } from '../../utils/elevenlabsApi';
 import { dispatchAppEvent, EVENTS } from '../../utils/events';
+import ConfirmationDialog from '../Common/ConfirmationDialog';
+import { showSuccess, showError, showWarning } from '../Common/NotificationManager';
 
 const Container = styled.div`
   color: #0f0;
@@ -208,7 +210,9 @@ const TabContainer = styled.div`
   margin-bottom: 1.5em;
 `;
 
-const Tab = styled.div<{ active?: boolean }>`
+const Tab = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active?: boolean }>`
   padding: 0.6em 1em;
   cursor: pointer;
   border: 1px solid ${props => props.active ? '#0f0' : 'transparent'};
@@ -337,18 +341,6 @@ const CancelButton = styled(ActionButton)`
   }
 `;
 
-const StatusMessage = styled.p.withConfig({
-  shouldForwardProp: (prop) => prop !== 'success',
-})<{ success?: boolean }>`
-  margin-top: 1em;
-  text-align: center;
-  font-weight: bold;
-  color: ${props => props.success ? '#0f0' : '#f00'};
-  padding: 0.5em;
-  background-color: ${props => props.success ? '#0f01' : '#f001'};
-  border-radius: 0.3em;
-`;
-
 const VoiceBrowserButton = styled(Button)`
   margin-top: 1em;
   width: 100%;
@@ -468,7 +460,9 @@ const BrowserVoiceDetails = styled.div`
   color: #0f08;
 `;
 
-const BrowserVoiceTag = styled.span<{ islocal?: boolean }>`
+const BrowserVoiceTag = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== 'islocal',
+})<{ islocal?: boolean }>`
   display: inline-block;
   padding: 0.1em 0.4em;
   background-color: ${props => props.islocal ? '#0f02' : '#00f2'};
@@ -503,14 +497,16 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
   const [models, setModels] = useState<Record<string, VoiceModel>>({});
   const [editingModel, setEditingModel] = useState<VoiceModel | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(true);
   const [elevenlabsKeyExists, setElevenlabsKeyExists] = useState(false);
   const [loadingVoices, setLoadingVoices] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<any[]>([]);
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedBrowserVoice, setSelectedBrowserVoice] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'general' | 'settings'>('general');
+  
+  // Confirmation dialog state
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [modelToDelete, setModelToDelete] = useState<string>('');
   
   useEffect(() => {
     // Load existing voice models
@@ -539,29 +535,23 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       loadVoices();
     }
   }, []);
-  
-  const fetchElevenLabsVoices = async () => {
+    const fetchElevenLabsVoices = async () => {
     if (!elevenlabsKeyExists) {
-      setStatus('ElevenLabs API key is not set');
-      setIsSuccess(false);
+      showError('ElevenLabs API key is not set');
       return;
     }
     
     try {
       setLoadingVoices(true);
-      setStatus('Loading ElevenLabs voices...');
-      setIsSuccess(true);
+      showWarning('Loading ElevenLabs voices...');
       
       const voicesData = await getVoices();
       setAvailableVoices(voicesData.voices || []);
       
-      setStatus(`Loaded ${voicesData.voices?.length || 0} voices from ElevenLabs`);
-      setIsSuccess(true);
-      setTimeout(() => setStatus(null), 3000);
+      showSuccess(`Loaded ${voicesData.voices?.length || 0} voices from ElevenLabs`);
     } catch (error) {
       console.error('Error fetching ElevenLabs voices:', error);
-      setStatus('Error loading ElevenLabs voices');
-      setIsSuccess(false);
+      showError('Error loading ElevenLabs voices');
     } finally {
       setLoadingVoices(false);
     }
@@ -593,24 +583,32 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       setSelectedBrowserVoice(model.voiceId);
     }
   };
-  
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this voice model?')) {
-      const updatedModels = { ...models };
-      delete updatedModels[id];
-      saveVoiceModels(updatedModels);
-      setModels(updatedModels);
-      
-      // Dispatch event to notify that voice models have been updated
-      dispatchAppEvent(EVENTS.VOICE_MODELS_UPDATED, { models: updatedModels });
-      
-      setStatus('Voice model deleted successfully');
-      setIsSuccess(true);
-      setTimeout(() => setStatus(null), 3000);
-    }
+    const handleDelete = (id: string) => {
+    // Show confirmation dialog
+    setModelToDelete(id);
+    setShowDeleteConfirmation(true);
+  };
+    const confirmDelete = () => {
+    const updatedModels = { ...models };
+    delete updatedModels[modelToDelete];
+    saveVoiceModels(updatedModels);
+    setModels(updatedModels);
+    
+    // Dispatch event to notify that voice models have been updated
+    dispatchAppEvent(EVENTS.VOICE_MODELS_UPDATED, { models: updatedModels });
+    
+    showSuccess('Voice model deleted successfully');
+    
+    // Close dialog
+    setShowDeleteConfirmation(false);
+    setModelToDelete('');
   };
   
-  const handleTestVoice = async (model: VoiceModel) => {
+  const cancelDelete = () => {
+    setShowDeleteConfirmation(false);
+    setModelToDelete('');
+  };
+    const handleTestVoice = async (model: VoiceModel) => {
     try {
       // Create a sample text to test with
       const testText = `This is a test of the ${model.name} voice model.`;
@@ -631,11 +629,9 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
           
           window.speechSynthesis.speak(utterance);
           
-          setStatus('Testing browser voice synthesis');
-          setIsSuccess(true);
+          showSuccess('Testing browser voice synthesis');
         } else {
-          setStatus('Speech synthesis not supported in this browser');
-          setIsSuccess(false);
+          showError('Speech synthesis not supported in this browser');
         }
       } else if (model.provider === 'elevenlabs') {
         // For ElevenLabs, we would use the API in production
@@ -644,21 +640,15 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
           const utterance = new SpeechSynthesisUtterance(testText);
           window.speechSynthesis.speak(utterance);
           
-          setStatus('Testing ElevenLabs voice (simulated for demo)');
-          setIsSuccess(true);
+          showSuccess('Testing ElevenLabs voice (simulated for demo)');
         } else {
-          setStatus('Speech synthesis not supported in this browser');
-          setIsSuccess(false);
+          showError('Speech synthesis not supported in this browser');
         }
       }
       
-      setTimeout(() => setStatus(null), 5000);
-      
     } catch (error) {
       console.error('Error testing voice:', error);
-      setStatus('Error testing voice');
-      setIsSuccess(false);
-      setTimeout(() => setStatus(null), 3000);
+      showError('Error testing voice');
     }
   };
   
@@ -710,28 +700,21 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       });
     }
   };
-  
-  const handleSave = () => {
+    const handleSave = () => {
     if (!editingModel || !editingModel.name.trim()) {
-      setStatus('Please provide a name for the voice model');
-      setIsSuccess(false);
-      setTimeout(() => setStatus(null), 3000);
+      showError('Please provide a name for the voice model');
       return;
     }
     
     // Additional validation for ElevenLabs voice models
     if (editingModel.provider === 'elevenlabs' && !editingModel.voiceId) {
-      setStatus('Please provide a Voice ID for ElevenLabs voice models');
-      setIsSuccess(false);
-      setTimeout(() => setStatus(null), 3000);
+      showError('Please provide a Voice ID for ElevenLabs voice models');
       return;
     }
     
     // For browser voice models, ensure a voice is selected
     if (editingModel.provider === 'browser' && !editingModel.voiceId) {
-      setStatus('Please select a browser voice');
-      setIsSuccess(false);
-      setTimeout(() => setStatus(null), 3000);
+      showError('Please select a browser voice');
       return;
     }
     
@@ -748,14 +731,10 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       // Dispatch event to notify that voice models have been updated
       dispatchAppEvent(EVENTS.VOICE_MODELS_UPDATED, { models: updatedModels });
       
-      setStatus(isEditing ? 'Voice model updated successfully' : 'Voice model added successfully');
-      setIsSuccess(true);
-      setTimeout(() => setStatus(null), 3000);
+      showSuccess(isEditing ? 'Voice model updated successfully' : 'Voice model added successfully');
     } catch (error) {
-      setStatus('Error saving voice model');
-      setIsSuccess(false);
+      showError('Error saving voice model');
       console.error('Failed to save voice model:', error);
-      setTimeout(() => setStatus(null), 3000);
     }
   };
   
@@ -796,8 +775,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
               <EmptyState>
                 <EmptyIcon>🔊</EmptyIcon>
                 <div>No voice models added yet.</div>
-              </EmptyState>
-            ) : (
+              </EmptyState>            ) : (
               Object.values(models).map(model => (
                 <VoiceModelCard 
                   key={model.id} 
@@ -881,8 +859,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                   placeholder="e.g., British Male"
                 />
               </FormGroup>
-              
-              <FormGroup>
+                <FormGroup>
                 <Label htmlFor="description">Description: <OptionalTag>Optional</OptionalTag></Label>
                 <TextArea
                   id="description"
@@ -1080,12 +1057,20 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
           
           <FooterButtons>
             <CancelButton onClick={handleCancel}>Cancel</CancelButton>
-            <SaveButton onClick={handleSave}>Save Voice Model</SaveButton>
-          </FooterButtons>
+            <SaveButton onClick={handleSave}>Save Voice Model</SaveButton>          </FooterButtons>
         </FormContainer>
       )}
       
-      {status && <StatusMessage success={isSuccess || undefined}>{status}</StatusMessage>}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        title="Delete Voice Model"
+        message={`Are you sure you want to delete this voice model? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </Container>
   );
 };

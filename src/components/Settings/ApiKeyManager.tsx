@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadApiKeys, saveApiKeys, ApiKeys } from '../../utils/storageUtils';
+import { showSuccess, showError } from '../Common/NotificationManager';
 
 const Container = styled.div`
   color: #0f0;
@@ -69,15 +70,6 @@ const Button = styled.button`
 const SaveButton = styled(Button)``;
 const BackButton = styled(Button)``;
 
-const StatusMessage = styled.p.withConfig({
-  shouldForwardProp: (prop) => prop !== 'success',
-})<{ success?: boolean }>`
-  margin-top: 1em;
-  font-weight: bold;
-  color: ${props => props.success ? '#0f0' : '#f00'};
-  transition: opacity 0.5s ease;
-`;
-
 interface ApiKeyManagerProps {
   onBack: () => void;
 }
@@ -87,9 +79,6 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
     OPENAI_API_KEY: '',
     ELEVENLABS_API_KEY: ''
   });
-  const [status, setStatus] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState<boolean>(false);
-  const [showStatus, setShowStatus] = useState(false);
   
   useEffect(() => {
     // Load existing API keys
@@ -104,38 +93,24 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       [name]: value
     }));
   };
-  
-  const handleSaveKeys = () => {
+    const handleSaveKeys = () => {
     try {
       // Basic validation for OpenAI key format (starts with "sk-")
       if (keys.OPENAI_API_KEY && !keys.OPENAI_API_KEY.startsWith('sk-')) {
-        setStatus('OpenAI API key should start with "sk-"');
-        setIsSuccess(false);
-        setShowStatus(true);
-        setTimeout(() => setShowStatus(false), 5000);
+        showError('OpenAI API key should start with "sk-"');
         return;
       }
 
       // Validate ElevenLabs key is not empty if provided
       if (keys.ELEVENLABS_API_KEY && keys.ELEVENLABS_API_KEY.trim() === '') {
-        setStatus('ElevenLabs API key cannot be empty');
-        setIsSuccess(false);
-        setShowStatus(true);
-        setTimeout(() => setShowStatus(false), 5000);
+        showError('ElevenLabs API key cannot be empty');
         return;
       }
 
       saveApiKeys(keys);
-      setStatus('API keys saved successfully!');
-      setIsSuccess(true);
-      setShowStatus(true);
-      setTimeout(() => {
-        setShowStatus(false);
-      }, 3000);
+      showSuccess('API keys saved successfully!');
     } catch (error) {
-      setStatus('Error saving API keys.');
-      setIsSuccess(false);
-      setShowStatus(true);
+      showError('Error saving API keys.');
       console.error('Failed to save API keys:', error);
     }
   };
@@ -186,15 +161,10 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           Required for ElevenLabs voice synthesis. Get your API key from the <a href="https://elevenlabs.io/" target="_blank" rel="noopener noreferrer" style={{ color: '#0af' }}>ElevenLabs website</a>.
         </Description>
       </FormGroup>
-      
-      <ButtonContainer>
+        <ButtonContainer>
         <BackButton onClick={onBack}>Back</BackButton>
         <SaveButton onClick={handleSaveKeys}>Save</SaveButton>
       </ButtonContainer>
-      
-      {showStatus && status && (
-        <StatusMessage success={isSuccess || undefined}>{status}</StatusMessage>
-      )}
     </Container>
   );
 };

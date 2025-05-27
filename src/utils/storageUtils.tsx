@@ -27,7 +27,7 @@ export interface VoiceModel {
     persona: string;
     timestamp: string;
     messages: {
-      role: 'user' | 'assistant';
+      role: 'user' | 'assistant' | 'system';
       content: string;
       timestamp: string;
     }[];

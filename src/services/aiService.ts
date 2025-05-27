@@ -1,9 +1,10 @@
 import { generateChatCompletion, getAvailableModels, getTokenUsageStats } from '../utils/openaiApi';
-import { loadApiKeys } from '../utils/storageUtils';
+import { loadApiKeys, loadSettings } from '../utils/storageUtils';
+import { getOpenSourceStatus, checkOpenSourceFallback } from '../utils/openSourceWip';
 
 // Interface for conversation history
 export interface MessageHistory {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
@@ -55,7 +56,18 @@ export const sendMessageToAI = async (
   history: MessageHistory[] = [],
   config?: Partial<AIConfig>
 ): Promise<string> => {
-  try {
+  try {    // Check if Open Source model is selected and in WIP mode
+    const settings = loadSettings();
+    const selectedModel = settings.selectedModel || 'Open Source';
+    
+    if (selectedModel === 'Open Source') {
+      const wipStatus = getOpenSourceStatus();
+      if (wipStatus.isWip) {
+        const fallbackMessage = checkOpenSourceFallback(selectedModel);
+        return fallbackMessage || "🚧 Open Source model is currently under development. Please use OpenAI for full functionality.";
+      }
+    }
+    
     const { OPENAI_API_KEY } = loadApiKeys();
     
     if (!OPENAI_API_KEY) {
@@ -83,7 +95,7 @@ export const sendMessageToAI = async (
     const response = await generateChatCompletion(
       systemPrompt,
       message,
-      history,
+      history.filter(msg => msg.role === 'user' || msg.role === 'assistant') as { role: 'user' | 'assistant', content: string }[], // Filter to only user and assistant messages
       finalConfig.model,
       finalConfig.temperature,
       finalConfig.maxTokens

@@ -155,16 +155,14 @@ const MainContent: React.FC<MainContentProps> = ({
   // Load the memory limit from settings
   const { memoryBuffer } = loadSettings();
   
-  // Listen for user queries
+  // Listen for user queries and event to clear chat display
   useEffect(() => {
     const handleUserQuery = (event: CustomEvent<{ query: string }>) => {
       const { query } = event.detail;
       
-      // Add user message and limit history
+      // Add user message to history (keep all messages visible)
       setMessages(prev => {
-        const newMessages = [...prev, { isUser: true, text: query }];
-        // Only keep the most recent messages based on memoryBuffer
-        return newMessages.slice(-memoryBuffer * 2); // *2 because each exchange has user + AI message
+        return [...prev, { isUser: true, text: query }];
       });
       
       // Show thinking state
@@ -186,23 +184,34 @@ const MainContent: React.FC<MainContentProps> = ({
       // Hide thinking state
       setIsThinking(false);
       
-      // Add AI response and limit history
+      // Add AI response to history (keep all messages visible)
       setMessages(prev => {
-        const newMessages = [...prev, { isUser: false, text: response }];
-        return newMessages.slice(-memoryBuffer * 2);
+        return [...prev, { isUser: false, text: response }];
       });
+    };
+    
+    // Listen for clear chat display event
+    const handleClearChatDisplay = () => {
+      // Reset messages to empty array
+      setMessages([]);
+      // Reset emotions
+      setUserEmotions([]);
+      setResponseEmotions([]);
+      setCurrentEmotion("neutral");
     };
     
     // Add event listeners
     window.addEventListener('user-query', handleUserQuery as EventListener);
     window.addEventListener('query-response', handleQueryResponse as EventListener);
+    window.addEventListener('clear-chat-display', handleClearChatDisplay as EventListener);
     
     // Clean up
     return () => {
       window.removeEventListener('user-query', handleUserQuery as EventListener);
       window.removeEventListener('query-response', handleQueryResponse as EventListener);
+      window.removeEventListener('clear-chat-display', handleClearChatDisplay as EventListener);
     };
-  }, [memoryBuffer, activeCharacter]); // Include memoryBuffer in dependencies
+  }, [activeCharacter]); // Removed memoryBuffer from dependencies as we're not using it here
   
   return (
     <MainContentContainer>

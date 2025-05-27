@@ -15,7 +15,7 @@ const ChatContainer = styled.div`
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Hello! I'm your ALTER EGO AI. How can I assist you today?",
+      text: "Hello! I'm ALTER EGO!",
       isUser: false,
       timestamp: new Date(),
     },

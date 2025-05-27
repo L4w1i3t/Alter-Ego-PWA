@@ -1,5 +1,6 @@
 dist/
-runapp.bat
+rundev.bat
+runprod.bat
 treeignore.txt
 create_tree_and_get_contents.exe
 file_tree_with_code_contents.txt
@@ -7,3 +8,4 @@ node_modules/
 package-lock.json
 keys.txt
 .webpack_cache/
+open_source.bat

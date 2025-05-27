@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
+import { showSuccess, showError } from '../Common/NotificationManager';
 
 const Container = styled.div`
   display: flex;
@@ -54,12 +55,6 @@ const Button = styled.button`
   }
 `;
 
-const StatusMessage = styled.p`
-  margin-top: 1em;
-  color: #0f0;
-  font-weight: bold;
-`;
-
 const InfoText = styled.p`
   margin: 1em 0;
   font-size: 0.9em;
@@ -75,7 +70,6 @@ interface MemorySettingsProps {
 const MemorySettings: React.FC<MemorySettingsProps> = ({ onBack }) => {
   const settings = loadSettings();
   const [memoryBuffer, setMemoryBuffer] = useState(settings.memoryBuffer || 3);
-  const [status, setStatus] = useState<string | null>(null);
 
   const handleSave = () => {
     try {
@@ -83,12 +77,12 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ onBack }) => {
         ...settings,
         memoryBuffer
       });
-      setStatus("Memory settings saved successfully.");
+      showSuccess("Memory settings saved successfully.");
       setTimeout(() => {
         onBack();
       }, 1500);
     } catch (error) {
-      setStatus("Error saving memory settings.");
+      showError("Error saving memory settings.");
       console.error("Failed to save memory settings:", error);
     }
   };
@@ -121,13 +115,10 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ onBack }) => {
         Note: Each exchange includes both your message and ALTER EGO's response.
         Changes will apply to new messages only.
       </InfoText>
-      
-      <ButtonContainer>
+        <ButtonContainer>
         <Button onClick={onBack}>Cancel</Button>
         <Button onClick={handleSave}>Save Settings</Button>
       </ButtonContainer>
-      
-      {status && <StatusMessage>{status}</StatusMessage>}
     </Container>
   );
 };

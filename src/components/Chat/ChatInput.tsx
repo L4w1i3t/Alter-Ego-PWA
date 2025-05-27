@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
+import { markEvent, startTimer, endTimer } from '../../utils/performanceMetrics';
 
 const InputContainer = styled.div`
   display: flex;
@@ -67,6 +68,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleSend = () => {
     if (message.trim()) {
+      // Mark event for metrics tracking
+      markEvent('user_message_sent', { length: message.length });
+      
+      // Start timer for message processing
+      startTimer('message_processing');
+      
       onSendMessage(message);
       setMessage('');
     }

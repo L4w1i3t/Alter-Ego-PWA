@@ -1,4 +1,5 @@
 import { loadApiKeys } from './storageUtils';
+import { trackAiResponseTime } from './performanceMetrics';
 
 // OpenAI API request interface
 interface OpenAIRequest {
@@ -67,6 +68,15 @@ And now, you must act according to the aforementioned rules applied, with the fo
 `.trim();
 
 /**
+ * Verify if the DEFAULT_SYSTEM_PROMPT is included in the provided prompt
+ * This ensures security rules are always applied
+ */
+export const verifySystemPrompt = (prompt: string): boolean => {
+  // Check if the default system prompt is included
+  return prompt.includes(DEFAULT_SYSTEM_PROMPT.substring(0, 100));
+};
+
+/**
  * Log token usage to local storage
  */
 export const logTokenUsage = (model: string, usage: OpenAIResponse['usage'], queryType: string = 'standard'): void => {
@@ -124,8 +134,16 @@ export const generateChatCompletion = async (
     throw new Error('OpenAI API key is not set. Please add your API key in the Settings.');
   }
   
+  // Start measuring response time
+  const startTime = performance.now();
+  
   // Combine default system prompt with custom persona
   const fullSystemPrompt = `${DEFAULT_SYSTEM_PROMPT} ${systemPrompt}`;
+  
+  // Verify if the default system prompt is included
+  if (!verifySystemPrompt(fullSystemPrompt)) {
+    throw new Error('The system prompt does not include the required security rules.');
+  }
   
   // Construct conversation history with system prompt
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -158,10 +176,20 @@ export const generateChatCompletion = async (
     
     const data: OpenAIResponse = await response.json();
     
+    // Calculate response time
+    const endTime = performance.now();
+    const responseTime = endTime - startTime;
+    
+    // Track the response time in performance metrics
+    trackAiResponseTime(responseTime);
+    
     // Log token usage
     if (data.usage) {
       logTokenUsage(model, data.usage);
     }
+    
+    // Log response time for debugging
+    console.log(`AI response time: ${responseTime.toFixed(0)}ms for ${data.usage?.total_tokens || 'unknown'} tokens`);
     
     return data.choices[0].message.content.trim();
   } catch (error) {

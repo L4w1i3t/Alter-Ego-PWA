@@ -2,9 +2,28 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './components/App';
 import { ApiProvider } from './context/ApiContext';
+import { initializePWA } from './utils/pwaUtils';
+import { devToolsBlocker } from './utils/devToolsBlocker';
+import { advancedSecurity } from './utils/advancedSecurity';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Initialize PWA installation capabilities
+initializePWA();
+
+// Initialize security features in production mode
+if (isProduction) {
+  // Block developer tools access
+  devToolsBlocker.initializeBlocking();
+  
+  // Enable advanced security features
+  advancedSecurity.initialize();
+  
+  console.log('Production security features activated');
+} else {
+  console.log('Running in development mode - security features disabled');
+}
 
 // Register service worker with proper error handling
 if ('serviceWorker' in navigator) {

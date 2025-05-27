@@ -49,8 +49,8 @@ self.addEventListener('activate', event => {
       const isLocalhost = self.location.hostname === 'localhost' || 
                          self.location.hostname === '127.0.0.1';
       
-      // Only notify about updates in production OR when it's a specific version change
-      if (!isLocalhost || self.registration.active) {
+      // Only notify about updates in production, NEVER in development
+      if (!isLocalhost) {
         return clients.matchAll().then(clients => {
           clients.forEach(client => {
             // Send update notification to client

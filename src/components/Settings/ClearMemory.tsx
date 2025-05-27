@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { clearMemory } from '../../utils/storageUtils';
+import { useApi } from '../../context/ApiContext';
+import { showSuccess, showError } from '../Common/NotificationManager';
 
 const Container = styled.div`
   display: flex;
@@ -49,28 +51,31 @@ const DangerButton = styled(Button)`
   }
 `;
 
-const StatusMessage = styled.p`
-  margin-top: 1em;
-  color: #0f0;
-  font-weight: bold;
-`;
-
 interface ClearMemoryProps {
   onBack: () => void;
 }
 
 const ClearMemory: React.FC<ClearMemoryProps> = ({ onBack }) => {
-  const [status, setStatus] = useState<string | null>(null);
+  const { clearConversation } = useApi(); // Get clearConversation function from context
 
   const handleClearMemory = () => {
     try {
+      // Clear memory in local storage
       clearMemory();
-      setStatus("Memory cleared successfully.");
+      
+      // Clear conversation in API context
+      clearConversation();
+      
+      // Dispatch custom event to clear the chat display
+      const clearChatEvent = new CustomEvent('clear-chat-display');
+      window.dispatchEvent(clearChatEvent);
+      
+      showSuccess("Memory cleared successfully.");
       setTimeout(() => {
         onBack();
       }, 1500);
     } catch (error) {
-      setStatus("Error clearing memory.");
+      showError("Error clearing memory.");
       console.error("Failed to clear memory:", error);
     }
   };
@@ -82,13 +87,10 @@ const ClearMemory: React.FC<ClearMemoryProps> = ({ onBack }) => {
         This will erase all conversation history with ALTER EGO.
         This action cannot be undone.
       </Message>
-      
-      <ButtonContainer>
+        <ButtonContainer>
         <Button onClick={onBack}>Cancel</Button>
         <DangerButton onClick={handleClearMemory}>Clear Memory</DangerButton>
       </ButtonContainer>
-      
-      {status && <StatusMessage>{status}</StatusMessage>}
     </Container>
   );
 };
