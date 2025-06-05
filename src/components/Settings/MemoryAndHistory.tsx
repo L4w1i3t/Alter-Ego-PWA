@@ -315,7 +315,6 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
     }
     
     setIsSearching(true);
-    showInfo('Searching long-term memory...');
     
     try {
       const results = await searchLongTermMemory(searchQuery);
@@ -341,7 +340,6 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
     }
     
     setIsSearching(true);
-    showInfo('Retrieving memories by time range...');
     
     try {
       const start = new Date(startDate);
@@ -377,7 +375,6 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
   };
     const handleRetrieveRecent = async () => {
     setIsSearching(true);
-    showInfo('Retrieving most recent memories...');
     
     try {
       const results = await retrieveLastNMemories(20); // Retrieve last 20 messages

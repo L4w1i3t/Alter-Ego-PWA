@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadSettings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
+import TypingAnimation from '../Common/TypingAnimation';
 
 const MainContentContainer = styled.main`
   display: flex;
@@ -132,7 +133,6 @@ const MainContent: React.FC<MainContentProps> = ({
     const welcomeMessage = `Hello, and welcome to ${activeCharacter}!`;
     setMessages([{ isUser: false, text: welcomeMessage }]);
     // This effect should only run once when the component mounts
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Update character name in messages if it changes
@@ -216,13 +216,21 @@ const MainContent: React.FC<MainContentProps> = ({
   return (
     <MainContentContainer>
       <ResponseArea>
-        <ResponseBox className="response-box">
+        <ResponseBox className="response-box">          
           {messages.map((message, index) => (
             <MessageContainer key={index}>
               {message.isUser ? (
-                <UserMessage>YOU: {message.text}</UserMessage>
-              ) : (
-                <AIMessage>{activeCharacter}: {message.text}</AIMessage>
+                <UserMessage>YOU: {message.text}</UserMessage>              ) : (                <AIMessage>
+                  {activeCharacter}: <TypingAnimation 
+                    text={message.text} 
+                    speed={loadSettings().textSpeed || 40} // Use text speed from settings
+                    showCursor={true}
+                  >
+                    {(displayText: string, isComplete: boolean) => (
+                      <span>{displayText}</span>
+                    )}
+                  </TypingAnimation>
+                </AIMessage>
               )}
             </MessageContainer>
           ))}

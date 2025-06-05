@@ -34,5 +34,18 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
+REM Open another terminal for react devtools
+start cmd /k "react-devtools --port 8097"
+REM Check if react-devtools is installed
+where react-devtools >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo Error: react-devtools is not installed or not in PATH
+    echo Please install react-devtools globally using: npm install -g react-devtools
+    pause
+    exit /b 1
+)
+
+REM Start the application
+set PORT=3000
 echo Starting the application...
 call npm run start-dev

@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
+import TypingAnimation from '../Common/TypingAnimation';
+import { loadSettings } from '../../utils/storageUtils';
 
 interface BubbleProps {
   isUser: boolean;
@@ -42,9 +44,24 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isUser, timestamp }) =
     minute: '2-digit',
   }).format(timestamp);
 
+  // Get text speed from settings
+  const settings = loadSettings();
+  const textSpeed = settings.textSpeed || 40;
+
   return (
     <Bubble isUser={isUser}>
-      <MessageText>{message}</MessageText>
+      {isUser ? (
+        <MessageText>{message}</MessageText>
+      ) : (        <TypingAnimation 
+          text={message} 
+          speed={textSpeed} // Use text speed from settings
+          showCursor={true}
+        >
+          {(displayText: string, isComplete: boolean) => (
+            <MessageText>{displayText}</MessageText>
+          )}
+        </TypingAnimation>
+      )}
       <Timestamp>{formattedTime}</Timestamp>
     </Bubble>
   );

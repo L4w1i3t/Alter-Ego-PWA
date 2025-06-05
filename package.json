@@ -8,7 +8,6 @@
     "start-prod": "webpack serve --mode production",
     "build-dev": "webpack --mode development",
     "build-prod": "webpack --mode production",
-    "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "metrics": "start-dev && open ./performance-metrics"
   },

@@ -28,7 +28,9 @@ const VoiceModelGrid = styled.div`
   border-radius: 0.3em;
 `;
 
-const VoiceModelCard = styled.div<{ provider?: string }>`
+const VoiceModelCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'provider',
+})<{ provider?: string }>`
   border: 1px solid ${props => props.provider === 'elevenlabs' ? '#0af3' : '#0f03'};
   background-color: ${props => props.provider === 'elevenlabs' ? '#001022' : '#001000'};
   padding: 1em;
@@ -60,7 +62,9 @@ const ModelDescription = styled.div`
   overflow: hidden;
 `;
 
-const ProviderBadge = styled.div<{ provider?: string }>`
+const ProviderBadge = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'provider',
+})<{ provider?: string }>`
   position: absolute;
   top: 0.5em;
   right: 0.5em;
@@ -235,7 +239,9 @@ const ProviderSelectionContainer = styled.div`
   margin-bottom: 1.5em;
 `;
 
-const ProviderCard = styled.div<{ selected?: boolean, provider?: string }>`
+const ProviderCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['selected', 'provider'].includes(prop),
+})<{ selected?: boolean, provider?: string }>`
   flex: 1;
   padding: 1.5em 1em;
   border: 2px solid ${props => props.selected 
@@ -260,7 +266,9 @@ const ProviderIcon = styled.div`
   margin-bottom: 0.5em;
 `;
 
-const ProviderTitle = styled.div<{ provider?: string }>`
+const ProviderTitle = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'provider',
+})<{ provider?: string }>`
   font-weight: bold;
   font-size: 1.1em;
   color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};

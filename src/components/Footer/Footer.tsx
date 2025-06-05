@@ -40,13 +40,17 @@ const VoiceModelSelector = styled.select`
   }
 `;
 
-const VoiceProviderIcon = styled.span<{ provider?: string }>`
+const VoiceProviderIcon = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== 'provider',
+})<{ provider?: string }>`
   color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
   margin-right: 0.5em;
   font-size: 1.2em;
 `;
 
-const VoiceInfo = styled.span<{ provider?: string }>`
+const VoiceInfo = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== 'provider',
+})<{ provider?: string }>`
   color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
   margin-left: 0.5em;
   font-size: 0.8em;

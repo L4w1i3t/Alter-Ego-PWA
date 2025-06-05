@@ -178,41 +178,49 @@ export interface VoiceModel {
       lastModified: new Date().toISOString()
     };
     savePersonas([defaultPersona]);
-    
-    // Reset settings to defaults
+      // Reset settings to defaults
     saveSettings({
       selectedModel: null,  // This will trigger model selection screen
       activeCharacter: "ALTER EGO",
       voiceModel: "None",
-      memoryBuffer: 3 // Reset to default memory buffer size
+      memoryBuffer: 3, // Reset to default memory buffer size
+      textSpeed: 40 // Reset to default text speed
     });
   }
-  
   // Settings
   export interface Settings {
     selectedModel: string | null;
     activeCharacter: string;
     voiceModel: string | null;
     memoryBuffer: number; // Make sure this is consistently named memoryBuffer
+    textSpeed?: number; // Characters per second for typing animation
+    notificationDuration?: number; // Duration for notifications in milliseconds
+    soundNotifications?: boolean; // Enable/disable notification sounds
+    showTimestamps?: boolean; // Show/hide message timestamps
+    compactMode?: boolean; // Dense UI layout
+    animationsEnabled?: boolean; // Enable/disable UI animations
+    autoBackup?: boolean; // Auto-backup conversations
+    developerMode?: boolean; // Show debug information
   }
-  
-  export function loadSettings(): Settings {
+    export function loadSettings(): Settings {
     const settings = localStorage.getItem('alterEgoSettings');
     if (!settings) {
       return {
         selectedModel: null,
         activeCharacter: "ALTER EGO",
         voiceModel: null,
-        memoryBuffer: 3 // Default to 3 messages
+        memoryBuffer: 3, // Default to 3 messages
+        textSpeed: 40 // Default text speed (characters per second)
       };
     }
     
     try {
       const parsedSettings = JSON.parse(settings);
-      // Ensure memoryBuffer exists in loaded settings
+      // Ensure memoryBuffer and textSpeed exist in loaded settings
       return {
         ...parsedSettings,
-        memoryBuffer: parsedSettings.memoryBuffer ?? 3
+        memoryBuffer: parsedSettings.memoryBuffer ?? 3,
+        textSpeed: parsedSettings.textSpeed ?? 40
       };
     } catch (e) {
       console.error('Error parsing settings:', e);
@@ -220,7 +228,8 @@ export interface VoiceModel {
         selectedModel: null,
         activeCharacter: "ALTER EGO",
         voiceModel: null,
-        memoryBuffer: 3
+        memoryBuffer: 3,
+        textSpeed: 40
       };
     }
   }

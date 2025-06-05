@@ -369,17 +369,16 @@ const App: React.FC = () => {
         }
       }, 300);
     }
-    
-    // Save the selected model to settings
+      // Save the selected model to settings
     saveSettings({
       selectedModel: model,
       activeCharacter,
       voiceModel,
-      memoryBuffer: loadSettings().memoryBuffer // Preserve existing memoryBuffer value
+      memoryBuffer: loadSettings().memoryBuffer, // Preserve existing memoryBuffer value
+      textSpeed: loadSettings().textSpeed // Preserve existing textSpeed value
     });
   };
-  
-  const handleModelChange = (model: string) => {
+    const handleModelChange = (model: string) => {
     setSelectedModel(model);
     
     // Save the selected model to settings
@@ -387,15 +386,15 @@ const App: React.FC = () => {
       selectedModel: model,
       activeCharacter,
       voiceModel,
-      memoryBuffer: loadSettings().memoryBuffer
+      memoryBuffer: loadSettings().memoryBuffer,
+      textSpeed: loadSettings().textSpeed
     });
   };
   
   const handleLoadCharacterClick = () => {
     setShowCharacterSelector(true);
   };
-  
-  const handleCharacterSelected = (characterName: string) => {
+    const handleCharacterSelected = (characterName: string) => {
     setActiveCharacter(characterName);
     
     // Update the current persona in the API context
@@ -414,7 +413,8 @@ const App: React.FC = () => {
       selectedModel,
       activeCharacter: characterName,
       voiceModel,
-      memoryBuffer: loadSettings().memoryBuffer
+      memoryBuffer: loadSettings().memoryBuffer,
+      textSpeed: loadSettings().textSpeed // Preserve existing textSpeed value
     });
       setShowCharacterSelector(false);
   };
@@ -427,8 +427,7 @@ const App: React.FC = () => {
   const handleCloseCharacterSelector = () => {
     setShowCharacterSelector(false);
   };
-  
-  const handleVoiceModelChange = (modelName: string) => {
+    const handleVoiceModelChange = (modelName: string) => {
     setVoiceModel(modelName);
     
     // Save to settings
@@ -436,7 +435,8 @@ const App: React.FC = () => {
       selectedModel,
       activeCharacter,
       voiceModel: modelName,
-      memoryBuffer: loadSettings().memoryBuffer
+      memoryBuffer: loadSettings().memoryBuffer,
+      textSpeed: loadSettings().textSpeed // Preserve existing textSpeed value
     });
   };
   

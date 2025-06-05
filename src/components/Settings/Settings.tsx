@@ -11,6 +11,7 @@ import { loadSettings, saveSettings } from '../../utils/storageUtils';
 import MemorySettings from './MemoryManager';
 import MemoryAndHistory from './MemoryAndHistory';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
+import MiscellaneousSettings from './MiscellaneousSettings';
 import { handleOpenSourceSelection, getOpenSourceStatus } from '../../utils/openSourceWip';
 
 const SettingsOverlay = styled.div`
@@ -290,8 +291,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
       case 'Clear Memory':
         return <ClearMemory onBack={handleBack} />;      case 'Memory Settings':
         return <MemorySettings onBack={handleBack} />;
+      case 'Miscellaneous':
+        return <MiscellaneousSettings onBack={handleBack} />;
       case 'Desktop Install':
-        return <DesktopInstall onBack={handleBack} />;      case 'Software Details':
+        return <DesktopInstall onBack={handleBack} />;case 'Software Details':
         return <SoftwareDetails onBack={handleBack} />;
       case 'Factory Reset':
         return <FactoryReset onBack={handleBack} />;
@@ -346,6 +349,14 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
                 <CategoryTitle>Memory Settings</CategoryTitle>
                 <CategoryDescription>
                   Configure conversation memory size
+                </CategoryDescription>
+              </SettingsCategory>
+
+              <SettingsCategory onClick={() => handleMenuClick('Miscellaneous')}>
+                <CategoryIcon>⚙️</CategoryIcon>
+                <CategoryTitle>Miscellaneous</CategoryTitle>
+                <CategoryDescription>
+                  Customize text speed and other preferences
                 </CategoryDescription>
               </SettingsCategory>
 

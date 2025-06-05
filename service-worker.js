@@ -8,7 +8,7 @@ const ASSETS_TO_CACHE = [
   '/index.html',
   '/bundle.js',
   '/manifest.json',
-  '/assets/favicon.ico'
+  '/public/assets/favicon.ico'
 ];
 
 // Install event - cache all static assets
