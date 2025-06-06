@@ -1,5 +1,6 @@
 rundev.bat
 runprod.bat
+dist/
 treeignore.txt
 create_tree_and_get_contents.exe
 file_tree_with_code_contents.txt
