@@ -27,7 +27,7 @@ if not exist node_modules\ (
 
 REM Build and start the application
 echo Building the application...
-call npm run build-prod
+call npm run build
 if %ERRORLEVEL% neq 0 (
     echo Error: Build failed
     pause
