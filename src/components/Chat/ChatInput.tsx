@@ -10,6 +10,14 @@ const InputContainer = styled.div`
   background-color: ${theme.colors.surface};
   border-radius: ${theme.borderRadius.md};
   box-shadow: ${theme.shadows.sm};
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    gap: 0.75rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
 `;
 
 const TextInput = styled.input`
@@ -23,6 +31,13 @@ const TextInput = styled.input`
   
   &:focus {
     outline: 1px solid ${theme.colors.primary};
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 44px;
+    touch-action: manipulation;
   }
 `;
 
@@ -46,6 +61,15 @@ const SendButton = styled.button`
   &:disabled {
     background-color: rgba(255, 255, 255, 0.3);
     cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    width: 56px;
+    height: 56px;
+    font-size: 1.4rem;
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
   }
 `;
 

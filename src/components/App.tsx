@@ -27,7 +27,7 @@ import {
 } from '../utils/performanceMetrics';
 
 // Dev mode UI components for performance metrics
-const DevMetricsControl = styled.div`
+const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
   position: fixed;
   bottom: 10px;
   right: 10px;
@@ -42,6 +42,109 @@ const DevMetricsControl = styled.div`
   gap: 8px;
   max-width: 300px;
   box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(2px);
+  
+  ${props => props.$collapsed && `
+    padding: 8px;
+    gap: 0;
+    max-width: 50px;
+    max-height: 50px;
+    overflow: hidden;
+  `}
+  
+  @media (max-width: 768px) {
+    bottom: 70px; /* Above footer on mobile, adjusted for reduced footer height */
+    right: 10px;
+    left: auto;
+    max-width: calc(100vw - 20px);
+    font-size: 0.75em;
+    padding: 10px;
+    opacity: 0.95;
+    border-width: 2px;
+    
+    ${props => props.$collapsed && `
+      left: auto;
+      right: 10px;
+      max-width: 50px;
+      max-height: 50px;
+      padding: 8px;
+    `}
+  }
+`;
+
+const CollapseButton = styled.button`
+  background: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  align-self: flex-end;
+  margin-bottom: 5px;
+  min-width: 24px;
+  min-height: 24px;
+  position: relative;
+  
+  &:hover {
+    background: #0f0;
+    color: #000;
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 6px;
+    height: 6px;
+    background: #ff0;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 16px;
+    margin-bottom: 3px;
+    border-width: 2px;
+    
+    &::after {
+      width: 8px;
+      height: 8px;
+      top: -3px;
+      right: -3px;
+      opacity: 1; /* Always show indicator on mobile for better UX */
+    }
+    
+    &:hover {
+      background: #0f0;
+      color: #000;
+    }
+  }
+`;
+
+const DevMetricsContent = styled.div<{ $collapsed?: boolean }>`
+  display: ${props => props.$collapsed ? 'none' : 'flex'};
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.3s ease;
 `;
 
 const DevButton = styled.button`
@@ -149,6 +252,15 @@ const AppContainer = styled.div`
   color: #0f0;
   font-family: monospace, "Courier New", Courier;
   overflow: hidden;
+  
+  @media (max-width: 768px) {
+    min-height: 100vh;
+    min-height: -webkit-fill-available; /* iOS Safari fix */
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100vw;
+  }
 `;
 
 // Counter to track component renders
@@ -295,10 +407,10 @@ const App: React.FC = () => {
   const [currentPersonaContent, setCurrentPersonaContent] = useState("");
   const [voiceModel, setVoiceModel] = useState("None");
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-  
-  // Performance monitoring state
+    // Performance monitoring state
   const isDevelopment = process.env.NODE_ENV === 'development';
   const [showDevTools, setShowDevTools] = useState(isDevelopment);
+  const [devToolsCollapsed, setDevToolsCollapsed] = useState(false);
 
   // Voice synthesis utilities
   const synthesizeVoice = async (text: string, voicemodel_id: string) => {
@@ -491,25 +603,30 @@ const App: React.FC = () => {
       window.removeEventListener('query-response', handleQueryResponse as EventListener);
     };
   }, [voiceModel]);
-
   // Initialize performance monitoring
   useEffect(() => {
     if (isDevelopment) {
       initPerformanceMonitoring();
       
-      // Add shortcut to toggle dev tools visibility
+      // Add shortcut to toggle dev tools visibility and collapse state
       const handleKeyDown = (e: KeyboardEvent) => {
         // Ctrl+Shift+D to toggle dev tools (Cmd+Shift+D on Mac)
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'd') {
           e.preventDefault();
           setShowDevTools(prev => !prev);
         }
+        
+        // Ctrl+Shift+C to toggle collapse state when dev tools are visible (Cmd+Shift+C on Mac)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'c' && showDevTools) {
+          e.preventDefault();
+          setDevToolsCollapsed(prev => !prev);
+        }
       };
       
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isDevelopment]);
+  }, [isDevelopment, showDevTools]);
 
   const generateMetricsReport = async () => {
     await triggerPerformanceReport();
@@ -619,26 +736,34 @@ const App: React.FC = () => {
           onSelect={handleCharacterSelected}
           onClose={handleCloseCharacterSelector}
         />
-      )}
-
-      {isDevelopment && showDevTools && (
-        <DevMetricsControl>
-          <LiveMetrics />
-          <ButtonRow>
-            <DevButton onClick={generateMetricsReport}>
-              Generate Metrics Report
-            </DevButton>
-          </ButtonRow>
-          <ButtonRow>
-            <DevButton onClick={exportDbContent}>
-              Export Dexie DB
-            </DevButton>
-          </ButtonRow>
-          <HotkeyInfo>
-            Hotkey: Ctrl+Alt+P
-            <br />
-            (Toggle panel: Ctrl+Shift+D)
-          </HotkeyInfo>
+      )}      {isDevelopment && showDevTools && (
+        <DevMetricsControl $collapsed={devToolsCollapsed}>
+          <CollapseButton 
+            onClick={() => setDevToolsCollapsed(!devToolsCollapsed)}
+            title={devToolsCollapsed ? 'Expand Performance Monitor' : 'Collapse Performance Monitor'}
+          >
+            {devToolsCollapsed ? '▲' : '▼'}
+          </CollapseButton>
+          
+          <DevMetricsContent $collapsed={devToolsCollapsed}>
+            <LiveMetrics />
+            <ButtonRow>
+              <DevButton onClick={generateMetricsReport}>
+                Generate Metrics Report
+              </DevButton>
+            </ButtonRow>
+            <ButtonRow>
+              <DevButton onClick={exportDbContent}>
+                Export Dexie DB
+              </DevButton>
+            </ButtonRow>            <HotkeyInfo>
+              Hotkey: Ctrl+Alt+P
+              <br />
+              Toggle panel: Ctrl+Shift+D
+              <br />
+              Collapse/Expand: Ctrl+Shift+C
+            </HotkeyInfo>
+          </DevMetricsContent>
         </DevMetricsControl>
       )}
       

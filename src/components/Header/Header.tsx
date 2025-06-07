@@ -8,6 +8,11 @@ const HeaderContainer = styled.header`
   padding: 0.8em;
   background-color: #000;
   border-bottom: 1px solid #0f0;
+  
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    min-height: 50px;
+  }
 `;
 
 const LoadCharacterButton = styled.button`
@@ -21,6 +26,13 @@ const LoadCharacterButton = styled.button`
     background-color: #0f0;
     color: #000;
   }
+  
+  @media (max-width: 768px) {
+    padding: 0.6em 0.8em;
+    font-size: 0.9rem;
+    min-height: 40px;
+    touch-action: manipulation;
+  }
 `;
 
 const MenuIcon = styled.div`
@@ -29,6 +41,17 @@ const MenuIcon = styled.div`
   
   &:hover {
     color: #8f8;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 1.8em;
+    padding: 0.2em;
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
   }
 `;
 

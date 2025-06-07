@@ -10,6 +10,18 @@ const MainContentContainer = styled.main`
   padding: 2vh 2vw;
   gap: 2vw;
   overflow: auto;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 0.75rem;
+    gap: 0.75rem;
+    height: calc(100vh - 150px); /* Account for header (~50px), footer (~50px), query section (~50px) */
+    min-height: 300px; /* Ensure minimum usable space */
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+  }
 `;
 
 const ResponseArea = styled.div`
@@ -18,6 +30,13 @@ const ResponseArea = styled.div`
   flex: 2;
   gap: 2vh;
   min-width: 40vw;
+  
+  @media (max-width: 768px) {
+    flex: none;
+    width: 100%;
+    gap: 1rem;
+    order: 1;
+  }
 `;
 
 const ResponseBox = styled.div`
@@ -29,6 +48,17 @@ const ResponseBox = styled.div`
   overflow-y: auto;
   flex: none;
   word-wrap: break-word;
+  
+  @media (max-width: 768px) {
+    height: 25vh;
+    min-height: 150px;
+    max-height: 25vh;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    width: 100%;
+    box-sizing: border-box;
+  }
 `;
 
 const MessageContainer = styled.div`
@@ -52,6 +82,12 @@ const ThinkingMessage = styled.div`
 const DetectedEmotionsSection = styled.div`
   display: flex;
   gap: 1vh;
+    @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.5rem;
+    order: 3;
+    width: 100%;
+  }
 `;
 
 const EmotionsSection = styled.div`
@@ -59,6 +95,11 @@ const EmotionsSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1vh;
+  
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+    width: 100%;
+  }
 `;
 
 const EmotionsBox = styled.div`
@@ -68,11 +109,25 @@ const EmotionsBox = styled.div`
   padding: 1vh 1vw;
   height: 10vh;
   overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    height: 6vh;
+    min-height: 40px;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
 `;
 
 const EmotionsTitle = styled.h3`
   margin: 0;
   font-size: 1em;
+  
+  @media (max-width: 768px) {
+    font-size: 0.9em;
+    text-align: center;
+  }
 `;
 
 const EmotionText = styled.p`
@@ -83,22 +138,43 @@ const AvatarArea = styled.div`
   flex: 1;
   background: #002000;
   border: 1px solid #0f0;
-  border-radius: 0.2em;
-  padding: 2vh 1vw;
+  border-radius: 1.2em;
   min-width: 20vw;
   max-height: 65vh;
   overflow: hidden;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Align to top since we're showing top half */
+  position: relative;
+  
+  @media (max-width: 768px) {
+    flex: none;
+    width: 100%;
+    height: 18vh;
+    min-height: 100px;
+    max-height: 18vh;
+    padding: 0.5rem;
+    order: 2;
+    margin-bottom: 0.5rem;
+    box-sizing: border-box;
+    align-items: flex-start; /* Consistent top alignment */
+  }
 `;
 
 const AvatarImage = styled.img`
-  min-width: 100%;
-  min-height: 100%;
+  width: 100%;
+  height: 200%; /* Make image twice the container height */
   object-fit: cover;
-  align-self: flex-start;
+  object-position: center top; /* Show top half of the image */
   filter: hue-rotate(90deg) saturate(3) brightness(1.2);
+  
+  @media (max-width: 768px) {
+    width: 60%;
+    height: 200%; /* Consistent behavior on mobile */
+    object-fit: cover;
+    object-position: center top; /* Always show top half */
+    margin-top: -10%;
+  }
 `;
 
 const AvatarPlaceholder = styled.div`

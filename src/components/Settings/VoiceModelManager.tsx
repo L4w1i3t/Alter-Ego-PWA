@@ -9,11 +9,25 @@ import { showSuccess, showError, showWarning } from '../Common/NotificationManag
 const Container = styled.div`
   color: #0f0;
   width: 100%;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    min-height: 70vh;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 1.4em;
+    margin-bottom: 1.5em;
+  }
 `;
 
 const VoiceModelGrid = styled.div`
@@ -26,6 +40,21 @@ const VoiceModelGrid = styled.div`
   padding: 0.5em;
   border: 1px solid #0f03;
   border-radius: 0.3em;
+  
+  @media (min-width: 769px) {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.2em;
+    max-height: 350px;
+    padding: 1em;
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    max-height: 50vh;
+    gap: 0.8em;
+    padding: 0.8em;
+    margin-bottom: 2em;
+  }
 `;
 
 const VoiceModelCard = styled.div.withConfig({
@@ -42,6 +71,12 @@ const VoiceModelCard = styled.div.withConfig({
   &:hover {
     border-color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
     background-color: ${props => props.provider === 'elevenlabs' ? '#001830' : '#002000'};
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    margin-bottom: 0.5em;
+    min-height: 5em;
   }
 `;
 
@@ -76,6 +111,12 @@ const ActionButtons = styled.div`
   display: flex;
   gap: 0.5em;
   margin-top: 0.8em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.8em;
+    width: 100%;
+  }
 `;
 
 const Button = styled.button`
@@ -90,6 +131,21 @@ const Button = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (min-width: 769px) {
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    min-width: 100px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.8em 1.2em;
+    font-size: 1em;
+    width: 100%;
+    min-height: 2.5em;
   }
 `;
 
@@ -107,10 +163,26 @@ const IconButton = styled.button<{ color?: string }>`
   justify-content: center;
   padding: 0;
   transition: all 0.2s ease;
+  flex-shrink: 0;
   
   &:hover {
     background: ${props => props.color || '#0f0'};
     color: #000;
+  }
+  
+  @media (min-width: 769px) {
+    width: 2.4em;
+    height: 2.4em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+  }
+  
+  @media (max-width: 768px) {
+    width: 2.5em;
+    height: 2.5em;
+    font-size: 1em;
+    min-width: 2.5em;
   }
 `;
 
@@ -174,15 +246,29 @@ const FormContainer = styled.div`
   border: 1px solid #0f04;
   border-radius: 0.3em;
   background-color: #000800;
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    margin-top: 1.5em;
+  }
 `;
 
 const FormGroup = styled.div`
   margin-bottom: 1.2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+  }
 `;
 
 const Label = styled.label`
   display: block;
   margin-bottom: 0.5em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const Input = styled.input`
@@ -194,6 +280,13 @@ const Input = styled.input`
   border-radius: 0.2em;
   margin-bottom: 0.5em;
   font-family: monospace;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    min-height: 2.5em;
+    box-sizing: border-box;
+  }
 `;
 
 const TextArea = styled.textarea`
@@ -206,12 +299,30 @@ const TextArea = styled.textarea`
   border-radius: 0.2em;
   font-family: monospace;
   resize: vertical;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    height: 100px;
+    box-sizing: border-box;
+  }
 `;
 
 const TabContainer = styled.div`
   display: flex;
   border-bottom: 1px solid #0f03;
   margin-bottom: 1.5em;
+  
+  @media (min-width: 769px) {
+    border-bottom: 2px solid #0f03;
+    margin-bottom: 2em;
+  }
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.5em;
+    margin-bottom: 2em;
+  }
 `;
 
 const Tab = styled.div.withConfig({
@@ -231,12 +342,34 @@ const Tab = styled.div.withConfig({
     color: #0f0;
     background: ${props => props.active ? '#001500' : '#000500'};
   }
+  
+  @media (min-width: 769px) {
+    padding: 0.8em 1.2em;
+    font-size: 1em;
+    margin-right: 0.8em;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    margin-right: 0;
+    margin-bottom: 0.5em;
+    text-align: center;
+    font-size: 1.1em;
+    border-radius: 0.3em;
+    border: 1px solid ${props => props.active ? '#0f0' : '#0f03'};
+  }
 `;
 
 const ProviderSelectionContainer = styled.div`
   display: flex;
   gap: 1em;
   margin-bottom: 1.5em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1.2em;
+    margin-bottom: 2em;
+  }
 `;
 
 const ProviderCard = styled.div.withConfig({
@@ -258,6 +391,14 @@ const ProviderCard = styled.div.withConfig({
   &:hover {
     background-color: ${props => props.provider === 'elevenlabs' ? '#001830' : '#002000'};
     border-color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+  }
+  
+  @media (max-width: 768px) {
+    padding: 2em 1.5em;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 `;
 
@@ -322,11 +463,24 @@ const FooterButtons = styled.div`
   margin-top: 1.5em;
   display: flex;
   justify-content: space-between;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1em;
+    margin-top: 2em;
+  }
 `;
 
 const ActionButton = styled(Button)`
   padding: 0.5em 1.2em;
   font-size: 0.9em;
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1.1em;
+    width: 100%;
+    min-height: 3em;
+  }
 `;
 
 const BackButton = styled(ActionButton)``;
@@ -370,6 +524,13 @@ const VoiceBrowserButton = styled(Button)`
     cursor: not-allowed;
     opacity: 0.6;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    font-size: 1.1em;
+    margin-top: 1.5em;
+    min-height: 3.5em;
+  }
 `;
 
 const VoiceBrowser = styled.div`
@@ -380,6 +541,12 @@ const VoiceBrowser = styled.div`
   overflow-y: auto;
   border-radius: 0.3em;
   background-color: #000818;
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    max-height: 40vh;
+    margin-top: 2em;
+  }
 `;
 
 const VoiceItem = styled.div`
@@ -397,6 +564,13 @@ const VoiceItem = styled.div`
 
   &:hover {
     background-color: #001030;
+  }
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.2em;
+    gap: 1em;
   }
 `;
 
@@ -441,6 +615,13 @@ const BrowserVoiceGrid = styled.div`
   padding: 0.5em;
   border: 1px solid #0f03;
   border-radius: 0.3em;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    max-height: 30vh;
+    gap: 0.8em;
+    padding: 0.8em;
+  }
 `;
 
 const BrowserVoiceOption = styled.div<{ selected?: boolean }>`
@@ -455,6 +636,15 @@ const BrowserVoiceOption = styled.div<{ selected?: boolean }>`
   &:hover {
     background-color: ${props => props.selected ? '#001500' : '#000500'};
     border-color: #0f0;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    font-size: 1em;
+    min-height: 4em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 `;
 
@@ -551,7 +741,6 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
     
     try {
       setLoadingVoices(true);
-      showWarning('Loading ElevenLabs voices...');
       
       const voicesData = await getVoices();
       setAvailableVoices(voicesData.voices || []);

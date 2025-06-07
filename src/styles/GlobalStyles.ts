@@ -10,7 +10,6 @@ export const GlobalStyles = createGlobalStyle`
     -moz-user-select: none;
     -ms-user-select: none;
   }
-
   html, body {
     margin: 0;
     padding: 0;
@@ -21,6 +20,19 @@ export const GlobalStyles = createGlobalStyle`
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* Improve mobile touch targets */
+    -webkit-tap-highlight-color: rgba(0, 255, 0, 0.1);
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (max-width: 768px) {
+    html, body {
+      height: 100vh;
+      height: -webkit-fill-available; /* iOS Safari fix */
+      overflow-x: hidden;
+      overflow-y: auto;
+      width: 100%;
+      max-width: 100vw;
+    }
   }
 
   #root {
@@ -31,7 +43,6 @@ export const GlobalStyles = createGlobalStyle`
   img {
     pointer-events: none;
   }
-
   button, input {
     font-family: inherit;
     color: #0f0;
@@ -39,6 +50,35 @@ export const GlobalStyles = createGlobalStyle`
     border: 1px solid #0f0;
     padding: 0.5em 1em;
     border-radius: 0.2em;
+    /* Improve mobile touch targets */
+    min-height: 40px;
+    touch-action: manipulation;
+  }
+  /* Mobile-specific improvements */
+  @media (max-width: 768px) {
+    button, input {
+      padding: 0.6em 0.8em;
+      font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    select {
+      font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    /* Better touch targets and spacing */
+    * {
+      -webkit-tap-highlight-color: rgba(0, 255, 0, 0.2);
+    }
+    
+    /* Prevent horizontal scrolling */
+    body {
+      overflow-x: hidden;
+    }
+    
+    /* Improve touch scrolling */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
   }
 
   button:hover {

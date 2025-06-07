@@ -8,11 +8,25 @@ import { showSuccess, showError } from '../Common/NotificationManager';
 const Container = styled.div`
   color: #0f0;
   width: 100%;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    min-height: 70vh;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 1.4em;
+    margin-bottom: 1.5em;
+  }
 `;
 
 const PersonaGrid = styled.div`
@@ -24,6 +38,21 @@ const PersonaGrid = styled.div`
   overflow-y: auto;
   padding: 0.5em;
   border: 1px solid #0f03;
+  
+  @media (min-width: 769px) {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.2em;
+    max-height: 350px;
+    padding: 1em;
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    max-height: 50vh;
+    gap: 0.8em;
+    padding: 0.8em;
+    margin-bottom: 2em;
+  }
 `;
 
 const PersonaCard = styled.div<{ isActive?: boolean }>`
@@ -39,6 +68,22 @@ const PersonaCard = styled.div<{ isActive?: boolean }>`
     border-color: #0f0;
     background-color: #001000;
   }
+  
+  @media (min-width: 769px) {
+    padding: 1.2em;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    margin-bottom: 0.5em;
+    min-height: 4em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
 `;
 
 const PersonaName = styled.div`
@@ -47,6 +92,13 @@ const PersonaName = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+    white-space: normal;
+    text-align: center;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const PersonaDate = styled.div`
@@ -71,6 +123,15 @@ const ActionButtons = styled.div`
   right: 0.5em;
   display: flex;
   gap: 0.3em;
+  
+  @media (max-width: 768px) {
+    position: relative;
+    top: auto;
+    right: auto;
+    justify-content: center;
+    margin-top: 0.5em;
+    gap: 0.8em;
+  }
 `;
 
 const Button = styled.button`
@@ -85,6 +146,21 @@ const Button = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (min-width: 769px) {
+    padding: 0.5em 1em;
+    font-size: 0.9em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    min-width: 80px;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1em;
+    min-width: 8em;
+    touch-action: manipulation;
   }
 `;
 
@@ -101,10 +177,26 @@ const IconButton = styled.button`
   align-items: center;
   justify-content: center;
   padding: 0;
+  flex-shrink: 0;
   
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (min-width: 769px) {
+    width: 2.2em;
+    height: 2.2em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+  }
+  
+  @media (max-width: 768px) {
+    width: 3em;
+    height: 3em;
+    font-size: 1.2em;
+    touch-action: manipulation;
   }
 `;
 
@@ -160,15 +252,30 @@ const FormContainer = styled.div`
   padding: 1.5em;
   border: 1px solid #0f04;
   border-radius: 0.3em;
+  
+  @media (max-width: 768px) {
+    padding: 1.5em 1em;
+    margin-top: 1.5em;
+    border-width: 2px;
+  }
 `;
 
 const FormGroup = styled.div`
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2em;
+  }
 `;
 
 const Label = styled.label`
   display: block;
   margin-bottom: 0.5em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const Input = styled.input`
@@ -179,6 +286,12 @@ const Input = styled.input`
   border: 1px solid #0f0;
   border-radius: 0.2em;
   font-family: monospace;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    border-width: 2px;
+  }
 `;
 
 const TextArea = styled.textarea`
@@ -191,6 +304,13 @@ const TextArea = styled.textarea`
   border-radius: 0.2em;
   font-family: monospace;
   resize: vertical;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    height: 150px;
+    font-size: 1em;
+    border-width: 2px;
+  }
 `;
 
 const ReadOnlyTextArea = styled(TextArea)`
@@ -204,6 +324,17 @@ const FormButtons = styled.div`
   display: flex;
   justify-content: space-between;
   margin-top: 1.5em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1em;
+    margin-top: 2em;
+    
+    button {
+      width: 100%;
+      max-width: none;
+    }
+  }
 `;
 
 const InfoBox = styled.div`
@@ -225,6 +356,18 @@ const ButtonContainer = styled.div`
   display: flex;
   justify-content: space-between;
   margin-top: 1em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1em;
+    margin-top: 2em;
+    
+    button {
+      width: 100%;
+      padding: 1.2em;
+      font-size: 1.1em;
+    }
+  }
 `;
 
 const RequiredTag = styled.span`

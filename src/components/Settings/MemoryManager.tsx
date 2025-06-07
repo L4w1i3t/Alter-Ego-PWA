@@ -9,11 +9,23 @@ const Container = styled.div`
   align-items: center;
   color: #0f0;
   width: 100%;
+  
+  @media (max-width: 768px) {
+    min-height: 60vh;
+    justify-content: center;
+    padding: 0 1em;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+    font-size: 1.3em;
+    text-align: center;
+  }
 `;
 
 const SettingRow = styled.div`
@@ -22,10 +34,22 @@ const SettingRow = styled.div`
   align-items: center;
   width: 100%;
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1.5em;
+    gap: 0.8em;
+  }
 `;
 
 const Label = styled.label`
   flex: 1;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+    font-weight: bold;
+  }
 `;
 
 const Select = styled.select`
@@ -33,6 +57,14 @@ const Select = styled.select`
   color: #0f0;
   border: 1px solid #0f0;
   padding: 0.5em;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 1em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+  }
 `;
 
 const ButtonContainer = styled.div`
@@ -40,6 +72,13 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   width: 100%;
   margin-top: 2em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    margin-top: 2.5em;
+    gap: 1.2em;
+    max-width: 300px;
+  }
 `;
 
 const Button = styled.button`
@@ -53,6 +92,13 @@ const Button = styled.button`
     background: #0f0;
     color: #000;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1.1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+  }
 `;
 
 const InfoText = styled.p`
@@ -61,6 +107,13 @@ const InfoText = styled.p`
   color: #0f08;
   text-align: center;
   font-style: italic;
+  
+  @media (max-width: 768px) {
+    margin: 1.5em 0;
+    font-size: 1em;
+    line-height: 1.5;
+    padding: 0 0.5em;
+  }
 `;
 
 interface MemorySettingsProps {

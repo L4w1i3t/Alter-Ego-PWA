@@ -36,18 +36,14 @@ class PerformanceMetricsPlugin {
     compiler.hooks.done.tap('PerformanceMetricsPlugin', () => {
       console.log('Performance metrics collection enabled. Reports will be saved to:', METRICS_DIR);
       console.log('Database metrics collection enabled. Reports will be saved to:', DB_METRICS_DIR);
-    });
-
-    // Add middleware to receive and save metrics
+    });    // Add middleware to receive and save metrics
     if (compiler.options.devServer) {
-      // Ensure the before function is called
-      const originalBefore = compiler.options.devServer.onBeforeSetupMiddleware || (() => {});
+      // Ensure the setupMiddlewares function is called
+      const originalSetupMiddlewares = compiler.options.devServer.setupMiddlewares || ((middlewares) => middlewares);
       
-      compiler.options.devServer.onBeforeSetupMiddleware = (devServer) => {
-        // Call original before function
-        if (originalBefore) {
-          originalBefore(devServer);
-        }
+      compiler.options.devServer.setupMiddlewares = (middlewares, devServer) => {
+        // Call original setupMiddlewares function
+        middlewares = originalSetupMiddlewares(middlewares, devServer);
         
         // Add middleware to handle performance metrics
         const app = devServer.app;
@@ -86,6 +82,8 @@ class PerformanceMetricsPlugin {
             }
           });
         }
+        
+        return middlewares;
       };
     }
   }

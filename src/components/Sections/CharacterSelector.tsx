@@ -13,6 +13,12 @@ const SelectorOverlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  
+  @media (max-width: 768px) {
+    align-items: flex-start;
+    padding: 1rem;
+    overflow-y: auto;
+  }
 `;
 
 const SelectorContent = styled.div`
@@ -22,12 +28,26 @@ const SelectorContent = styled.div`
   border-radius: 5px;
   width: 300px;
   max-width: 90vw;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    border-width: 2px;
+    margin-top: 2rem;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 1.5em;
+    margin-bottom: 1.5em;
+  }
 `;
 
 const CharacterList = styled.ul`
@@ -46,9 +66,23 @@ const CharacterItem = styled.li`
   &:last-child {
     border-bottom: none;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1em 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8em;
+    border-bottom: 2px solid #0f03;
+  }
 `;
 
-const CharacterName = styled.span``;
+const CharacterName = styled.span`
+  @media (max-width: 768px) {
+    font-size: 1.2em;
+    text-align: center;
+    font-weight: bold;
+  }
+`;
 
 const LoadButton = styled.button`
   background: #000;
@@ -61,6 +95,16 @@ const LoadButton = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1.1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    min-height: 3em;
+    width: 100%;
+    touch-action: manipulation;
   }
 `;
 
@@ -76,6 +120,16 @@ const CloseButton = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    margin-top: 2.5em;
+    padding: 1.2em 1.5em;
+    font-size: 1.2em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    min-height: 3.5em;
+    touch-action: manipulation;
   }
 `;
 

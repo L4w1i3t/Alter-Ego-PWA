@@ -9,11 +9,25 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   color: #0f0;
+  width: 100%;
+  min-height: 60vh;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    min-height: 70vh;
+    align-items: stretch;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.4em;
+    margin-bottom: 1.5em;
+    text-align: center;
+  }
 `;
 
 // Tab navigation
@@ -22,6 +36,12 @@ const TabContainer = styled.div`
   width: 100%;
   margin-bottom: 1.5em;
   border-bottom: 1px solid #0f04;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.5em;
+    margin-bottom: 2em;
+  }
 `;
 
 const Tab = styled.div.withConfig({
@@ -36,17 +56,34 @@ const Tab = styled.div.withConfig({
   &:hover {
     color: #0f0;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    text-align: center;
+    font-size: 1.1em;
+    border: 1px solid ${props => props.active ? '#0f0' : '#0f03'};
+    border-radius: 0.3em;
+    background: ${props => props.active ? '#001500' : 'transparent'};
+  }
 `;
 
 // Search and filtering
 const SearchSection = styled.div`
   width: 100%;
   margin-bottom: 1.5em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2em;
+  }
 `;
 
 const TimeSearchSection = styled.div`
   width: 100%;
   margin-bottom: 1.5em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2em;
+  }
 `;
 
 const FilterSection = styled.div`
@@ -54,17 +91,36 @@ const FilterSection = styled.div`
   margin-bottom: 1.5em;
   display: flex;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 2em;
+  }
 `;
 
 const InputGroup = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 0.8em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.5em;
+  }
 `;
 
 const Label = styled.label`
   margin-right: 1em;
   min-width: 80px;
+  
+  @media (max-width: 768px) {
+    margin-right: 0;
+    margin-bottom: 0.8em;
+    font-size: 1.1em;
+    min-width: auto;
+  }
 `;
 
 const Input = styled.input`
@@ -73,6 +129,14 @@ const Input = styled.input`
   border: 1px solid #0f0;
   padding: 0.5em;
   flex: 1;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    margin-bottom: 1em;
+    min-height: 2.5em;
+    box-sizing: border-box;
+  }
 `;
 
 const Select = styled.select`
@@ -81,6 +145,13 @@ const Select = styled.select`
   border: 1px solid #0f0;
   padding: 0.5em;
   flex: 1;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    min-height: 2.5em;
+    box-sizing: border-box;
+  }
 `;
 
 const Button = styled.button`
@@ -95,6 +166,14 @@ const Button = styled.button`
     background: #0f0;
     color: #000;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1em;
+    margin-left: 0;
+    width: 100%;
+    min-height: 3em;
+  }
 `;
 
 // Results display
@@ -104,6 +183,11 @@ const HistoryList = styled.div`
   overflow-y: auto;
   border: 1px solid #0f04;
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    max-height: 50vh;
+    margin-bottom: 1.5em;
+  }
 `;
 
 const HistoryItem = styled.div`
@@ -118,16 +202,31 @@ const HistoryItem = styled.div`
   &:last-child {
     border-bottom: none;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    min-height: 4em;
+  }
 `;
 
 const HistoryHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.5em;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const PersonaName = styled.div`
   font-weight: bold;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+  }
 `;
 
 const Timestamp = styled.div`
@@ -150,6 +249,12 @@ const ResultsSection = styled.div`
   margin-top: 1em;
   max-height: 300px;
   overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    max-height: 50vh;
+    margin-top: 1.5em;
+  }
 `;
 
 const ConversationDetail = styled.div`
@@ -158,22 +263,42 @@ const ConversationDetail = styled.div`
   padding: 1em;
   max-height: 400px;
   overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    max-height: 60vh;
+  }
 `;
 
 const Message = styled.div`
   margin-bottom: 1em;
   padding: 0.5em;
   border-bottom: 1px solid #0f03;
+  
+  @media (max-width: 768px) {
+    padding: 0.8em;
+    margin-bottom: 1.2em;
+  }
 `;
 
 const MessageContainer = styled.div`
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+  }
 `;
 
 const MessageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.3em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.3em;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const MessageRole = styled.div<{ role: 'user' | 'assistant' | 'system' }>`
@@ -193,6 +318,11 @@ const MessageTime = styled.div`
 const MessageContent = styled.div`
   white-space: pre-wrap;
   line-height: 1.4;
+  
+  @media (max-width: 768px) {
+    font-size: 1em;
+    line-height: 1.5;
+  }
 `;
 
 const UserMessage = styled.div`
@@ -226,6 +356,12 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   width: 100%;
   margin-top: 1em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1em;
+    margin-top: 2em;
+  }
 `;
 
 interface MemoryAndHistoryProps {

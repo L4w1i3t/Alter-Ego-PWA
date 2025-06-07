@@ -3,27 +3,65 @@ import styled from 'styled-components';
 
 const DetailsContainer = styled.div`
   color: #0f0;
+  
+  @media (max-width: 768px) {
+    padding: 0 0.5em;
+  }
 `;
 
 const DetailsTitle = styled.h2`
   margin-top: 0;
   margin-bottom: 1em;
   font-size: 1.2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+    font-size: 1.3em;
+    text-align: center;
+  }
 `;
 
 const DetailsList = styled.ul`
   list-style: none;
   padding-left: 1em;
   margin: 0.5em 0;
+  
+  @media (max-width: 768px) {
+    padding-left: 1.5em;
+    margin: 1em 0;
+    line-height: 1.6;
+  }
 `;
 
 const DetailsItem = styled.li`
   margin: 0.3em 0;
+  
+  @media (max-width: 768px) {
+    margin: 0.6em 0;
+    font-size: 1.05em;
+  }
 `;
 
 const SectionTitle = styled.h3`
   margin: 0.8em 0 0.3em 0;
   font-size: 1em;
+  
+  @media (max-width: 768px) {
+    margin: 1.5em 0 0.8em 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #0ff;
+  }
+`;
+
+const InfoParagraph = styled.p`
+  margin: 0.5em 0;
+  
+  @media (max-width: 768px) {
+    margin: 1em 0;
+    font-size: 1.05em;
+    line-height: 1.5;
+  }
 `;
 
 const BackButton = styled.button`
@@ -38,6 +76,19 @@ const BackButton = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    margin-top: 2em;
+    padding: 1em 1.5em;
+    font-size: 1.1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    width: 100%;
+    max-width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
   }
 `;
 
@@ -73,13 +124,12 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
     ]
   };
 
-  return (
-    <DetailsContainer>
+  return (    <DetailsContainer>
       <DetailsTitle>Software Details</DetailsTitle>
       
-      <p><strong>Software Name:</strong> {details.softwareName}</p>
-      <p><strong>Version:</strong> {details.version}</p>
-      <p><strong>Developed By:</strong> {details.developedBy}</p>
+      <InfoParagraph><strong>Software Name:</strong> {details.softwareName}</InfoParagraph>
+      <InfoParagraph><strong>Version:</strong> {details.version}</InfoParagraph>
+      <InfoParagraph><strong>Developed By:</strong> {details.developedBy}</InfoParagraph>
       
       <SectionTitle>Tools:</SectionTitle>
       <DetailsList>

@@ -7,10 +7,22 @@ const QuerySectionContainer = styled.section`
   align-items: center;
   padding: 1vh 2vw;
   gap: 1vw;
+  
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    min-height: 50px;
+  }
 `;
 
 const QueryInputWrapper = styled.div`
   flex: 1;
+  
+  @media (max-width: 768px) {
+    min-width: 100%;
+    order: 1;
+  }
 `;
 
 const QueryInput = styled.input`
@@ -24,6 +36,13 @@ const QueryInput = styled.input`
   &::placeholder {
     color: #0f0;
     opacity: 0.7;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 40px;
+    touch-action: manipulation;
   }
 `;
 
@@ -49,6 +68,15 @@ const SendQueryButton = styled.button`
       background: #000;
       color: #0f0;
     }
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1rem 1.5rem;
+    font-size: 16px;
+    min-height: 44px;
+    min-width: 100%;
+    order: 2;
+    touch-action: manipulation;
   }
 `;
 

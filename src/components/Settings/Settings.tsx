@@ -127,12 +127,48 @@ const CloseButton = styled.button`
     background: #0f0;
     color: #000;
   }
+  
+  @media (min-width: 769px) {
+    width: 2.5em;
+    height: 2.5em;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    font-weight: bold;
+  }
+  
+  @media (max-width: 768px) {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.8em 1.2em;
+    font-size: 1.1em;
+    border-radius: 0.3em;
+    min-height: 2.5em;
+    min-width: 2.5em;
+    touch-action: manipulation;
+  }
 `;
 
 const ModelSelection = styled.div`
   margin-top: 1.5em;
   padding-top: 1em;
   border-top: 1px solid #0f03;
+  
+  @media (min-width: 769px) {
+    margin-top: 2em;
+    padding-top: 1.5em;
+    border-top: 2px solid #0f03;
+  }
+  
+  @media (max-width: 768px) {
+    margin-top: 2em;
+    padding-top: 1.5em;
+    border-top: 2px solid #0f03;
+  }
 `;
 
 const ModelTitle = styled.h3`
@@ -145,6 +181,17 @@ const ModelOptions = styled.div`
   justify-content: space-between;
   gap: 0.5em;
   align-items: center;
+  
+  @media (min-width: 769px) {
+    gap: 1em;
+    flex-wrap: wrap;
+  }
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1.5em;
+    align-items: stretch;
+  }
 `;
 
 const WipInfoButton = styled.button`
@@ -160,10 +207,29 @@ const WipInfoButton = styled.button`
   align-items: center;
   justify-content: center;
   margin-left: 0.3em;
+  flex-shrink: 0;
   
   &:hover {
     background: #ff8800;
     color: #000;
+  }
+  
+  @media (min-width: 769px) {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85em;
+    margin-left: 0.5em;
+    border-width: 2px;
+    font-weight: bold;
+  }
+  
+  @media (max-width: 768px) {
+    width: 2.5em;
+    height: 2.5em;
+    font-size: 1em;
+    margin-left: 0.8em;
+    border-width: 2px;
+    touch-action: manipulation;
   }
 `;
 
@@ -184,6 +250,8 @@ const ModelButton = styled.button.withConfig({
   border: 1px solid ${props => props.isWip ? '#ff8800' : '#0f0'};
   cursor: pointer;
   position: relative;
+  border-radius: 0.3em;
+  flex-shrink: 0;
   
   &:hover {
     background: ${props => {
@@ -207,6 +275,45 @@ const ModelButton = styled.button.withConfig({
       font-weight: bold;
     }
   `}
+  
+  @media (min-width: 769px) {
+    padding: 0.8em 1.6em;
+    margin: 0 0.4em;
+    font-size: 1em;
+    min-width: 120px;
+    border-width: 2px;
+    font-weight: 500;
+    
+    ${props => props.isWip && `
+      &::after {
+        top: -10px;
+        right: -10px;
+        font-size: 0.65em;
+        padding: 3px 5px;
+      }
+    `}
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    margin: 0;
+    font-size: 1.1em;
+    border-radius: 0.3em;
+    border-width: 2px;
+    min-height: 3em;
+    flex: 1;
+    touch-action: manipulation;
+    
+    ${props => props.isWip && `
+      &::after {
+        top: -12px;
+        right: -12px;
+        font-size: 0.8em;
+        padding: 4px 6px;
+        border-radius: 4px;
+      }
+    `}
+  }
 `;
 
 const StatusMessage = styled.p`

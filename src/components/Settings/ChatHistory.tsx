@@ -4,11 +4,21 @@ import { loadChatHistory, ChatHistoryEntry } from '../../utils/storageUtils';
 
 const Container = styled.div`
   color: #0f0;
+  
+  @media (max-width: 768px) {
+    padding: 0 0.5em;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+    font-size: 1.3em;
+    text-align: center;
+  }
 `;
 
 const HistoryFilterContainer = styled.div`
@@ -16,15 +26,36 @@ const HistoryFilterContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1em;
+    margin-bottom: 1.5em;
+  }
 `;
 
-const Label = styled.label``;
+const Label = styled.label`
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+`;
 
 const Select = styled.select`
   background: #000;
   color: #0f0;
   border: 1px solid #0f0;
   padding: 0.3em;
+  
+  @media (max-width: 768px) {
+    padding: 0.8em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    width: 100%;
+    max-width: 250px;
+  }
 `;
 
 const HistoryList = styled.div`
@@ -32,6 +63,13 @@ const HistoryList = styled.div`
   overflow-y: auto;
   border: 1px solid #0f04;
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    max-height: 400px;
+    border-width: 2px;
+    border-radius: 0.3em;
+    margin-bottom: 1.5em;
+  }
 `;
 
 const HistoryItem = styled.div`
@@ -46,21 +84,45 @@ const HistoryItem = styled.div`
   &:last-child {
     border-bottom: none;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    touch-action: manipulation;
+    
+    &:hover {
+      background-color: #0f02;
+    }
+  }
 `;
 
 const HistoryHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3em;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const PersonaName = styled.div`
   font-weight: bold;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+  }
 `;
 
 const Timestamp = styled.div`
   font-size: 0.8em;
   color: #0f08;
+  
+  @media (max-width: 768px) {
+    font-size: 0.9em;
+  }
 `;
 
 const MessagePreview = styled.div`
@@ -69,6 +131,17 @@ const MessagePreview = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   color: #0f0a;
+  
+  @media (max-width: 768px) {
+    font-size: 1em;
+    white-space: normal;
+    line-height: 1.4;
+    max-height: 2.8em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
 `;
 
 const HistoryDetail = styled.div`
@@ -76,16 +149,34 @@ const HistoryDetail = styled.div`
   padding: 1em;
   max-height: 400px;
   overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    border-width: 2px;
+    border-radius: 0.3em;
+    padding: 1.5em;
+    max-height: 500px;
+  }
 `;
 
 const MessageContainer = styled.div`
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+  }
 `;
 
 const MessageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.3em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2em;
+    margin-bottom: 0.6em;
+  }
 `;
 
 const MessageRole = styled.div<{ role: 'user' | 'assistant' | 'system' }>`
@@ -95,28 +186,53 @@ const MessageRole = styled.div<{ role: 'user' | 'assistant' | 'system' }>`
     props.role === 'assistant' ? '#0ff' : 
     '#ff0'  /* Yellow color for system messages */
   };
+  
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+  }
 `;
 
 const MessageTime = styled.div`
   font-size: 0.8em;
   color: #0f08;
+  
+  @media (max-width: 768px) {
+    font-size: 0.9em;
+  }
 `;
 
 const MessageContent = styled.div`
   white-space: pre-wrap;
   line-height: 1.4;
+  
+  @media (max-width: 768px) {
+    font-size: 1em;
+    line-height: 1.5;
+  }
 `;
 
 const EmptyState = styled.div`
   padding: 2em;
   text-align: center;
   color: #0f06;
+  
+  @media (max-width: 768px) {
+    padding: 3em 1.5em;
+    font-size: 1.1em;
+    line-height: 1.4;
+  }
 `;
 
 const ButtonContainer = styled.div`
   margin-top: 1em;
   display: flex;
   justify-content: space-between;
+  
+  @media (max-width: 768px) {
+    margin-top: 1.5em;
+    flex-direction: column;
+    gap: 1em;
+  }
 `;
 
 const Button = styled.button`
@@ -129,6 +245,15 @@ const Button = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.8em 1.5em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    min-height: 2.5em;
+    touch-action: manipulation;
   }
 `;
 

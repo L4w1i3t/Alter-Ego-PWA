@@ -9,16 +9,34 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   color: #0f0;
+  
+  @media (max-width: 768px) {
+    min-height: 60vh;
+    justify-content: center;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+    font-size: 1.3em;
+    text-align: center;
+  }
 `;
 
 const Message = styled.p`
   margin-bottom: 1em;
   text-align: center;
+  line-height: 1.5;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2em;
+    font-size: 1.1em;
+    padding: 0 1em;
+  }
 `;
 
 const ButtonContainer = styled.div`
@@ -26,6 +44,14 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   width: 100%;
   margin-top: 1em;
+  gap: 1em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    margin-top: 2em;
+    gap: 1.2em;
+    max-width: 300px;
+  }
 `;
 
 const Button = styled.button`
@@ -38,6 +64,13 @@ const Button = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1.1em;
+    border-width: 2px;
+    border-radius: 0.3em;
   }
 `;
 

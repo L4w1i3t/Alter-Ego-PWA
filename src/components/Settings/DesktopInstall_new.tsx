@@ -11,6 +11,10 @@ import {
 
 const Container = styled.div`
   padding: 1em;
+  
+  @media (max-width: 768px) {
+    padding: 0.5em;
+  }
 `;
 
 const Title = styled.h2`
@@ -19,6 +23,14 @@ const Title = styled.h2`
   display: flex;
   align-items: center;
   gap: 0.5em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.3em;
+    margin-bottom: 1.5em;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1em;
+  }
 `;
 
 const BackButton = styled.button`
@@ -33,6 +45,14 @@ const BackButton = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.8em 1.2em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    min-height: 2.5em;
   }
 `;
 
@@ -58,16 +78,33 @@ const StatusCard = styled.div<{ type: 'success' | 'info' | 'warning' | 'error' }
       default: return 'rgba(0, 255, 0, 0.1)';
     }
   }};
+  
+  @media (max-width: 768px) {
+    padding: 1.5em;
+    margin-bottom: 1.5em;
+    border-width: 2px;
+    border-radius: 0.5em;
+  }
 `;
 
 const StatusTitle = styled.h3`
   margin: 0 0 0.5em 0;
   font-size: 1em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.2em;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const StatusText = styled.p`
   margin: 0;
   line-height: 1.5;
+  
+  @media (max-width: 768px) {
+    line-height: 1.6;
+    font-size: 1.05em;
+  }
 `;
 
 const InstallButton = styled.button`
@@ -90,12 +127,25 @@ const InstallButton = styled.button`
     color: #999;
     cursor: not-allowed;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1.2em 2em;
+    font-size: 1.2em;
+    margin: 1.5em 0;
+    width: 100%;
+    min-height: 3em;
+    border-radius: 0.5em;
+  }
 `;
 
 const BenefitsList = styled.ul`
   list-style: none;
   padding: 0;
   margin: 1em 0;
+  
+  @media (max-width: 768px) {
+    margin: 1.5em 0;
+  }
 `;
 
 const BenefitItem = styled.li`
@@ -109,6 +159,12 @@ const BenefitItem = styled.li`
     color: #0f0;
     font-weight: bold;
   }
+  
+  @media (max-width: 768px) {
+    padding: 0.8em 0;
+    font-size: 1.05em;
+    line-height: 1.5;
+  }
 `;
 
 const Instructions = styled.div`
@@ -117,11 +173,23 @@ const Instructions = styled.div`
   border-radius: 0.3em;
   padding: 1em;
   margin: 1em 0;
+  
+  @media (max-width: 768px) {
+    padding: 1.5em;
+    margin: 1.5em 0;
+    border-width: 2px;
+    border-radius: 0.5em;
+  }
 `;
 
 const InstructionsTitle = styled.h4`
   margin: 0 0 0.5em 0;
   color: #0ff;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 0.8em;
+    font-size: 1.1em;
+  }
 `;
 
 const DebugInfo = styled.details`
@@ -130,6 +198,13 @@ const DebugInfo = styled.details`
   background: rgba(128, 128, 128, 0.1);
   border: 1px solid #666;
   border-radius: 0.3em;
+  
+  @media (max-width: 768px) {
+    margin-top: 2.5em;
+    padding: 1.5em;
+    border-width: 2px;
+    border-radius: 0.5em;
+  }
 `;
 
 const DebugSummary = styled.summary`
@@ -137,6 +212,11 @@ const DebugSummary = styled.summary`
   font-weight: bold;
   color: #888;
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.05em;
+    margin-bottom: 1.2em;
+  }
 `;
 
 const DebugContent = styled.pre`
@@ -146,6 +226,13 @@ const DebugContent = styled.pre`
   overflow-x: auto;
   font-size: 0.8em;
   color: #ccc;
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    font-size: 0.9em;
+    border-radius: 0.5em;
+    overflow-x: scroll;
+  }
 `;
 
 interface Props {

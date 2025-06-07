@@ -10,14 +10,32 @@ const FooterContainer = styled.footer`
   background-color: #000;
   border-top: 1px solid #0f0;
   font-size: 0.8em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    min-height: 50px;
+  }
 `;
 
 const FooterLeft = styled.div`
   display: flex;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 `;
 
-const FooterRight = styled.div``;
+const FooterRight = styled.div`
+  @media (max-width: 768px) {
+    text-align: center;
+    font-size: 0.9em;
+  }
+`;
 
 const VoiceModelSelector = styled.select`
   background-color: #000;
@@ -37,6 +55,13 @@ const VoiceModelSelector = styled.select`
   
   option.browser-option {
     color: #0f0;
+  }
+    @media (max-width: 768px) {
+    padding: 0.4em;
+    margin: 0.2em;
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 40px;
+    touch-action: manipulation;
   }
 `;
 

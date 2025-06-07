@@ -10,6 +10,13 @@ const WipInfoPanel = styled.div`
   position: relative;
   max-width: 500px;
   margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    padding: 1.5em;
+    margin: 1em;
+    max-width: none;
+    border-radius: 0.8em;
+  }
 `;
 
 const WipTitle = styled.h2`
@@ -21,6 +28,13 @@ const WipTitle = styled.h2`
   align-items: center;
   justify-content: center;
   gap: 0.5em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.5em;
+    margin-bottom: 1.2em;
+    line-height: 1.3;
+    padding-right: 1em; /* Account for close button */
+  }
 `;
 
 const WipIcon = styled.span`
@@ -29,6 +43,10 @@ const WipIcon = styled.span`
 
 const WipSection = styled.div`
   margin-bottom: 1.5em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2em;
+  }
 `;
 
 const WipSectionTitle = styled.h3`
@@ -38,6 +56,11 @@ const WipSectionTitle = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.3em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.2em;
+    margin-bottom: 0.8em;
+  }
 `;
 
 const WipList = styled.ul`
@@ -48,12 +71,29 @@ const WipList = styled.ul`
     margin: 0.3em 0;
     color: #ffaa44;
   }
+  
+  @media (max-width: 768px) {
+    margin: 1em 0;
+    padding-left: 1.2em;
+    
+    li {
+      margin: 0.6em 0;
+      font-size: 1.05em;
+      line-height: 1.4;
+    }
+  }
 `;
 
 const WipDescription = styled.p`
   margin: 0 0 1em 0;
   line-height: 1.5;
   color: #ffcc88;
+  
+  @media (max-width: 768px) {
+    margin: 0 0 1.5em 0;
+    line-height: 1.6;
+    font-size: 1.05em;
+  }
 `;
 
 const RecommendationBox = styled.div`
@@ -62,6 +102,13 @@ const RecommendationBox = styled.div`
   padding: 1em;
   border-radius: 0.3em;
   margin-top: 1.5em;
+  
+  @media (max-width: 768px) {
+    padding: 1.5em;
+    margin-top: 2em;
+    border-width: 2px;
+    border-radius: 0.5em;
+  }
 `;
 
 const RecommendationTitle = styled.h4`
@@ -70,6 +117,11 @@ const RecommendationTitle = styled.h4`
   display: flex;
   align-items: center;
   gap: 0.3em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 0.8em;
+    font-size: 1.1em;
+  }
 `;
 
 const BackButton = styled.button`
@@ -88,6 +140,17 @@ const BackButton = styled.button`
     background: #ff8800;
     color: #000;
   }
+  
+  @media (max-width: 768px) {
+    margin-top: 2.5em;
+    padding: 1em 2em;
+    font-size: 1.1em;
+    border-width: 2px;
+    border-radius: 0.5em;
+    width: 100%;
+    max-width: 250px;
+    min-height: 2.5em;
+  }
 `;
 
 const CloseButton = styled.button`
@@ -105,6 +168,17 @@ const CloseButton = styled.button`
   &:hover {
     background: #ff8800;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    top: 1em;
+    right: 1em;
+    padding: 0.5em 0.8em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+    min-height: 2.2em;
+    min-width: 2.2em;
   }
 `;
 

@@ -13,6 +13,12 @@ const Overlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
 `;
 
 const OverlayContent = styled.div`
@@ -21,6 +27,14 @@ const OverlayContent = styled.div`
   border-radius: 5px;
   text-align: center;
   border: 1px solid #0f0;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: none;
+    padding: 2rem;
+    margin-top: 2rem;
+    border-radius: 0;
+  }
 `;
 
 const Title = styled.h1`
@@ -46,6 +60,15 @@ const ModelButton = styled.button<{ isWip?: boolean }>`
   &:hover {
     background: ${props => props.isWip ? '#ff6b00' : '#0f0'};
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1rem 2rem;
+    margin: 0.5rem;
+    font-size: 1.1rem;
+    min-height: 60px;
+    min-width: 80%;
+    touch-action: manipulation;
   }
 `;
 

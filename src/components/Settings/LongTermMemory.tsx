@@ -8,32 +8,67 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   color: #0f0;
+  width: 100%;
+  min-height: 60vh;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    min-height: 70vh;
+    align-items: stretch;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  
+  @media (max-width: 768px) {
+    font-size: 1.4em;
+    margin-bottom: 1.5em;
+    text-align: center;
+  }
 `;
 
 const SearchSection = styled.div`
   width: 100%;
   margin-bottom: 2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2.5em;
+  }
 `;
 
 const TimeSearchSection = styled.div`
   width: 100%;
   margin-bottom: 2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2.5em;
+  }
 `;
 
 const InputGroup = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 1em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.5em;
+  }
 `;
 
 const Label = styled.label`
   margin-right: 1em;
   min-width: 80px;
+  
+  @media (max-width: 768px) {
+    margin-right: 0;
+    margin-bottom: 0.8em;
+    font-size: 1.1em;
+    min-width: auto;
+  }
 `;
 
 const Input = styled.input`
@@ -42,6 +77,14 @@ const Input = styled.input`
   border: 1px solid #0f0;
   padding: 0.5em;
   flex: 1;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    margin-bottom: 1em;
+    min-height: 2.5em;
+    box-sizing: border-box;
+  }
 `;
 
 const Button = styled.button`
@@ -56,6 +99,14 @@ const Button = styled.button`
     background: #0f0;
     color: #000;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1em;
+    margin-left: 0;
+    width: 100%;
+    min-height: 3em;
+  }
 `;
 
 const ResultsSection = styled.div`
@@ -65,21 +116,42 @@ const ResultsSection = styled.div`
   margin-top: 1em;
   max-height: 300px;
   overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    max-height: 50vh;
+    margin-top: 1.5em;
+  }
 `;
 
 const Message = styled.div`
   margin-bottom: 1em;
   padding: 0.5em;
   border-bottom: 1px solid #0f03;
+  
+  @media (max-width: 768px) {
+    padding: 0.8em;
+    margin-bottom: 1.2em;
+  }
 `;
 
 const UserMessage = styled.div`
   color: #0af;
   margin-bottom: 0.5em;
+  
+  @media (max-width: 768px) {
+    font-size: 1em;
+    line-height: 1.5;
+  }
 `;
 
 const AIMessage = styled.div`
   color: #0f0;
+  
+  @media (max-width: 768px) {
+    font-size: 1em;
+    line-height: 1.5;
+  }
 `;
 
 const NoResults = styled.p`
@@ -92,6 +164,12 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   width: 100%;
   margin-top: 1em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1em;
+    margin-top: 2em;
+  }
 `;
 
 interface LongTermMemoryProps {

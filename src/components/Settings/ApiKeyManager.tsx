@@ -6,20 +6,40 @@ import { showSuccess, showError } from '../Common/NotificationManager';
 const Container = styled.div`
   color: #0f0;
   max-width: 100%;
+  
+  @media (max-width: 768px) {
+    padding: 0 0.5em;
+  }
 `;
 
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5em;
+    font-size: 1.3em;
+    text-align: center;
+  }
 `;
 
 const FormGroup = styled.div`
   margin-bottom: 1.5em; /* Increased spacing between form groups */
+  
+  @media (max-width: 768px) {
+    margin-bottom: 2em;
+  }
 `;
 
 const Label = styled.label`
   display: block;
   margin-bottom: 0.3em;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 0.8em;
+    font-size: 1.1em;
+    font-weight: bold;
+  }
 `;
 
 const Input = styled.input`
@@ -30,6 +50,13 @@ const Input = styled.input`
   border: 1px solid #0f0;
   border-radius: 0.2em;
   font-family: monospace;
+  
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+  }
 `;
 
 const Description = styled.p`
@@ -37,6 +64,13 @@ const Description = styled.p`
   margin-top: 0.5em;
   color: #0f09;
   line-height: 1.4; /* Improved readability */
+  
+  @media (max-width: 768px) {
+    font-size: 0.95em;
+    margin-top: 1em;
+    line-height: 1.5;
+    padding: 0 0.2em;
+  }
 `;
 
 const InfoBox = styled.div`
@@ -46,12 +80,31 @@ const InfoBox = styled.div`
   margin-bottom: 2em;
   font-size: 0.9em;
   line-height: 1.5; /* Improved readability */
+  
+  @media (max-width: 768px) {
+    padding: 1.5em;
+    margin-bottom: 2.5em;
+    font-size: 1em;
+    line-height: 1.6;
+    border-width: 2px;
+    border-radius: 0.3em;
+  }
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: space-between;
   margin-top: 1.5em;
+  gap: 1em;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    margin-top: 2.5em;
+    gap: 1.2em;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 `;
 
 const Button = styled.button`
@@ -64,6 +117,13 @@ const Button = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1em 1.5em;
+    font-size: 1.1em;
+    border-width: 2px;
+    border-radius: 0.3em;
   }
 `;
 
