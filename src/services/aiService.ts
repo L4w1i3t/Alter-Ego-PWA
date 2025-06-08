@@ -1,4 +1,5 @@
 import { generateChatCompletion, getAvailableModels, getTokenUsageStats } from '../utils/openaiApi';
+import { generateOpenSourceCompletion, validateBackendReady, OPEN_SOURCE_CONFIG } from '../utils/openSourceApi';
 import { loadApiKeys, loadSettings } from '../utils/storageUtils';
 import { getOpenSourceStatus, checkOpenSourceFallback } from '../utils/openSourceWip';
 
@@ -55,8 +56,8 @@ export const sendMessageToAI = async (
   systemPrompt: string = "You are ALTER EGO, an intelligent AI personality.",
   history: MessageHistory[] = [],
   config?: Partial<AIConfig>
-): Promise<string> => {
-  try {    // Check if Open Source model is selected and in WIP mode
+): Promise<string> => {  try {    
+    // Check if Open Source model is selected
     const settings = loadSettings();
     const selectedModel = settings.selectedModel || 'Open Source';
     
@@ -66,8 +67,60 @@ export const sendMessageToAI = async (
         const fallbackMessage = checkOpenSourceFallback(selectedModel);
         return fallbackMessage || "🚧 Open Source model is currently under development. Please use OpenAI for full functionality.";
       }
+      
+      // Try to use the open-source backend
+      try {
+        console.log('Using open-source backend for AI completion');
+        
+        // Validate backend is ready
+        const backendStatus = await validateBackendReady();
+        if (!backendStatus.ready) {
+          throw new Error(backendStatus.error || 'Backend not ready');
+        }
+        
+        // Get current configuration and apply any overrides
+        const currentConfig = getAIConfig();
+        const finalConfig = {
+          ...currentConfig,
+          ...config
+        };
+        
+        // Use the configured open-source model or default
+        const openSourceModel = settings.openSourceModel || OPEN_SOURCE_CONFIG.defaultModel;
+        
+        // Prepare messages for the backend
+        const messages: MessageHistory[] = [
+          { role: 'system', content: systemPrompt },
+          ...history,
+          { role: 'user', content: message }
+        ];
+        
+        console.log(`Using open-source model: ${openSourceModel}`);
+        console.log(`Using ${history.length} messages from history for AI context`);
+        
+        // Call the open-source backend
+        const response = await generateOpenSourceCompletion(
+          messages,
+          openSourceModel,
+          finalConfig.temperature,
+          finalConfig.maxTokens
+        );
+        
+        return response;
+        
+      } catch (backendError) {
+        console.error('Open-source backend error:', backendError);
+        
+        // Fallback to OpenAI if backend fails
+        console.log('Falling back to OpenAI due to backend error');
+        const fallbackMessage = `⚠️ Open-source backend unavailable (${backendError instanceof Error ? backendError.message : 'Unknown error'}). Switching to OpenAI...`;
+        
+        // Continue to OpenAI logic below
+        console.warn(fallbackMessage);
+      }
     }
     
+    // OpenAI logic (original code)
     const { OPENAI_API_KEY } = loadApiKeys();
     
     if (!OPENAI_API_KEY) {

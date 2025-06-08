@@ -12,6 +12,7 @@ import MemorySettings from './MemoryManager';
 import MemoryAndHistory from './MemoryAndHistory';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
+import OpenSourceSettings from './OpenSourceSettings';
 import { handleOpenSourceSelection, getOpenSourceStatus } from '../../utils/openSourceWip';
 
 const SettingsOverlay = styled.div`
@@ -398,6 +399,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
       case 'Clear Memory':
         return <ClearMemory onBack={handleBack} />;      case 'Memory Settings':
         return <MemorySettings onBack={handleBack} />;
+      case 'Open Source Setup':
+        return <OpenSourceSettings onBack={handleBack} />;
       case 'Miscellaneous':
         return <MiscellaneousSettings onBack={handleBack} />;
       case 'Desktop Install':
@@ -456,6 +459,14 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
                 <CategoryTitle>Memory Settings</CategoryTitle>
                 <CategoryDescription>
                   Configure conversation memory size
+                </CategoryDescription>
+              </SettingsCategory>
+
+              <SettingsCategory onClick={() => handleMenuClick('Open Source Setup')}>
+                <CategoryIcon>🔧</CategoryIcon>
+                <CategoryTitle>Open Source Setup</CategoryTitle>
+                <CategoryDescription>
+                  Configure local AI models and backend
                 </CategoryDescription>
               </SettingsCategory>
 

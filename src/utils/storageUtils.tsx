@@ -186,8 +186,7 @@ export interface VoiceModel {
       memoryBuffer: 3, // Reset to default memory buffer size
       textSpeed: 40 // Reset to default text speed
     });
-  }
-  // Settings
+  }  // Settings
   export interface Settings {
     selectedModel: string | null;
     activeCharacter: string;
@@ -201,6 +200,8 @@ export interface VoiceModel {
     animationsEnabled?: boolean; // Enable/disable UI animations
     autoBackup?: boolean; // Auto-backup conversations
     developerMode?: boolean; // Show debug information
+    openSourceModel?: string; // Selected open-source model
+    backendUrl?: string; // Custom backend URL for open-source models
   }
     export function loadSettings(): Settings {
     const settings = localStorage.getItem('alterEgoSettings');

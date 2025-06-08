@@ -16,10 +16,10 @@ export interface OpenSourceWipConfig {
 }
 
 const DEFAULT_WIP_CONFIG: OpenSourceWipConfig = {
-  enabled: true,
+  enabled: false, // Disabled by default now that we have a backend
   wipMessage: "🚧 Open Source model is currently under development. Please use OpenAI for now.",
   fallbackMessage: "The Open Source language model is not yet available. Redirecting to OpenAI...",
-  allowSelection: false
+  allowSelection: true // Allow selection since we have a working backend
 };
 
 /**

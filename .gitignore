@@ -9,3 +9,5 @@ package-lock.json
 keys.txt
 .webpack_cache/
 open_source.bat
+venv/
+alterego-backend/
