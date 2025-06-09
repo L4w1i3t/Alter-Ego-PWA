@@ -79,7 +79,9 @@ const StatusLabel = styled.span`
   color: #0af;
 `;
 
-const StatusValue = styled.span<{ status?: 'good' | 'warning' | 'error' }>`
+const StatusValue = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== 'status',
+})<{ status?: 'good' | 'warning' | 'error' }>`
   color: ${props => 
     props.status === 'good' ? '#0f0' :
     props.status === 'warning' ? '#fa0' :

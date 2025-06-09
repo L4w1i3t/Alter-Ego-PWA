@@ -55,7 +55,9 @@ const PersonaGrid = styled.div`
   }
 `;
 
-const PersonaCard = styled.div<{ isActive?: boolean }>`
+const PersonaCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isActive',
+})<{ isActive?: boolean }>`
   border: 1px solid ${props => props.isActive ? '#0f0' : '#0f03'};
   background-color: ${props => props.isActive ? '#001500' : '#000'};
   padding: 1em;

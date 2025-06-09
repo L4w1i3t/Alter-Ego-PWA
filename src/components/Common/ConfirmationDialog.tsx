@@ -70,7 +70,9 @@ const CancelButton = styled(Button)`
   }
 `;
 
-const ConfirmButton = styled(Button)<{ variant?: 'danger' | 'primary' }>`
+const ConfirmButton = styled(Button).withConfig({
+  shouldForwardProp: (prop) => prop !== 'variant',
+})<{ variant?: 'danger' | 'primary' }>`
   border-color: ${props => props.variant === 'danger' ? '#f00' : '#0f0'};
   color: ${props => props.variant === 'danger' ? '#f00' : '#0f0'};
 

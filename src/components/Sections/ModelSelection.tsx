@@ -49,7 +49,9 @@ const Subtitle = styled.h2`
   margin-bottom: 20px;
 `;
 
-const ModelButton = styled.button<{ isWip?: boolean }>`
+const ModelButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isWip',
+})<{ isWip?: boolean }>`
   margin: 10px;
   padding: 10px 20px;
   background: #000;

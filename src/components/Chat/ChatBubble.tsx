@@ -8,7 +8,9 @@ interface BubbleProps {
   isUser: boolean;
 }
 
-const Bubble = styled.div<BubbleProps>`
+const Bubble = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isUser',
+})<BubbleProps>`
   max-width: 70%;
   padding: ${theme.spacing.md};
   border-radius: ${theme.borderRadius.lg};

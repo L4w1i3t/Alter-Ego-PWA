@@ -12,6 +12,8 @@ import {
   getMessagesByTimeRange,
   getLastNMessages
 } from '../memory/longTermDB';
+// Import emotion classification service
+import { classifyConversationEmotion, analyzeUserEmotions, analyzeResponseEmotions } from '../services/emotionService';
 
 // Define message type
 interface Message {
@@ -463,27 +465,27 @@ const sendQuery = async (
     const finalHistory: Message[] = [
       ...updatedFullHistory,
       { role: 'assistant' as const, content: response }
-    ];
-
-    // Save the complete conversation history
+    ];    // Save the complete conversation history
     setConversationHistory(finalHistory);
-    await saveCurrentConversation(finalHistory);
-
-    // For now, generate dummy emotions - this can be enhanced later
-    const userEmotions = ['CURRENTLY UNAVAILABLE'];
-    const responseEmotions = ['CURRENTLY UNAVAILABLE'];
-    const emotion = 'neutral';
+    await saveCurrentConversation(finalHistory);    // Classify emotions using the new emotion service
+    const primaryEmotion = classifyConversationEmotion(query, response);
+    const userEmotions = analyzeUserEmotions(query);
+    const responseEmotions = analyzeResponseEmotions(response);
 
     setIsLoading(false);
-    return { response, userEmotions, responseEmotions, emotion };
-  } catch (err) {
+    return { 
+      response, 
+      userEmotions: userEmotions.emotions, 
+      responseEmotions: responseEmotions.emotions, 
+      emotion: primaryEmotion 
+    };} catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     setError(errorMessage);
     setIsLoading(false);
     return { 
       response: `Error: ${errorMessage}`, 
-      userEmotions: [], 
-      responseEmotions: [],
+      userEmotions: ['ERROR (100%)'], 
+      responseEmotions: ['ERROR (100%)'],
       emotion: 'neutral'
     };
   }

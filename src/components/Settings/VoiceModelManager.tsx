@@ -149,7 +149,9 @@ const Button = styled.button`
   }
 `;
 
-const IconButton = styled.button<{ color?: string }>`
+const IconButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'color',
+})<{ color?: string }>`
   background: transparent;
   color: ${props => props.color || '#0f0'};
   border: 1px solid ${props => props.color || '#0f0'};
@@ -624,7 +626,9 @@ const BrowserVoiceGrid = styled.div`
   }
 `;
 
-const BrowserVoiceOption = styled.div<{ selected?: boolean }>`
+const BrowserVoiceOption = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'selected',
+})<{ selected?: boolean }>`
   padding: 0.8em;
   border: 1px solid ${props => props.selected ? '#0f0' : '#0f03'};
   background-color: ${props => props.selected ? '#001500' : '#000'};

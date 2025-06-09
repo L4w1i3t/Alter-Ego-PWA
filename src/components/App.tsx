@@ -15,12 +15,12 @@ import { loadSettings, saveSettings, loadPersonas, getPersona, loadVoiceModels, 
 import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
 import { getTokenUsageStats } from '../utils/openaiApi';
 import { exportDatabaseContent } from '../memory/longTermDB';
-import { 
-  initPerformanceMonitoring, 
-  markEvent, 
-  startTimer, 
-  endTimer, 
-  generateReport, 
+import {
+  initPerformanceMonitoring,
+  markEvent,
+  startTimer,
+  endTimer,
+  generateReport,
   setMetricsEnabled,
   triggerPerformanceReport,
   isPerformanceMonitoringEnabled
@@ -44,7 +44,7 @@ const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
   box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
   transition: all 0.3s ease;
   backdrop-filter: blur(2px);
-  
+
   ${props => props.$collapsed && `
     padding: 8px;
     gap: 0;
@@ -52,7 +52,7 @@ const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
     max-height: 50px;
     overflow: hidden;
   `}
-  
+
   @media (max-width: 768px) {
     bottom: 70px; /* Above footer on mobile, adjusted for reduced footer height */
     right: 10px;
@@ -62,7 +62,7 @@ const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
     padding: 10px;
     opacity: 0.95;
     border-width: 2px;
-    
+
     ${props => props.$collapsed && `
       left: auto;
       right: 10px;
@@ -92,17 +92,17 @@ const CollapseButton = styled.button`
   min-width: 24px;
   min-height: 24px;
   position: relative;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
     box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -115,7 +115,7 @@ const CollapseButton = styled.button`
     opacity: 0;
     transition: opacity 0.2s ease;
   }
-  
+
   @media (max-width: 768px) {
     width: 32px;
     height: 32px;
@@ -124,7 +124,7 @@ const CollapseButton = styled.button`
     font-size: 16px;
     margin-bottom: 3px;
     border-width: 2px;
-    
+
     &::after {
       width: 8px;
       height: 8px;
@@ -132,7 +132,7 @@ const CollapseButton = styled.button`
       right: -3px;
       opacity: 1; /* Always show indicator on mobile for better UX */
     }
-    
+
     &:hover {
       background: #0f0;
       color: #000;
@@ -156,7 +156,7 @@ const DevButton = styled.button`
   cursor: pointer;
   font-family: monospace;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
@@ -211,7 +211,7 @@ const PerformanceIndicator = styled.div<{ value: number }>`
   border-radius: 2px;
   overflow: hidden;
   position: relative;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -219,9 +219,9 @@ const PerformanceIndicator = styled.div<{ value: number }>`
     left: 0;
     height: 100%;
     width: ${props => Math.min(100, props.value)}%;
-    background: ${props => 
-      props.value > 80 ? '#00ff00' : 
-      props.value > 50 ? '#aaff00' : 
+    background: ${props =>
+      props.value > 80 ? '#00ff00' :
+      props.value > 50 ? '#aaff00' :
       props.value > 30 ? '#ffaa00' : '#ff3300'};
     transition: width 0.5s ease, background 0.5s ease;
   }
@@ -238,7 +238,7 @@ const ExpandButton = styled.button`
   align-items: center;
   justify-content: center;
   margin-left: auto;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -252,7 +252,7 @@ const AppContainer = styled.div`
   color: #0f0;
   font-family: monospace, "Courier New", Courier;
   overflow: hidden;
-  
+
   @media (max-width: 768px) {
     min-height: 100vh;
     min-height: -webkit-fill-available; /* iOS Safari fix */
@@ -279,25 +279,25 @@ const LiveMetrics: React.FC = () => {
     byModel: {}
   });
   const [expanded, setExpanded] = useState<boolean>(false);
-  
+
   // Update metrics using shared tracking with performance monitor
   useEffect(() => {
     let rafId: number;
     let memoryIntervalId: number;
-    
+
     // Synchronize with the FPS tracking in performanceMetrics.ts
     const updateStats = () => {
       // Access the FPS from the external performanceMetrics value
       if (window.ALTER_EGO_METRICS) {
         setFps(window.ALTER_EGO_METRICS.currentFPS || 0);
       }
-      
+
       rafId = requestAnimationFrame(updateStats);
     };
-    
+
     // Start animation frame loop for smooth updates
     rafId = requestAnimationFrame(updateStats);
-    
+
     // Update memory and token stats on interval
     memoryIntervalId = window.setInterval(() => {
       // Update memory stats
@@ -306,41 +306,41 @@ const LiveMetrics: React.FC = () => {
         const used = Math.round(memory.usedJSHeapSize / (1024 * 1024));
         const total = Math.round(memory.jsHeapSizeLimit / (1024 * 1024));
         const percent = Math.round((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100);
-        
+
         setMemory({ used, total, percent });
       }
-      
+
       // Update token usage stats
       setTokenStats(getTokenUsageStats());
     }, 1000);
-    
+
     return () => {
       cancelAnimationFrame(rafId);
       clearInterval(memoryIntervalId);
     };
   }, []);
-  
+
   return (
     <>
       <MetricsTitle>ALTER EGO Performance Monitor</MetricsTitle>
-      
+
       <MetricsRow>
         <MetricsLabel>FPS:</MetricsLabel>
         <MetricsValue>{fps}</MetricsValue>
       </MetricsRow>
       <PerformanceIndicator value={fps > 60 ? 100 : (fps / 60) * 100} />
-      
+
       <MetricsRow>
         <MetricsLabel>Memory:</MetricsLabel>
         <MetricsValue>{memory.used} MB / {memory.total} MB</MetricsValue>
       </MetricsRow>
       <PerformanceIndicator value={100 - memory.percent} />
-      
+
       <MetricsRow>
         <MetricsLabel>Tokens Used:</MetricsLabel>
         <MetricsValue>{tokenStats.total.toLocaleString()}</MetricsValue>
       </MetricsRow>
-      
+
       {expanded && (
         <>
           <MetricsTitle>Token Usage by Model</MetricsTitle>
@@ -350,7 +350,7 @@ const LiveMetrics: React.FC = () => {
               <MetricsValue>{count.toLocaleString()}</MetricsValue>
             </MetricsRow>
           ))}
-          
+
           <MetricsTitle>System Info</MetricsTitle>
           <MetricsRow>
             <MetricsLabel>Screen:</MetricsLabel>
@@ -366,7 +366,7 @@ const LiveMetrics: React.FC = () => {
           </MetricsRow>
         </>
       )}
-      
+
       <ExpandButton onClick={() => setExpanded(!expanded)}>
         {expanded ? '▲ Show Less' : '▼ Show More'}
       </ExpandButton>
@@ -377,18 +377,18 @@ const LiveMetrics: React.FC = () => {
 const App: React.FC = () => {
 
   const { setCurrentPersona } = useApi();
-  
+
   // Log mounting for debugging
   useEffect(() => {
     console.log(`App component mounted (render #${++renderCount})`);
-    
+
     // Capture reload events
     const beforeUnloadHandler = () => {
       console.log('Page is about to reload/unload');
     };
-    
+
     window.addEventListener('beforeunload', beforeUnloadHandler);
-    
+
     return () => {
       console.log('App component unmounting');
       window.removeEventListener('beforeunload', beforeUnloadHandler);
@@ -400,7 +400,7 @@ const App: React.FC = () => {
   const [showModelSelection, setShowModelSelection] = useState(false); // Default to not showing
   const [showWarmingUp, setShowWarmingUp] = useState(false);
   const [showCharacterSelector, setShowCharacterSelector] = useState(false);
-  
+
   // App state
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [activeCharacter, setActiveCharacter] = useState("ALTER EGO");
@@ -415,12 +415,12 @@ const App: React.FC = () => {
   // Voice synthesis utilities
   const synthesizeVoice = async (text: string, voicemodel_id: string) => {
     if (voicemodel_id === 'None' || !text) return;
-    
+
     const models = loadVoiceModels();
     const model = models[voicemodel_id];
-    
+
     if (!model) return;
-    
+
     try {
       if (model.provider === 'browser') {
         // Use browser's built-in speech synthesis
@@ -433,14 +433,14 @@ const App: React.FC = () => {
           if (!ELEVENLABS_API_KEY) {
             throw new Error('ElevenLabs API key is not set');
           }
-          
+
           // Call ElevenLabs API with proper settings
           const audioBlob = await textToSpeech(
             text,
             model.voiceId || 'eleven_multilingual_v2',
             model.settings || { stability: 0.5, similarity_boost: 0.5 }
           );
-          
+
           if (audioBlob) {
             await playAudio(audioBlob);
           }
@@ -456,15 +456,15 @@ const App: React.FC = () => {
       console.error('Error synthesizing speech:', error);
     }
   };
-  
+
   const handleModelSelection = (model: string) => {
     setSelectedModel(model);
     setShowModelSelection(false);
-    
+
     // Only show warming up on first load
     if (isFirstLoad) {
       setShowWarmingUp(true);
-      
+
       // Simulate warming up process
       let progress = 10;
       const interval = setInterval(() => {
@@ -473,7 +473,7 @@ const App: React.FC = () => {
         if (progressBar) {
           progressBar.style.width = `${progress}%`;
         }
-        
+
         if (progress >= 100) {
           clearInterval(interval);
           setShowWarmingUp(false);
@@ -492,7 +492,7 @@ const App: React.FC = () => {
   };
     const handleModelChange = (model: string) => {
     setSelectedModel(model);
-    
+
     // Save the selected model to settings
     saveSettings({
       selectedModel: model,
@@ -502,16 +502,16 @@ const App: React.FC = () => {
       textSpeed: loadSettings().textSpeed
     });
   };
-  
+
   const handleLoadCharacterClick = () => {
     setShowCharacterSelector(true);
   };
     const handleCharacterSelected = (characterName: string) => {
     setActiveCharacter(characterName);
-    
+
     // Update the current persona in the API context
     setCurrentPersona(characterName);
-    
+
     // Load the persona content
     const persona = getPersona(characterName);
     if (persona) {
@@ -519,7 +519,7 @@ const App: React.FC = () => {
     } else {
       setCurrentPersonaContent("");
     }
-    
+
     // Save to settings
     saveSettings({
       selectedModel,
@@ -530,18 +530,18 @@ const App: React.FC = () => {
     });
       setShowCharacterSelector(false);
   };
-  
+
   const handleShowWipInfo = () => {
     setSettingsInitialView('OpenSourceWipInfo');
     setShowSettings(true);
   };
-  
+
   const handleCloseCharacterSelector = () => {
     setShowCharacterSelector(false);
   };
     const handleVoiceModelChange = (modelName: string) => {
     setVoiceModel(modelName);
-    
+
     // Save to settings
     saveSettings({
       selectedModel,
@@ -551,11 +551,11 @@ const App: React.FC = () => {
       textSpeed: loadSettings().textSpeed // Preserve existing textSpeed value
     });
   };
-  
+
   useEffect(() => {
     // Load settings from localStorage
     const settings = loadSettings();
-    
+
     if (settings.selectedModel) {
       setSelectedModel(settings.selectedModel);
       setIsFirstLoad(false); // We have a selected model, so not first load
@@ -563,41 +563,41 @@ const App: React.FC = () => {
       // Only show model selection if no model has been selected yet
       setShowModelSelection(true);
     }
-    
+
     if (settings.activeCharacter) {
       setActiveCharacter(settings.activeCharacter);
-      
+
       // Set the current persona in the API context
       setCurrentPersona(settings.activeCharacter);
-      
+
       // Load the persona content
       const persona = getPersona(settings.activeCharacter);
       if (persona) {
         setCurrentPersonaContent(persona.content);
       }
     }
-    
+
     if (settings.voiceModel) {
       setVoiceModel(settings.voiceModel);
     }
   }, [setCurrentPersona]);
-  
+
   // Add effect to listen for AI responses and synthesize voice
   useEffect(() => {
     const handleQueryResponse = (event: CustomEvent<any>) => {
       if (!event.detail) return;
-      
+
       const { response } = event.detail;
-      
+
       // If a voice model is selected, synthesize the response
       if (voiceModel && voiceModel !== 'None') {
         synthesizeVoice(response, voiceModel);
       }
     };
-    
+
     // Add event listener
     window.addEventListener('query-response', handleQueryResponse as EventListener);
-    
+
     // Clean up
     return () => {
       window.removeEventListener('query-response', handleQueryResponse as EventListener);
@@ -607,7 +607,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isDevelopment) {
       initPerformanceMonitoring();
-      
+
       // Add shortcut to toggle dev tools visibility and collapse state
       const handleKeyDown = (e: KeyboardEvent) => {
         // Ctrl+Shift+D to toggle dev tools (Cmd+Shift+D on Mac)
@@ -615,14 +615,14 @@ const App: React.FC = () => {
           e.preventDefault();
           setShowDevTools(prev => !prev);
         }
-        
+
         // Ctrl+Shift+C to toggle collapse state when dev tools are visible (Cmd+Shift+C on Mac)
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'c' && showDevTools) {
           e.preventDefault();
           setDevToolsCollapsed(prev => !prev);
         }
       };
-      
+
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
@@ -637,7 +637,7 @@ const App: React.FC = () => {
   const exportDbContent = async () => {
     try {
       const dbContent = await exportDatabaseContent();
-      
+
       if (isDevelopment) {
         // In development mode, save to the server's db-metrics folder using our API endpoint
         try {
@@ -648,7 +648,7 @@ const App: React.FC = () => {
             },
             body: JSON.stringify(dbContent)
           });
-          
+
           const result = await response.json();
           if (result.success) {
             console.log(`Database content exported successfully to db-metrics/${result.filename}`);
@@ -657,7 +657,7 @@ const App: React.FC = () => {
           }
         } catch (serverError) {
           console.error('Error saving to server, falling back to client download:', serverError);
-          
+
           // Fall back to client-side download if server save fails
           saveClientSideFile(dbContent);
         }
@@ -669,19 +669,19 @@ const App: React.FC = () => {
       console.error('Failed to export database content:', error);
     }
   };
-  
+
   // Helper function to save file on client side
   const saveClientSideFile = (content: any) => {
     const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `ALTER-EGO-DB-${new Date().toISOString().replace(/:/g, '-')}.json`;
-    
+
     document.body.appendChild(a);
     a.click();
-    
+
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 100);
   };

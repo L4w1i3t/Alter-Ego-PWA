@@ -301,7 +301,9 @@ const MessageHeader = styled.div`
   }
 `;
 
-const MessageRole = styled.div<{ role: 'user' | 'assistant' | 'system' }>`
+const MessageRole = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'role',
+})<{ role: 'user' | 'assistant' | 'system' }>`
   font-weight: bold;
   color: ${props => 
     props.role === 'user' ? '#0f0' : 

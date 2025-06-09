@@ -56,7 +56,9 @@ const BackButton = styled.button`
   }
 `;
 
-const StatusCard = styled.div<{ type: 'success' | 'info' | 'warning' | 'error' }>`
+const StatusCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'type',
+})<{ type: 'success' | 'info' | 'warning' | 'error' }>`
   padding: 1em;
   border-radius: 0.3em;
   margin-bottom: 1em;
