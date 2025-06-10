@@ -116,14 +116,18 @@ interface ModelSelectionProps {
 
 const ModelSelection: React.FC<ModelSelectionProps> = ({ onSelectModel, onShowWipInfo }) => {
   const wipIndicator = getWipIndicatorText();
-  
-  const handleOpenSourceClick = () => {
+    const handleOpenSourceClick = () => {
+    // Disable in production mode
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+    
     if (handleOpenSourceSelection()) {
       // If WIP mode is disabled or selection is allowed, proceed normally
       onSelectModel('Open Source');
     }
     // If blocked, the handleOpenSourceSelection already showed the warning
-  };  const handleWipInfoClick = () => {
+  };const handleWipInfoClick = () => {
     if (onShowWipInfo) {
       onShowWipInfo();
     } else {
@@ -137,11 +141,14 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({ onSelectModel, onShowWi
       <OverlayContent>
         <Title>Choose Language Model.</Title>
         <Subtitle>If unsure, select OpenAI for full functionality.</Subtitle>
-        <ButtonContainer>
-          <div style={{ position: 'relative', display: 'inline-block' }}>
+        <ButtonContainer>          <div style={{ position: 'relative', display: 'inline-block' }}>
             <ModelButton 
               isWip={!!wipIndicator}
               onClick={handleOpenSourceClick}
+              style={{ 
+                cursor: process.env.NODE_ENV === 'production' ? 'not-allowed' : 'pointer',
+                opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1 
+              }}
             >
               Open Source
               {wipIndicator && <WipIndicator>WIP</WipIndicator>}

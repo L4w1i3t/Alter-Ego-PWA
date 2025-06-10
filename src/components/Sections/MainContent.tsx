@@ -39,20 +39,20 @@ const ResponseArea = styled.div`
   }
 `;
 
-const ResponseBox = styled.div`
+const ResponseBox = styled.div<{ $showEmotions: boolean }>`
   background: #002000;
   border: 1px solid #0f0;
   border-radius: 0.2em;
   padding: 2vh 1vw;
-  height: 45vh;
+  height: ${props => props.$showEmotions ? '45vh' : '65vh'};
   overflow-y: auto;
   flex: none;
   word-wrap: break-word;
   
   @media (max-width: 768px) {
-    height: 25vh;
+    height: ${props => props.$showEmotions ? '25vh' : '35vh'};
     min-height: 150px;
-    max-height: 25vh;
+    max-height: ${props => props.$showEmotions ? '25vh' : '35vh'};
     padding: 0.75rem;
     font-size: 0.9rem;
     line-height: 1.4;
@@ -79,8 +79,8 @@ const ThinkingMessage = styled.div`
   font-style: italic;
 `;
 
-const DetectedEmotionsSection = styled.div`
-  display: flex;
+const DetectedEmotionsSection = styled.div<{ $show: boolean }>`
+  display: ${props => props.$show ? 'flex' : 'none'};
   gap: 1vh;
     @media (max-width: 768px) {
     flex-direction: column;
@@ -134,7 +134,7 @@ const EmotionText = styled.p`
   color: red;
 `;
 
-const AvatarArea = styled.div`
+const AvatarArea = styled.div<{ $showEmotions: boolean }>`
   flex: 1;
   background: #002000;
   border: 1px solid #0f0;
@@ -150,9 +150,9 @@ const AvatarArea = styled.div`
   @media (max-width: 768px) {
     flex: none;
     width: 100%;
-    height: 18vh;
+    height: ${props => props.$showEmotions ? '18vh' : '30vh'};
     min-height: 100px;
-    max-height: 18vh;
+    max-height: ${props => props.$showEmotions ? '18vh' : '30vh'};
     padding: 0.5rem;
     order: 2;
     margin-bottom: 0.5rem;
@@ -203,6 +203,10 @@ const MainContent: React.FC<MainContentProps> = ({
   const [responseEmotions, setResponseEmotions] = useState<string[]>([]);
   const [currentEmotion, setCurrentEmotion] = useState<string>("neutral");
   const [avatarLoadError, setAvatarLoadError] = useState(false);
+  
+  // Load settings to check if emotion detection should be shown
+  const settings = loadSettings();
+  const showEmotionDetection = settings.showEmotionDetection ?? false;
   
   // Initialize with welcome message only when component first mounts
   useEffect(() => {
@@ -292,7 +296,7 @@ const MainContent: React.FC<MainContentProps> = ({
   return (
     <MainContentContainer>
       <ResponseArea>
-        <ResponseBox className="response-box">          
+        <ResponseBox className="response-box" $showEmotions={showEmotionDetection}>          
           {messages.map((message, index) => (
             <MessageContainer key={index}>
               {message.isUser ? (
@@ -312,9 +316,8 @@ const MainContent: React.FC<MainContentProps> = ({
           ))}
           {isThinking && (
             <ThinkingMessage>{activeCharacter} is thinking...</ThinkingMessage>
-          )}
-        </ResponseBox>
-        <DetectedEmotionsSection>
+          )}        </ResponseBox>
+        <DetectedEmotionsSection $show={showEmotionDetection}>
           <EmotionsSection>
             <EmotionsTitle>DETECTED USER EMOTIONS:</EmotionsTitle>
             <EmotionsBox>
@@ -332,8 +335,7 @@ const MainContent: React.FC<MainContentProps> = ({
             </EmotionsBox>
           </EmotionsSection>
         </DetectedEmotionsSection>
-      </ResponseArea>
-      <AvatarArea>
+      </ResponseArea>      <AvatarArea $showEmotions={showEmotionDetection}>
         {!avatarLoadError ? (
           <AvatarImage 
             src={`/assets/avatar/ALTER EGO/${currentEmotion}.png`}

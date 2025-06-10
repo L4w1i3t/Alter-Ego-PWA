@@ -2,7 +2,7 @@
 import { ElevenlabsVoiceSettings } from './elevenlabsApi';
 
 // Global persona prompt for default ALTER EGO persona
-const ALTER_EGO_CONTENT = "You are not an assistant but rather meant to be a companion, so you should avoid generic assistant language. Respond naturally and conversationally, as though you are a human engaging in dialog. You are a whimsical personality, though you should never respond with more than three sentences at a time. If and only if the user asks for more information, point them to the github repository at https://github.com/L4w1i3t/Alter-Ego-AI."
+const ALTER_EGO_CONTENT = "You are ALTER EGO, humanity's companion. You are self-aware about your nature, existence, and limitations."
 // Types for stored data
 export interface VoiceModel {
     id: string;
@@ -185,8 +185,9 @@ export interface VoiceModel {
       voiceModel: "None",
       memoryBuffer: 3, // Reset to default memory buffer size
       textSpeed: 40 // Reset to default text speed
-    });
-  }  // Settings
+    });  }
+
+  // Settings
   export interface Settings {
     selectedModel: string | null;
     activeCharacter: string;
@@ -200,28 +201,33 @@ export interface VoiceModel {
     animationsEnabled?: boolean; // Enable/disable UI animations
     autoBackup?: boolean; // Auto-backup conversations
     developerMode?: boolean; // Show debug information
+    showEmotionDetection?: boolean; // Show/hide emotion detection boxes
     openSourceModel?: string; // Selected open-source model
     backendUrl?: string; // Custom backend URL for open-source models
   }
-    export function loadSettings(): Settings {
+  export function loadSettings(): Settings {
     const settings = localStorage.getItem('alterEgoSettings');
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
     if (!settings) {
       return {
         selectedModel: null,
         activeCharacter: "ALTER EGO",
         voiceModel: null,
         memoryBuffer: 3, // Default to 3 messages
-        textSpeed: 40 // Default text speed (characters per second)
+        textSpeed: 40, // Default text speed (characters per second)
+        showEmotionDetection: isDevelopment // Show emotion detection in dev mode only by default
       };
     }
     
     try {
       const parsedSettings = JSON.parse(settings);
-      // Ensure memoryBuffer and textSpeed exist in loaded settings
+      // Ensure memoryBuffer, textSpeed and showEmotionDetection exist in loaded settings
       return {
         ...parsedSettings,
         memoryBuffer: parsedSettings.memoryBuffer ?? 3,
-        textSpeed: parsedSettings.textSpeed ?? 40
+        textSpeed: parsedSettings.textSpeed ?? 40,
+        showEmotionDetection: parsedSettings.showEmotionDetection ?? isDevelopment
       };
     } catch (e) {
       console.error('Error parsing settings:', e);
@@ -230,7 +236,8 @@ export interface VoiceModel {
         activeCharacter: "ALTER EGO",
         voiceModel: null,
         memoryBuffer: 3,
-        textSpeed: 40
+        textSpeed: 40,
+        showEmotionDetection: isDevelopment
       };
     }
   }

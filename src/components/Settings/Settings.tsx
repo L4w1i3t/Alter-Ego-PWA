@@ -34,10 +34,13 @@ const SettingsPanel = styled.div`
   padding: 2em;
   border-radius: 0.5em;
   position: relative;
-  width: 500px; /* Increased from 300px */
+  width: 50vw;
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
+
+  @media (max-width: 768px) {
+    width: 90vw; /* Fixed width for larger screens */
 `;
 
 const SettingsGrid = styled.div`
@@ -123,6 +126,17 @@ const CloseButton = styled.button`
   cursor: pointer;
   font-weight: bold;
   padding: 0.2em 0.5em;
+  z-index: 1000;
+  
+  /* Ensure the button has a proper click area */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+  }
   
   &:hover {
     background: #0f0;
@@ -140,6 +154,14 @@ const CloseButton = styled.button`
     border-width: 2px;
     border-radius: 0.3em;
     font-weight: bold;
+    
+    /* Larger click area for desktop */
+    &::before {
+      top: -8px;
+      left: -8px;
+      right: -8px;
+      bottom: -8px;
+    }
   }
   
   @media (max-width: 768px) {
@@ -151,6 +173,14 @@ const CloseButton = styled.button`
     min-height: 2.5em;
     min-width: 2.5em;
     touch-action: manipulation;
+    
+    /* Larger touch area for mobile */
+    &::before {
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+    }
   }
 `;
 
@@ -460,13 +490,20 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
                 <CategoryDescription>
                   Configure conversation memory size
                 </CategoryDescription>
-              </SettingsCategory>
-
-              <SettingsCategory onClick={() => handleMenuClick('Open Source Setup')}>
+              </SettingsCategory>              <SettingsCategory 
+                onClick={process.env.NODE_ENV === 'production' ? undefined : () => handleMenuClick('Open Source Setup')}
+                style={{ 
+                  cursor: process.env.NODE_ENV === 'production' ? 'not-allowed' : 'pointer',
+                  opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1 
+                }}
+              >
                 <CategoryIcon>🔧</CategoryIcon>
                 <CategoryTitle>Open Source Setup</CategoryTitle>
                 <CategoryDescription>
-                  Configure local AI models and backend
+                  {process.env.NODE_ENV === 'production' 
+                    ? 'Backend not ready in production' 
+                    : 'Configure local AI models and backend'
+                  }
                 </CategoryDescription>
               </SettingsCategory>
 
@@ -508,12 +545,15 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
               </CategoryDescription>
             </SettingsCategory>            <ModelSelection>
               <ModelTitle>AI Provider:</ModelTitle>
-              <ModelOptions>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
+              <ModelOptions>                <div style={{ display: 'flex', alignItems: 'center' }}>
                   <ModelButton 
                     isActive={selectedModel === 'Open Source'}
                     isWip={getOpenSourceStatus().isWip}
-                    onClick={() => handleModelSelect('Open Source')}
+                    onClick={process.env.NODE_ENV === 'production' ? undefined : () => handleModelSelect('Open Source')}
+                    style={{ 
+                      cursor: process.env.NODE_ENV === 'production' ? 'not-allowed' : 'pointer',
+                      opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1 
+                    }}
                   >
                     Open Source
                   </ModelButton>

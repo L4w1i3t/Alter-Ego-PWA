@@ -244,8 +244,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
   const [previewText, setPreviewText] = useState<string>('');
   const [previewIndex, setPreviewIndex] = useState<number>(0);
   const [isPreviewRunning, setIsPreviewRunning] = useState<boolean>(false);
-  
-  // New settings states
+    // New settings states
   const [notificationDuration, setNotificationDuration] = useState<number>(5000);
   const [soundNotifications, setSoundNotifications] = useState<boolean>(false);
   const [showTimestamps, setShowTimestamps] = useState<boolean>(true);
@@ -253,9 +252,9 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
   const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(true);
   const [autoBackup, setAutoBackup] = useState<boolean>(false);
   const [developerMode, setDeveloperMode] = useState<boolean>(false);
+  const [showEmotionDetection, setShowEmotionDetection] = useState<boolean>(false);
 
   const sampleText = "Hello! This is how ALTER EGO will type responses at this speed.";
-
   useEffect(() => {
     // Load current settings
     const settings = loadSettings();
@@ -269,6 +268,9 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
         setIsInstantText(false);
       }
     }
+    
+    // Load emotion detection setting
+    setShowEmotionDetection(settings.showEmotionDetection ?? false);
   }, []);
 
   useEffect(() => {
@@ -295,9 +297,12 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
     const value = Math.max(1, Math.min(200, Number(e.target.value))); // Clamp between 1-200
     setTextSpeed(value);
   };
-
   const handleInstantToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsInstantText(e.target.checked);
+  };
+
+  const handleEmotionDetectionToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setShowEmotionDetection(e.target.checked);
   };
 
   const handlePreview = () => {
@@ -305,7 +310,6 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
     setPreviewIndex(0);
     setIsPreviewRunning(true);
   };
-
   const handleSave = () => {
     try {
       const currentSettings = loadSettings();
@@ -313,7 +317,8 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
       
       saveSettings({
         ...currentSettings,
-        textSpeed: speedToSave
+        textSpeed: speedToSave,
+        showEmotionDetection: showEmotionDetection
       });
       showSuccess("Miscellaneous settings saved successfully.");
       setTimeout(() => {
@@ -331,9 +336,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
       <InfoBox>
         Customize your ALTER EGO experience with these additional settings. These options allow you to 
         fine-tune how the application behaves and feels during use.
-      </InfoBox>
-
-      <SettingRow>
+      </InfoBox>      <SettingRow>
         <Label htmlFor="instantText">Instant Text:</Label>
         <CheckboxContainer>
           <Checkbox
@@ -366,7 +369,6 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
           </span>
         </InputContainer>
       </SettingRow>
-
       <InfoText>
         {isInstantText 
           ? "Instant text will show ALTER EGO's complete responses immediately without any typing animation."
@@ -374,7 +376,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
              Slower speeds create a more dramatic, visual novel-like experience, while faster speeds 
              provide quicker response delivery.`
         }
-      </InfoText>
+      </InfoText>      
 
       <PreviewSection>
         <PreviewLabel>Preview Text Speed:</PreviewLabel>
@@ -385,6 +387,30 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
           </Button>
         </ButtonContainer>
       </PreviewSection>
+
+      {process.env.NODE_ENV === 'development' && (
+        <SettingRow>
+          <Label htmlFor="emotionDetection">Show Emotion Detection:</Label>
+          <CheckboxContainer>
+            <Checkbox
+              type="checkbox"
+              id="emotionDetection"
+              checked={showEmotionDetection}
+              onChange={handleEmotionDetectionToggle}
+            />
+            <CheckboxLabel htmlFor="emotionDetection">
+              Display user and AI emotion analysis boxes
+            </CheckboxLabel>
+          </CheckboxContainer>
+        </SettingRow>
+      )}
+
+      <InfoText style={{ fontSize: '0.9em', color: '#0f06' }}>
+        <strong>Emotion Detection:</strong> Shows boxes analyzing the emotional content of both 
+        your messages and ALTER EGO's responses. This feature is automatically hidden in production mode 
+        for a cleaner interface. {process.env.NODE_ENV === 'development' && 
+        'In development mode, you can toggle this feature on/off above.'}
+      </InfoText>
 
       <ButtonContainer>
         <Button onClick={onBack}>Cancel</Button>

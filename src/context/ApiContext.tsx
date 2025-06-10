@@ -410,12 +410,11 @@ const sendQuery = async (
     const updatedFullHistory: Message[] = [
       ...conversationHistory, 
       { role: 'user' as const, content: query }
-    ];
-
-    // Apply memory buffer limitation ONLY for the AI context
+    ];    // Apply memory buffer limitation ONLY for the AI context
     const { memoryBuffer } = loadSettings();
-    // Take only the last N exchanges based on memory buffer setting
-    const limitedContextForAI = updatedFullHistory.slice(-memoryBuffer * 2);
+    // Take only the last N exchanges based on memory buffer setting, but exclude the current user message
+    // since it will be added separately by the AI service
+    const limitedContextForAI = conversationHistory.slice(-memoryBuffer * 2);
 
     console.log(`Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`);
 
@@ -438,25 +437,29 @@ const sendQuery = async (
       }
     } catch (err) {
       console.error('Error retrieving from long-term memory:', err);
-    }
-
-    // Construct the full message history for the AI
+    }    // Construct the full message history for the AI (excluding system prompt and current user message)
     const messagesForAI: MessageHistory[] = [
-      // Start with the system prompt
-      { role: 'system', content: systemPrompt },
-
-      // Then add any relevant memories from long-term storage (already formatted for RAG)
+      // Add any relevant memories from long-term storage (already formatted for RAG)
       ...relevantMemories.map(msg => ({
         role: msg.role,
         content: msg.content
       })),
 
-      // Then add the current conversation context
+      // Then add the current conversation context (excluding current user message)
       ...limitedContextForAI.map(msg => ({
         role: msg.role,
         content: msg.content
       }))
     ];
+
+    // Debug logging to verify no duplicate user messages
+    console.log('=== MESSAGE CONSTRUCTION DEBUG ===');
+    console.log('Current user query:', query);
+    console.log('Conversation history length:', conversationHistory.length);
+    console.log('Limited context for AI length:', limitedContextForAI.length);
+    console.log('Messages for AI length:', messagesForAI.length);
+    console.log('Messages for AI roles:', messagesForAI.map(m => m.role));
+    console.log('=== END MESSAGE DEBUG ===');
 
     // Call the AI service with the combined context
     const response = await sendMessageToAI(query, systemPrompt, messagesForAI, config);
