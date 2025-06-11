@@ -31,6 +31,9 @@ export interface SecurityConfig {
   clearDataOnBreach: boolean;
   reloadOnDetection: boolean;
   redirectUrl?: string;
+  
+  // Response level: 'soft' = warnings only, 'hard' = page replacement
+  responseLevel: 'soft' | 'hard';
 }
 
 // Default production security configuration
@@ -39,28 +42,31 @@ export const productionSecurityConfig: SecurityConfig = {
   blockDevTools: true,
   blockKeyboardShortcuts: true,
   blockContextMenu: true,
-  blockTextSelection: true,
+  blockTextSelection: false, // Less intrusive - allow text selection
   detectDevToolsOpening: true,
   
   // Advanced security
   disableConsole: true,
   preventSourceViewing: true,
-  enableAntiDebugging: true,
+  enableAntiDebugging: false, // Disable anti-debugging to avoid Safari issues
   protectAgainstInjection: true,
   obfuscateErrors: true,
   
   // Detection sensitivity
-  devToolsDetectionThreshold: 160,
-  debuggerCheckInterval: 500,
+  devToolsDetectionThreshold: 200, // Less sensitive to avoid false positives
+  debuggerCheckInterval: 1000, // Less frequent checks
   
   // Warning messages
   showWarnings: true,
-  warningDuration: 3000,
+  warningDuration: 5000, // Longer display time
   customWarningMessage: 'Developer tools are disabled in production mode',
   
   // Response actions
-  clearDataOnBreach: true,
-  reloadOnDetection: true
+  clearDataOnBreach: false, // Don't clear data - too aggressive
+  reloadOnDetection: false, // Don't auto-reload - prevents endless loop
+  
+  // Use soft response level for better UX
+  responseLevel: 'soft'
 };
 
 // Development security configuration (minimal security for testing)
@@ -89,7 +95,10 @@ export const developmentSecurityConfig: SecurityConfig = {
   
   // Response actions
   clearDataOnBreach: false,
-  reloadOnDetection: false
+  reloadOnDetection: false,
+  
+  // No response in development
+  responseLevel: 'soft'
 };
 
 // Testing security configuration (moderate security for staging)
@@ -119,7 +128,10 @@ export const testingSecurityConfig: SecurityConfig = {
   
   // Response actions
   clearDataOnBreach: false,
-  reloadOnDetection: false
+  reloadOnDetection: false,
+  
+  // Soft response for testing
+  responseLevel: 'soft'
 };
 
 /**
@@ -129,15 +141,33 @@ export function getSecurityConfig(): SecurityConfig {
   const env = process.env.NODE_ENV;
   const customConfig = process.env.REACT_APP_SECURITY_CONFIG;
   
+  let config: SecurityConfig;
+  
   // Allow custom configuration via environment variable
   if (customConfig) {
     try {
-      return JSON.parse(customConfig) as SecurityConfig;
+      config = JSON.parse(customConfig) as SecurityConfig;
     } catch (e) {
       console.warn('Invalid security configuration in REACT_APP_SECURITY_CONFIG, using defaults');
+      config = getDefaultConfigForEnv(env);
     }
+  } else {
+    config = getDefaultConfigForEnv(env);
   }
   
+  // Validate the configuration
+  if (!validateSecurityConfig(config)) {
+    console.warn('Invalid security configuration detected, using safe defaults');
+    config = getDefaultConfigForEnv(env);
+  }
+  
+  return config;
+}
+
+/**
+ * Get default configuration for environment
+ */
+function getDefaultConfigForEnv(env: string | undefined): SecurityConfig {
   switch (env) {
     case 'production':
       return productionSecurityConfig;

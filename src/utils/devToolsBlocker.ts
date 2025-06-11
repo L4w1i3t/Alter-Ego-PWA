@@ -10,6 +10,8 @@ export class DevToolsBlocker {
   private isBlocking = false;
   private devToolsOpen = false;
   private config: SecurityConfig;
+  private warningShown = false; // Prevent multiple warnings
+  private detectionPaused = false; // Allow temporary pausing
 
   private constructor() {
     this.config = currentSecurityConfig;
@@ -20,8 +22,7 @@ export class DevToolsBlocker {
       DevToolsBlocker.instance = new DevToolsBlocker();
     }
     return DevToolsBlocker.instance;
-  }
-  /**
+  }  /**
    * Initialize dev tools blocking for production mode
    */
   public initializeBlocking(): void {
@@ -46,7 +47,39 @@ export class DevToolsBlocker {
     
     this.blockCommonInspectionMethods();
     
+    // Add emergency disable sequence (Konami code)
+    this.addEmergencyDisable();
+    
     console.log('Developer tools blocking activated for production');
+  }
+
+  /**
+   * Add emergency disable sequence for support/debugging purposes
+   */
+  private addEmergencyDisable(): void {
+    const konamiCode = [
+      'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+      'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+      'KeyB', 'KeyA'
+    ];
+    let konamiIndex = 0;
+
+    document.addEventListener('keydown', (event) => {
+      if (event.code === konamiCode[konamiIndex]) {
+        konamiIndex++;
+        if (konamiIndex === konamiCode.length) {
+          // Show confirmation dialog
+          const confirmed = confirm('Do you want to disable developer tools protection? This should only be used for support purposes.');
+          if (confirmed) {
+            this.disableBlocking();
+            alert('Developer tools protection has been disabled for this session.');
+          }
+          konamiIndex = 0;
+        }
+      } else {
+        konamiIndex = 0;
+      }
+    });
   }
 
   /**
@@ -132,15 +165,21 @@ export class DevToolsBlocker {
       this.showWarning();
       return false;
     });
-  }
-  /**
+  }  /**
    * Detect when developer tools are opened
    */
   private detectDevToolsOpening(): void {
     const threshold = this.config.devToolsDetectionThreshold;
     const interval = this.config.debuggerCheckInterval;
 
-    // Method 1: Window size detection
+    // Detect browser type for better handling
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+    // Method 1: Window size detection (less aggressive for Safari)
+    let detectionCount = 0;
+    const requiredDetections = isSafari ? 3 : 2; // More confirmations needed for Safari
+
     setInterval(() => {
       if (!this.isBlocking) return;
 
@@ -148,33 +187,40 @@ export class DevToolsBlocker {
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;
       
       if (widthThreshold || heightThreshold) {
-        if (!this.devToolsOpen) {
+        detectionCount++;
+        if (detectionCount >= requiredDetections && !this.devToolsOpen) {
           this.devToolsOpen = true;
           this.handleDevToolsDetected();
         }
       } else {
+        detectionCount = 0;
         this.devToolsOpen = false;
       }
     }, interval);
 
-    // Method 2: Console object detection
-    let devtools: { open: boolean; orientation: string | null } = { open: false, orientation: null };
-    setInterval(() => {
-      if (!this.isBlocking) return;
+    // Method 2: Console object detection (skip for Safari to avoid issues)
+    if (!isSafari) {
+      let devtools: { open: boolean; orientation: string | null } = { open: false, orientation: null };
+      setInterval(() => {
+        if (!this.isBlocking) return;
 
-      if (window.outerHeight - window.innerHeight > threshold || 
-          window.outerWidth - window.innerWidth > threshold) {
-        if (!devtools.open) {
-          devtools.open = true;
-          this.handleDevToolsDetected();
+        if (window.outerHeight - window.innerHeight > threshold || 
+            window.outerWidth - window.innerWidth > threshold) {
+          if (!devtools.open) {
+            devtools.open = true;
+            if (!this.devToolsOpen) {
+              this.devToolsOpen = true;
+              this.handleDevToolsDetected();
+            }
+          }
+        } else {
+          devtools.open = false;
         }
-      } else {
-        devtools.open = false;
-      }
-    }, interval);
+      }, interval);
+    }
 
-    // Method 3: Debugger statement detection (only if anti-debugging is enabled)
-    if (this.config.enableAntiDebugging) {
+    // Method 3: Debugger statement detection (disabled by default in config now)
+    if (this.config.enableAntiDebugging && !isSafari) {
       setInterval(() => {
         if (!this.isBlocking) return;
         
@@ -183,9 +229,12 @@ export class DevToolsBlocker {
         const end = performance.now();
         
         if (end - start > 100) {
-          this.handleDevToolsDetected();
+          if (!this.devToolsOpen) {
+            this.devToolsOpen = true;
+            this.handleDevToolsDetected();
+          }
         }
-      }, 1000);
+      }, 2000); // Less frequent for debugger method
     }
   }
   /**
@@ -238,16 +287,46 @@ export class DevToolsBlocker {
         profileEnd: noop
       };
     }
-  }
-  /**
+  }  /**
    * Handle when developer tools are detected
    */
   private handleDevToolsDetected(): void {
+    // Prevent multiple simultaneous responses
+    if (this.warningShown || this.detectionPaused) {
+      return;
+    }
+
     if (this.config.redirectUrl) {
       window.location.href = this.config.redirectUrl;
       return;
     }
 
+    // Use different response based on configuration
+    if (this.config.responseLevel === 'hard') {
+      this.showHardResponse();
+    } else {
+      this.showDevToolsWarning();
+    }
+    
+    // Clear sensitive data if configured (but warn user first)
+    if (this.config.clearDataOnBreach) {
+      console.warn('Security breach detected - sensitive data clearing is configured but disabled for user safety');
+      // this.clearSensitiveData(); // Commented out for safety
+    }
+    
+    // Redirect after a delay if configured (but don't do it automatically)
+    if (this.config.reloadOnDetection) {
+      console.warn('Auto-reload is configured but disabled to prevent refresh loops');
+      // setTimeout(() => {
+      //   window.location.reload();
+      // }, 10000);
+    }
+  }
+
+  /**
+   * Show hard response (page replacement) - only used if explicitly configured
+   */
+  private showHardResponse(): void {
     // Clear the page content
     document.body.innerHTML = `
       <div style="
@@ -281,18 +360,136 @@ export class DevToolsBlocker {
         </button>
       </div>
     `;
-    
-    // Clear sensitive data if configured
-    if (this.config.clearDataOnBreach) {
-      this.clearSensitiveData();
+  }
+  /**
+   * Show a less intrusive dev tools warning overlay
+   */
+  private showDevToolsWarning(): void {
+    // Prevent multiple warnings
+    if (this.warningShown) {
+      return;
     }
-    
-    // Redirect after a delay if configured
-    if (this.config.reloadOnDetection) {
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
+    this.warningShown = true;
+
+    // Remove any existing warning
+    const existingWarning = document.getElementById('dev-tools-warning-overlay');
+    if (existingWarning) {
+      existingWarning.remove();
     }
+
+    // Create overlay warning
+    const overlay = document.createElement('div');
+    overlay.id = 'dev-tools-warning-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999999;
+      font-family: Arial, sans-serif;
+    `;
+
+    const warningBox = document.createElement('div');
+    warningBox.style.cssText = `
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    `;
+
+    warningBox.innerHTML = `
+      <h2 style="color: #e74c3c; margin-bottom: 20px;">⚠️ Developer Tools Detected</h2>
+      <p style="color: #2c3e50; font-size: 16px; margin-bottom: 20px;">
+        Please close the developer tools to continue using the application normally.
+      </p>
+      <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 20px;">
+        This security measure helps protect the application and your data.
+      </p>
+      <button id="dismiss-warning" style="
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-right: 10px;
+      ">
+        I'll Close Dev Tools
+      </button>
+      <button id="continue-anyway" style="
+        padding: 10px 20px;
+        background: #95a5a6;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      ">
+        Continue Anyway
+      </button>
+    `;
+
+    overlay.appendChild(warningBox);
+    document.body.appendChild(overlay);
+
+    // Add click handlers
+    const dismissButton = document.getElementById('dismiss-warning');
+    const continueButton = document.getElementById('continue-anyway');
+
+    if (dismissButton) {
+      dismissButton.addEventListener('click', () => {
+        overlay.remove();
+        this.warningShown = false;
+        // Check again in a few seconds to see if dev tools are still open
+        setTimeout(() => {
+          if (this.devToolsOpen && !this.detectionPaused) {
+            this.showDevToolsWarning();
+          }
+        }, 5000); // Give more time
+      });
+    }
+
+    if (continueButton) {
+      continueButton.addEventListener('click', () => {
+        overlay.remove();
+        this.warningShown = false;
+        // Temporarily disable detection for 60 seconds
+        this.temporarilyDisableDetection(60000);
+      });
+    }
+
+    // Auto-dismiss if dev tools are closed
+    const checkInterval = setInterval(() => {
+      if (!this.devToolsOpen) {
+        overlay.remove();
+        this.warningShown = false;
+        clearInterval(checkInterval);
+      }
+    }, 1000);
+  }
+  /**
+   * Temporarily disable dev tools detection
+   */
+  private temporarilyDisableDetection(duration: number): void {
+    const originalBlocking = this.isBlocking;
+    this.detectionPaused = true;
+    this.isBlocking = false;
+    
+    console.log(`🔒 Developer tools detection paused for ${duration/1000} seconds`);
+    
+    setTimeout(() => {
+      this.isBlocking = originalBlocking;
+      this.detectionPaused = false;
+      console.log('🔒 Developer tools detection resumed');
+    }, duration);
   }
 
   /**
@@ -345,19 +542,54 @@ export class DevToolsBlocker {
       }
     }, this.config.warningDuration);
   }
-
   /**
    * Disable blocking (for development/testing)
    */
   public disableBlocking(): void {
     this.isBlocking = false;
+    this.detectionPaused = true;
+    this.warningShown = false;
+    
+    // Remove any existing warnings
+    const existingWarning = document.getElementById('dev-tools-warning-overlay');
+    if (existingWarning) {
+      existingWarning.remove();
+    }
+    
+    console.log('🔓 Developer tools protection disabled');
+  }
+
+  /**
+   * Re-enable blocking
+   */
+  public enableBlocking(): void {
+    this.isBlocking = true;
+    this.detectionPaused = false;
+    console.log('🔒 Developer tools protection enabled');
   }
 
   /**
    * Check if blocking is active
    */
   public isBlockingActive(): boolean {
-    return this.isBlocking;
+    return this.isBlocking && !this.detectionPaused;
+  }
+
+  /**
+   * Get current security status
+   */
+  public getSecurityStatus(): {
+    blocking: boolean;
+    paused: boolean;
+    warningShown: boolean;
+    devToolsOpen: boolean;
+  } {
+    return {
+      blocking: this.isBlocking,
+      paused: this.detectionPaused,
+      warningShown: this.warningShown,
+      devToolsOpen: this.devToolsOpen
+    };
   }
 }
 

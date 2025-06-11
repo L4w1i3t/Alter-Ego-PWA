@@ -15,6 +15,7 @@ import { loadSettings, saveSettings, loadPersonas, getPersona, loadVoiceModels, 
 import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
 import { getTokenUsageStats } from '../utils/openaiApi';
 import { exportDatabaseContent } from '../memory/longTermDB';
+import { preventOverscroll } from '../utils/preventOverscroll';
 import {
   initPerformanceMonitoring,
   markEvent,
@@ -252,6 +253,12 @@ const AppContainer = styled.div`
   color: #0f0;
   font-family: monospace, "Courier New", Courier;
   overflow: hidden;
+  /* Prevent overscroll behavior */
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+  touch-action: pan-x pan-y;
 
   @media (max-width: 768px) {
     min-height: 100vh;
@@ -260,6 +267,19 @@ const AppContainer = styled.div`
     overflow-y: auto;
     width: 100%;
     max-width: 100vw;
+    /* Enhanced mobile overscroll prevention */
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: auto;
+    /* Prevent elastic/rubber band scrolling */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 `;
 
@@ -377,7 +397,6 @@ const LiveMetrics: React.FC = () => {
 const App: React.FC = () => {
 
   const { setCurrentPersona } = useApi();
-
   // Log mounting for debugging
   useEffect(() => {
     console.log(`App component mounted (render #${++renderCount})`);
@@ -389,9 +408,13 @@ const App: React.FC = () => {
 
     window.addEventListener('beforeunload', beforeUnloadHandler);
 
+    // Initialize overscroll prevention
+    const cleanupOverscroll = preventOverscroll();
+
     return () => {
       console.log('App component unmounting');
       window.removeEventListener('beforeunload', beforeUnloadHandler);
+      cleanupOverscroll();
     };
   }, []);
     // UI state

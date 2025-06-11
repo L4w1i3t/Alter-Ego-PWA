@@ -10,17 +10,35 @@ const MainContentContainer = styled.main`
   padding: 2vh 2vw;
   gap: 2vw;
   overflow: auto;
+  /* Prevent overscroll behavior */
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  touch-action: pan-x pan-y;
   
   @media (max-width: 768px) {
-    flex-direction: column;
+    /* Use CSS Grid for better mobile layout control */
+    display: grid;
+    grid-template-rows: auto auto 1fr; /* response, emotions, avatar */
     padding: 0.75rem;
     gap: 0.75rem;
-    height: calc(100vh - 150px); /* Account for header (~50px), footer (~50px), query section (~50px) */
-    min-height: 300px; /* Ensure minimum usable space */
+    height: calc(100vh - 150px);
+    min-height: 500px; /* Ensure minimum height for avatar */
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
-    overflow-x: hidden; /* Prevent horizontal scrolling */
+    overflow-x: hidden;
+    /* Enhanced overscroll prevention for mobile */
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: auto;
+    /* Ensure grid items don't overflow */
+    grid-template-areas: 
+      "response"
+      "emotions" 
+      "avatar";
   }
 `;
 
@@ -32,10 +50,11 @@ const ResponseArea = styled.div`
   min-width: 40vw;
   
   @media (max-width: 768px) {
-    flex: none;
-    width: 100%;
+    grid-area: response;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
-    order: 1;
+    width: 100%;
   }
 `;
 
@@ -50,14 +69,16 @@ const ResponseBox = styled.div<{ $showEmotions: boolean }>`
   word-wrap: break-word;
   
   @media (max-width: 768px) {
-    height: ${props => props.$showEmotions ? '25vh' : '35vh'};
-    min-height: 150px;
-    max-height: ${props => props.$showEmotions ? '25vh' : '35vh'};
+    height: ${props => props.$showEmotions ? '150px' : '200px'}; /* Use fixed heights instead of vh */
+    min-height: 120px;
+    max-height: ${props => props.$showEmotions ? '150px' : '200px'};
     padding: 0.75rem;
     font-size: 0.9rem;
     line-height: 1.4;
     width: 100%;
     box-sizing: border-box;
+    /* Ensure it doesn't take all available space */
+    flex-shrink: 1;
   }
 `;
 
@@ -83,10 +104,14 @@ const DetectedEmotionsSection = styled.div<{ $show: boolean }>`
   display: ${props => props.$show ? 'flex' : 'none'};
   gap: 1vh;
     @media (max-width: 768px) {
+    grid-area: emotions;
+    display: ${props => props.$show ? 'flex' : 'none'};
     flex-direction: column;
     gap: 0.5rem;
-    order: 3;
     width: 100%;
+    /* Limit the height so it doesn't take up too much space */
+    max-height: 120px;
+    overflow-y: auto;
   }
 `;
 
@@ -111,7 +136,7 @@ const EmotionsBox = styled.div`
   overflow-y: auto;
   
   @media (max-width: 768px) {
-    height: 6vh;
+    height: 50px; /* Fixed small height on mobile */
     min-height: 40px;
     padding: 0.5rem;
     font-size: 0.8rem;
@@ -148,16 +173,26 @@ const AvatarArea = styled.div<{ $showEmotions: boolean }>`
   position: relative;
   
   @media (max-width: 768px) {
-    flex: none;
+    grid-area: avatar;
+    display: flex !important;
     width: 100%;
-    height: ${props => props.$showEmotions ? '18vh' : '30vh'};
-    min-height: 100px;
-    max-height: ${props => props.$showEmotions ? '18vh' : '30vh'};
+    height: 250px; /* Fixed height for consistency */
+    min-height: 200px;
+    max-height: 300px;
     padding: 0.5rem;
-    order: 2;
     margin-bottom: 0.5rem;
     box-sizing: border-box;
-    align-items: flex-start; /* Consistent top alignment */
+    align-items: flex-start;
+    justify-content: center;
+    /* Force visibility */
+    visibility: visible !important;
+    opacity: 1 !important;
+    /* Enhanced border for debugging */
+    border-width: 3px;
+    border-color: #0f0;
+    border-style: solid;
+    /* Ensure it takes the remaining space */
+    flex: 1;
   }
 `;
 
@@ -169,11 +204,15 @@ const AvatarImage = styled.img`
   filter: hue-rotate(90deg) saturate(3) brightness(1.2);
   
   @media (max-width: 768px) {
-    width: 60%;
+    width: 80%; /* Increase width for better visibility */
     height: 200%; /* Consistent behavior on mobile */
     object-fit: cover;
     object-position: center top; /* Always show top half */
     margin-top: -10%;
+    /* Ensure image is visible */
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 `;
 
@@ -181,6 +220,15 @@ const AvatarPlaceholder = styled.div`
   font-size: 5rem;
   color: #0f0;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 3rem; /* Smaller but still visible on mobile */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+  }
 `;
 
 interface Message {
@@ -207,6 +255,26 @@ const MainContent: React.FC<MainContentProps> = ({
   // Load settings to check if emotion detection should be shown
   const settings = loadSettings();
   const showEmotionDetection = settings.showEmotionDetection ?? false;
+  
+  // Debug mobile layout issues
+  useEffect(() => {
+    const checkMobileLayout = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        console.log('Mobile layout active:', {
+          screenWidth: window.innerWidth,
+          screenHeight: window.innerHeight,
+          showEmotionDetection: showEmotionDetection,
+          availableHeight: window.innerHeight - 150 // approximate
+        });
+      }
+    };
+    
+    checkMobileLayout();
+    window.addEventListener('resize', checkMobileLayout);
+    
+    return () => window.removeEventListener('resize', checkMobileLayout);
+  }, [showEmotionDetection]);
   
   // Initialize with welcome message only when component first mounts
   useEffect(() => {
@@ -335,7 +403,8 @@ const MainContent: React.FC<MainContentProps> = ({
             </EmotionsBox>
           </EmotionsSection>
         </DetectedEmotionsSection>
-      </ResponseArea>      <AvatarArea $showEmotions={showEmotionDetection}>
+      </ResponseArea>      
+      <AvatarArea $showEmotions={showEmotionDetection}>
         {!avatarLoadError ? (
           <AvatarImage 
             src={`/assets/avatar/ALTER EGO/${currentEmotion}.png`}

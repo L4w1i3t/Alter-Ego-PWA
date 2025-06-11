@@ -6,8 +6,7 @@
   "background_color": "#000000",
   "theme_color": "#00ff00",
   "description": "A desktop AI program that uses NLP to allow you to textually or verbally converse with anyone you want--literally.",
-  "scope": "./",
-  "icons": [
+  "scope": "./",  "icons": [
     {
       "src": "./assets/icons/icon-192x192.png",
       "sizes": "192x192",

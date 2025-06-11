@@ -186,49 +186,15 @@ const HeaderContent = styled.div`
 `;
 
 const AppIcon = styled.img`
-  width: 4em;
-  height: 4em;
+  width: 16em;
+  height: 16em;
   margin-bottom: 1em;
   filter: drop-shadow(0 0 20px #0f0);
   object-fit: contain;
-`;
 
-const AppName = styled.h1`
-  margin: 0;
-  font-size: 2em;
-  text-shadow: 
-    0 0 10px #00ff00,
-    2px 2px 0px #000,
-    -2px -2px 0px #000;
-  color: #00ff00;
-  font-weight: bold;
-  letter-spacing: 2px;
-  position: relative;
-  filter: brightness(1.5) saturate(1.3);
-  
-  &::before {
-    content: 'ALTER EGO';
-    position: absolute;
-    top: 1px;
-    left: 1px;
-    width: 100%;
-    height: 100%;
-    color: #ff0044;
-    opacity: 0.1;
-    z-index: -1;
-  }
-  
-  &::after {
-    content: 'ALTER EGO';
-    position: absolute;
-    top: -1px;
-    left: -1px;
-    width: 100%;
-    height: 100%;
-    color: #0088ff;
-    opacity: 0.08;
-    z-index: -2;
-  }
+  @media (max-width: 768px) {
+    width: 16em;
+    height: 16em;
 `;
 
 const shimmer = keyframes`
@@ -414,11 +380,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
   
   const details = {
     softwareName: "ALTER EGO",
-    subtitle: "Progressive Web Application",
     version: "0.8.0",
     buildDate: "July 2024",
     developedBy: "L4w1i3t",
-    description: "An AI companion with voice synthesis, persona management, and intelligent conversation capabilities. Currently in active development with ongoing feature improvements.",
     technologies: [
       "React 18.2.0",
       "TypeScript",
@@ -479,13 +443,11 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
         <HeaderSection>        
           <HeaderContent>
           <AppIcon src="../assets/logo.png" alt="ALTER EGO Logo" />
-          <AppName>{details.softwareName}</AppName>
-          <Version>{details.subtitle} v{details.version}</Version>
-          <div style={{ marginTop: '1em', opacity: 0.8 }}>
-            {details.description}
-          </div>
+          <Version> v{details.version}</Version>
         </HeaderContent>
-      </HeaderSection>      <InfoGrid>        <InfoCard $delay={0.2}>
+      </HeaderSection>      
+      <InfoGrid>        
+        <InfoCard $delay={0.2}>
           <CardTitle data-icon="🔧">Technologies</CardTitle>
           <CardContent>
             {details.technologies.map((tech, index) => (

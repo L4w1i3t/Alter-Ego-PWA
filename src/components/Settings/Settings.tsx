@@ -372,6 +372,21 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
       setSelectedModel(settings.selectedModel);
     }
   }, []);
+  // Scroll to top when view changes (fixes mobile scroll position issue)
+  useEffect(() => {
+    const settingsPanel = document.querySelector('[data-settings-panel]') as HTMLElement;
+    if (settingsPanel && currentView) {
+      settingsPanel.scrollTop = 0;
+    }
+  }, [currentView]);
+
+  // Scroll to top when Settings panel first opens
+  useEffect(() => {
+    const settingsPanel = document.querySelector('[data-settings-panel]') as HTMLElement;
+    if (settingsPanel) {
+      settingsPanel.scrollTop = 0;
+    }
+  }, []);
   
   const handleMenuClick = (item: string) => {
     setCurrentView(item);
@@ -583,10 +598,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
         );
     }
   };
-  
-  return (
+    return (
     <SettingsOverlay>
-      <SettingsPanel>
+      <SettingsPanel data-settings-panel>
         <CloseButton onClick={onClose}>X</CloseButton>
         {renderContent()}
       </SettingsPanel>
