@@ -15,6 +15,7 @@ import { loadSettings, saveSettings, loadPersonas, getPersona, loadVoiceModels, 
 import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
 import { getTokenUsageStats } from '../utils/openaiApi';
 import { exportDatabaseContent } from '../memory/longTermDB';
+import MobileOptimizations from '../utils/mobileOptimizations';
 import {
   initPerformanceMonitoring,
   markEvent,
@@ -248,18 +249,24 @@ const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   background-color: #000;
   color: #0f0;
   font-family: monospace, "Courier New", Courier;
   overflow: hidden;
+  /* Support for notched devices */
+  padding: var(--safe-area-inset-top, 0) var(--safe-area-inset-right, 0) var(--safe-area-inset-bottom, 0) var(--safe-area-inset-left, 0);
 
   @media (max-width: 768px) {
     min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
     min-height: -webkit-fill-available; /* iOS Safari fix */
     overflow-x: hidden;
     overflow-y: auto;
     width: 100%;
     max-width: 100vw;
+    /* Enhanced overscroll prevention */
+    overscroll-behavior: none;
   }
 `;
 
@@ -601,8 +608,18 @@ const App: React.FC = () => {
     // Clean up
     return () => {
       window.removeEventListener('query-response', handleQueryResponse as EventListener);
-    };
-  }, [voiceModel]);
+    };  }, [voiceModel]);
+
+  // Initialize mobile optimizations
+  useEffect(() => {
+    const mobileOpt = MobileOptimizations.getInstance();
+    mobileOpt.initialize();
+    
+    // Enable immersive mode for mobile devices
+    if (window.innerWidth <= 768) {
+      mobileOpt.enableImmersiveMode();
+    }
+  }, []);
   // Initialize performance monitoring
   useEffect(() => {
     if (isDevelopment) {
@@ -620,6 +637,25 @@ const App: React.FC = () => {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'c' && showDevTools) {
           e.preventDefault();
           setDevToolsCollapsed(prev => !prev);
+        }
+
+        // F11 to toggle fullscreen (desktop only)
+        if (e.key === 'F11') {
+          e.preventDefault();
+          const mobileOpt = MobileOptimizations.getInstance();
+          mobileOpt.toggleFullscreen();
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    } else {
+      // Add F11 fullscreen toggle for production too
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'F11') {
+          e.preventDefault();
+          const mobileOpt = MobileOptimizations.getInstance();
+          mobileOpt.toggleFullscreen();
         }
       };
 

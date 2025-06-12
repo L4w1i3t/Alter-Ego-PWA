@@ -442,7 +442,7 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
       <DetailsTitle>Software Information</DetailsTitle>
         <HeaderSection>        
           <HeaderContent>
-          <AppIcon src="../assets/logo.png" alt="ALTER EGO Logo" />
+          <AppIcon src="../assets/logo.webp" alt="ALTER EGO Logo" />
           <Version> v{details.version}</Version>
         </HeaderContent>
       </HeaderSection>      

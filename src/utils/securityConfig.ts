@@ -36,36 +36,36 @@ export interface SecurityConfig {
   responseLevel: 'soft' | 'hard';
 }
 
-// Default production security configuration
+// Default production security configuration (Mobile-Friendly)
 export const productionSecurityConfig: SecurityConfig = {
-  // Developer tools blocking
+  // Developer tools blocking - more selective
   blockDevTools: true,
   blockKeyboardShortcuts: true,
-  blockContextMenu: true,
-  blockTextSelection: false, // Less intrusive - allow text selection
+  blockContextMenu: false, // Don't block on mobile - handled by device detection
+  blockTextSelection: false, // Never block - essential for mobile
   detectDevToolsOpening: true,
   
-  // Advanced security
-  disableConsole: true,
+  // Advanced security - less aggressive
+  disableConsole: false, // Don't disable console - can break mobile debugging
   preventSourceViewing: true,
-  enableAntiDebugging: false, // Disable anti-debugging to avoid Safari issues
+  enableAntiDebugging: false, // Disable to avoid mobile issues
   protectAgainstInjection: true,
   obfuscateErrors: true,
   
-  // Detection sensitivity
-  devToolsDetectionThreshold: 200, // Less sensitive to avoid false positives
-  debuggerCheckInterval: 1000, // Less frequent checks
+  // Detection sensitivity - more tolerant
+  devToolsDetectionThreshold: 300, // Higher threshold for mobile compatibility
+  debuggerCheckInterval: 2000, // Less frequent checks
   
   // Warning messages
   showWarnings: true,
-  warningDuration: 5000, // Longer display time
-  customWarningMessage: 'Developer tools are disabled in production mode',
+  warningDuration: 3000, // Shorter duration
+  customWarningMessage: 'Developer tools access is restricted',
   
-  // Response actions
-  clearDataOnBreach: false, // Don't clear data - too aggressive
-  reloadOnDetection: false, // Don't auto-reload - prevents endless loop
+  // Response actions - non-destructive
+  clearDataOnBreach: false, // Never clear data automatically
+  reloadOnDetection: false, // Never auto-reload
   
-  // Use soft response level for better UX
+  // Use soft response level only
   responseLevel: 'soft'
 };
 
