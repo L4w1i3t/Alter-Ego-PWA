@@ -11,6 +11,7 @@ import CharacterSelector from './Sections/CharacterSelector';
 import NotificationManager from './Common/NotificationManager';
 import { useApi } from '../context/ApiContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
+import '../styles/mobile.css';
 import { loadSettings, saveSettings, loadPersonas, getPersona, loadVoiceModels, loadApiKeys } from '../utils/storageUtils';
 import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
 import { getTokenUsageStats } from '../utils/openaiApi';

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 import { markEvent, startTimer, endTimer } from '../../utils/performanceMetrics';
+import { useVirtualKeyboard } from '../../hooks/useVirtualKeyboard';
 
 const InputContainer = styled.div`
   display: flex;
@@ -29,15 +30,26 @@ const TextInput = styled.input`
   color: ${theme.colors.text};
   font-size: 1rem;
   
+  /* Ensure virtual keyboard works on mobile */
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-appearance: none;
+  appearance: none;
+  
   &:focus {
     outline: 1px solid ${theme.colors.primary};
   }
   
   @media (max-width: 768px) {
     padding: 1rem;
-    font-size: 16px; /* Prevent zoom on iOS */
+    font-size: 16px !important; /* Prevent zoom on iOS */
     min-height: 44px;
     touch-action: manipulation;
+    /* iOS specific fixes */
+    -webkit-border-radius: ${theme.borderRadius.md};
+    /* Ensure keyboard appears */
+    -webkit-user-select: text !important;
+    user-select: text !important;
   }
 `;
 
@@ -89,6 +101,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onToggleListen 
 }) => {
   const [message, setMessage] = useState('');
+  const { isKeyboardVisible } = useVirtualKeyboard();
 
   const handleSend = () => {
     if (message.trim()) {
@@ -102,7 +115,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
       setMessage('');
     }
   };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -110,13 +122,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Ensure the input is visible when focused on mobile
+    if (window.innerWidth <= 768) {
+      setTimeout(() => {
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300); // Delay to allow virtual keyboard to appear
+    }
+  };
   return (
-    <InputContainer>
-      <TextInput
+    <InputContainer className="chat-input-container">      <TextInput
+        type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={handleKeyPress}
+        onFocus={handleInputFocus}
         placeholder="Type your message..."
+        autoComplete="off"
+        autoCapitalize="sentences"
+        autoCorrect="on"
+        spellCheck={true}
+        inputMode="text"
       />
       <MicButton 
         onClick={onToggleListen} 

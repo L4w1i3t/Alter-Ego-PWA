@@ -1,0 +1,80 @@
+/* Mobile-specific styles for better virtual keyboard support */
+
+/* iOS Safari virtual keyboard fixes */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific styles */  input, textarea {
+    font-size: 16px !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    -webkit-border-radius: 0 !important;
+    border-radius: 4px !important;
+  }
+  
+  /* Prevent viewport zoom when focusing inputs */
+  input:focus, textarea:focus {
+    font-size: 16px !important;
+  }
+}
+
+/* iPad specific adjustments */
+@media screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+  input, textarea {
+    font-size: 16px !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+  }
+  
+  /* Ensure touch targets are large enough */
+  button, input {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent body scroll when virtual keyboard is open */
+.keyboard-open {
+  position: fixed;
+  width: 100%;
+  height: calc(100vh - var(--keyboard-height, 0px));
+  overflow: hidden;
+}
+
+/* Adjust chat container when keyboard is visible */
+.keyboard-open .chat-input-container {
+  position: fixed;
+  bottom: var(--keyboard-height, 0px);
+  left: 0;
+  right: 0;
+  z-index: 1001;
+}
+
+/* Chat input specific mobile fixes */
+.chat-input-container {
+  position: relative;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .chat-input-container {
+    position: sticky;
+    bottom: 0;
+    background: inherit;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  /* Handle virtual keyboard appearance */
+  .chat-input-container input {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-touch-callout: default !important;
+    touch-action: manipulation;
+  }
+}
+
+/* Fix for iOS virtual keyboard hiding content */
+@media screen and (-webkit-min-device-pixel-ratio: 1) {
+  .app-container {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}

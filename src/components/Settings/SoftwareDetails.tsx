@@ -193,8 +193,8 @@ const AppIcon = styled.img`
   object-fit: contain;
 
   @media (max-width: 768px) {
-    width: 16em;
-    height: 16em;
+    width: 15em;
+    height: 15em;
 `;
 
 const shimmer = keyframes`
