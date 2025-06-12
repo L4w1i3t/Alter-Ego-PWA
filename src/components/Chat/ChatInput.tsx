@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 import { markEvent, startTimer, endTimer } from '../../utils/performanceMetrics';
@@ -35,6 +35,8 @@ const TextInput = styled.input`
   user-select: text !important;
   -webkit-appearance: none;
   appearance: none;
+  cursor: text;
+  pointer-events: auto;
   
   &:focus {
     outline: 1px solid ${theme.colors.primary};
@@ -50,6 +52,18 @@ const TextInput = styled.input`
     /* Ensure keyboard appears */
     -webkit-user-select: text !important;
     user-select: text !important;
+  }
+  
+  /* iPad specific styles */
+  @media screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+    font-size: 16px !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    cursor: text !important;
   }
 `;
 
@@ -102,6 +116,33 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const [message, setMessage] = useState('');
   const { isKeyboardVisible } = useVirtualKeyboard();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // iPad-specific keyboard fix
+  useEffect(() => {
+    const isIPad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+    
+    if (isIPad && inputRef.current) {
+      const input = inputRef.current;
+      
+      // Remove readonly attribute that might prevent keyboard
+      input.removeAttribute('readonly');
+      
+      // Add event listeners to force keyboard on iPad
+      const forceKeyboard = () => {
+        input.focus();
+        input.click();
+      };
+      
+      input.addEventListener('touchstart', forceKeyboard);
+      input.addEventListener('touchend', forceKeyboard);
+      
+      return () => {
+        input.removeEventListener('touchstart', forceKeyboard);
+        input.removeEventListener('touchend', forceKeyboard);
+      };
+    }
+  }, []);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -121,28 +162,48 @@ const ChatInput: React.FC<ChatInputProps> = ({
       handleSend();
     }
   };
-
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Force focus and keyboard on iPad
+    const input = e.target;
+    
+    // iPad specific: ensure readonly is not set
+    input.removeAttribute('readonly');
+    
     // Ensure the input is visible when focused on mobile
     if (window.innerWidth <= 768) {
       setTimeout(() => {
-        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300); // Delay to allow virtual keyboard to appear
     }
   };
+
+  const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    // iPad specific: force focus on click
+    const input = e.target as HTMLInputElement;
+    input.focus();
+    
+    // Trigger input event to ensure keyboard appears
+    setTimeout(() => {
+      input.click();
+      input.focus();
+    }, 100);
+  };
   return (
     <InputContainer className="chat-input-container">      <TextInput
+        ref={inputRef}
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyPress={handleKeyPress}
         onFocus={handleInputFocus}
+        onClick={handleInputClick}
         placeholder="Type your message..."
         autoComplete="off"
         autoCapitalize="sentences"
         autoCorrect="on"
         spellCheck={true}
         inputMode="text"
+        tabIndex={0}
       />
       <MicButton 
         onClick={onToggleListen} 

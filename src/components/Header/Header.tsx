@@ -9,9 +9,18 @@ const HeaderContainer = styled.header`
   background-color: #000;
   border-bottom: 1px solid #0f0;
   
+  /* Safe area support for notched devices */
+  padding-top: max(0.8em, env(safe-area-inset-top));
+  padding-left: max(0.8em, env(safe-area-inset-left));
+  padding-right: max(0.8em, env(safe-area-inset-right));
+  
   @media (max-width: 768px) {
     padding: 0.75rem;
     min-height: 50px;
+    /* Ensure safe area is respected on mobile */
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
   }
 `;
 

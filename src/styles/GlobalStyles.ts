@@ -16,8 +16,7 @@ export const GlobalStyles = createGlobalStyle`  * {
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
     -ms-user-select: text !important;
-  }
-  html, body {
+  }  html, body {
     margin: 0;
     padding: 0;
     height: 100%;
@@ -30,6 +29,8 @@ export const GlobalStyles = createGlobalStyle`  * {
     /* Improve mobile touch targets */
     -webkit-tap-highlight-color: rgba(0, 255, 0, 0.1);
     -webkit-text-size-adjust: 100%;
+    /* Support safe areas on notched devices */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   @media (max-width: 768px) {
     html, body {

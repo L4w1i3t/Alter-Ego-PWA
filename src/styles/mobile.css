@@ -1,5 +1,38 @@
 /* Mobile-specific styles for better virtual keyboard support */
 
+/* Safe area insets for iOS devices including iPad */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+}
+
+/* iPad and iOS specific adjustments */
+@supports (-webkit-touch-callout: none) {
+  /* Ensure body respects safe areas */
+  body {
+    padding-top: var(--safe-area-inset-top);
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+    padding-bottom: var(--safe-area-inset-bottom);
+  }
+  
+  /* Header adjustments for safe area */
+  header {
+    padding-top: calc(0.8em + var(--safe-area-inset-top));
+    padding-left: calc(0.8em + var(--safe-area-inset-left));
+    padding-right: calc(0.8em + var(--safe-area-inset-right));
+  }
+  
+  /* Footer adjustments for safe area */
+  footer {
+    padding-bottom: calc(0.5em + var(--safe-area-inset-bottom));
+    padding-left: calc(1em + var(--safe-area-inset-left));
+    padding-right: calc(1em + var(--safe-area-inset-right));
+  }
+}
+
 /* iOS Safari virtual keyboard fixes */
 @supports (-webkit-touch-callout: none) {
   /* iOS specific styles */  input, textarea {
@@ -22,12 +55,30 @@
     font-size: 16px !important;
     -webkit-user-select: text !important;
     user-select: text !important;
+    /* iPad specific: force keyboard appearance */
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+  
+  /* Force touch events to register properly on iPad */
+  input[type="text"] {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-touch-callout: default !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
   }
   
   /* Ensure touch targets are large enough */
   button, input {
     min-height: 44px;
     min-width: 44px;
+  }
+  
+  /* iPad keyboard trigger fix */
+  .chat-input-container input {
+    cursor: text !important;
+    pointer-events: auto !important;
   }
 }
 
