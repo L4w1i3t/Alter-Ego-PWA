@@ -55,30 +55,12 @@
     font-size: 16px !important;
     -webkit-user-select: text !important;
     user-select: text !important;
-    /* iPad specific: force keyboard appearance */
-    -webkit-appearance: none !important;
-    appearance: none !important;
-  }
-  
-  /* Force touch events to register properly on iPad */
-  input[type="text"] {
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-    -webkit-touch-callout: default !important;
-    -webkit-user-select: text !important;
-    user-select: text !important;
   }
   
   /* Ensure touch targets are large enough */
   button, input {
     min-height: 44px;
     min-width: 44px;
-  }
-  
-  /* iPad keyboard trigger fix */
-  .chat-input-container input {
-    cursor: text !important;
-    pointer-events: auto !important;
   }
 }
 

@@ -190,7 +190,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
   return (
     <InputContainer className="chat-input-container">      <TextInput
-        ref={inputRef}
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}

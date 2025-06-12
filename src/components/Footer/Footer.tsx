@@ -11,21 +11,12 @@ const FooterContainer = styled.footer`
   border-top: 1px solid #0f0;
   font-size: 0.8em;
   
-  /* Safe area support for notched devices */
-  padding-bottom: max(0.5em, env(safe-area-inset-bottom));
-  padding-left: max(1em, env(safe-area-inset-left));
-  padding-right: max(1em, env(safe-area-inset-right));
-  
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.25rem;
     padding: 0.75rem;
     font-size: 0.75rem;
     min-height: 50px;
-    /* Ensure safe area is respected on mobile */
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-    padding-left: max(0.75rem, env(safe-area-inset-left));
-    padding-right: max(0.75rem, env(safe-area-inset-right));
   }
 `;
 
