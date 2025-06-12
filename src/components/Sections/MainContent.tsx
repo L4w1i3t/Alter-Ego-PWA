@@ -10,10 +10,6 @@ const MainContentContainer = styled.main`
   padding: 2vh 2vw;
   gap: 2vw;
   overflow: auto;
-  /* Prevent overscroll behavior */
-  overscroll-behavior: none;
-  -webkit-overscroll-behavior: none;
-  touch-action: pan-x pan-y;
   
   @media (max-width: 768px) {
     /* Use CSS Grid for better mobile layout control */
@@ -27,13 +23,6 @@ const MainContentContainer = styled.main`
     max-width: 100vw;
     box-sizing: border-box;
     overflow-x: hidden;
-    /* Enhanced overscroll prevention for mobile */
-    overscroll-behavior: none;
-    -webkit-overscroll-behavior: none;
-    overscroll-behavior-y: none;
-    overscroll-behavior-x: none;
-    touch-action: pan-x pan-y;
-    -webkit-overflow-scrolling: auto;
     /* Ensure grid items don't overflow */
     grid-template-areas: 
       "response"
