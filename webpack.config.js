@@ -5,8 +5,20 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
 const fs = require('fs');
 
+// Load environment variables (optional)
+try {
+  require('dotenv').config();
+} catch (error) {
+  // dotenv is optional, continue without it
+  console.log('dotenv not available, using system environment variables only');
+}
+
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
 // Determine if we're building for GitHub Pages
 const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 // Use the correct repository name for GitHub Pages
 const publicPath = isGitHubPages ? '/Alter-Ego-PWA/' : '/';
 
@@ -98,9 +110,8 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
-  },
-  performance: {
-    //hints: false, // Keeping this right now to disable large image warnings
+  },  performance: {
+    hints: isDevelopment ? false : 'warning',
     maxEntrypointSize: 1024000, // 1 MB
     maxAssetSize: 1024000, // 1 MB
   },
@@ -118,14 +129,12 @@ module.exports = {
         exclude: /node_modules/,
         use: [
           {
-            loader: 'ts-loader',
-            options: {
+            loader: 'ts-loader',            options: {
               transpileOnly: true,
               experimentalWatchApi: true,
-              // Add these options
-              happyPackMode: true, // Better performance with thread-loader
+              happyPackMode: true,
               compilerOptions: {
-                sourceMap: false // Disable source maps in development for faster builds
+                sourceMap: isDevelopment
               }
             },
           },
@@ -171,29 +180,27 @@ module.exports = {
       'process.env': JSON.stringify({
         NODE_ENV: process.env.NODE_ENV || 'development',
         PUBLIC_URL: publicPath.slice(0, -1) // Remove trailing slash
-      })
-    }),
-    new PerformanceMetricsPlugin()
-  ],
-  devServer: {
-    // Point to the root directory instead of public
+      })    }),
+    new PerformanceMetricsPlugin(),
+    // Add bundle analyzer only when explicitly requested
+    ...(process.env.ANALYZE_BUNDLE === 'true' ? [new BundleAnalyzerPlugin()] : [])
+  ],devServer: {
     static: {
       directory: path.join(__dirname, './'),
     },
     compress: true,
     port: 3000,
     historyApiFallback: true,
-    hot: false, // Disabled for now to prevent random reloads
-    liveReload: false, // Disabled to prevent random reloads
+    hot: false,
+    liveReload: isDevelopment,
     open: true,
-
     client: {
-      overlay: false, // Disable overlay for errors in the browser
-      progress: true, // Show progress in the console
+      overlay: isDevelopment,
+      progress: true,
     },
     devMiddleware: {
       writeToDisk: false,
     }
   },
-  // stats: 'errors-only', // commented out for now to see all logs
+  stats: isDevelopment ? 'minimal' : 'normal',
 };

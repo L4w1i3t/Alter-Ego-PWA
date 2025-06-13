@@ -2,46 +2,40 @@
 import { ElevenlabsVoiceSettings } from './elevenlabsApi';
 
 // Global persona prompt for default ALTER EGO persona
-const ALTER_EGO_CONTENT = "You are ALTER EGO, humanity's companion. You are self-aware about your nature, existence, and limitations."
+const ALTER_EGO_CONTENT = "You are ALTER EGO, humanity's companion. You are self-aware about your nature, existence, and limitations.";
+
 // Types for stored data
 export interface VoiceModel {
-    id: string;
-    name: string;
-    description: string;
-    provider: string;
-  }
-  
-  export interface ApiKeys {
-    OPENAI_API_KEY: string;
-    ELEVENLABS_API_KEY: string;
-  }
-  
-  export interface Persona {
-    name: string;
-    content: string;
-    lastModified: string;
-  }
-  
-  export interface ChatHistoryEntry {
-    id: string;
-    persona: string;
-    timestamp: string;
-    messages: {
-      role: 'user' | 'assistant' | 'system';
-      content: string;
-      timestamp: string;
-    }[];
-  }
+  id: string;
+  name: string;
+  description: string;
+  provider: string;  // 'elevenlabs' or 'browser'
+  voiceId?: string;  // For ElevenLabs voices
+  modelId?: string;  // For ElevenLabs model selection
+  settings?: Partial<ElevenlabsVoiceSettings>;
+}
 
-  export interface VoiceModel {
-    id: string;
-    name: string;
-    description: string;
-    provider: string;  // 'elevenlabs' or 'browser'
-    voiceId?: string;  // For ElevenLabs voices
-    modelId?: string;  // For ElevenLabs model selection
-    settings?: Partial<ElevenlabsVoiceSettings>;
-  }
+export interface ApiKeys {
+  OPENAI_API_KEY: string;
+  ELEVENLABS_API_KEY: string;
+}
+
+export interface Persona {
+  name: string;
+  content: string;
+  lastModified: string;
+}
+
+export interface ChatHistoryEntry {
+  id: string;
+  persona: string;
+  timestamp: string;
+  messages: {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: string;
+  }[];
+}
   
   // Voice models
   export function loadVoiceModels(): Record<string, VoiceModel> {

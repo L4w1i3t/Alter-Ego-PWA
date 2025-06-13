@@ -1,13 +1,73 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Production builds
+dist/
+build/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Webpack cache
+.webpack_cache/
+
+# Performance metrics
+performance-metrics/
+db-metrics/
+
+# API keys (keep secure)
+keys.txt
+
+# Python virtual environment
+backend/alterego-backend/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# TypeScript compiled output
+*.tsbuildinfo
+
+# Development scripts
 rundev.bat
 runprod.bat
-dist/
+open_source.bat
+dev.bat
+build.bat
+
+# Temporary files
+*.tmp
+*.temp
 treeignore.txt
 create_tree_and_get_contents.exe
 file_tree_with_code_contents.txt
-node_modules/
-package-lock.json
-keys.txt
-.webpack_cache/
-open_source.bat
 venv/
 alterego-backend/

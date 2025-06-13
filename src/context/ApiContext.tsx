@@ -452,14 +452,16 @@ const sendQuery = async (
       }))
     ];
 
-    // Debug logging to verify no duplicate user messages
-    console.log('=== MESSAGE CONSTRUCTION DEBUG ===');
-    console.log('Current user query:', query);
-    console.log('Conversation history length:', conversationHistory.length);
-    console.log('Limited context for AI length:', limitedContextForAI.length);
-    console.log('Messages for AI length:', messagesForAI.length);
-    console.log('Messages for AI roles:', messagesForAI.map(m => m.role));
-    console.log('=== END MESSAGE DEBUG ===');
+    // Debug logging to verify no duplicate user messages    // Debug logging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('=== MESSAGE CONSTRUCTION DEBUG ===');
+      console.log('Current user query:', query);
+      console.log('Conversation history length:', conversationHistory.length);
+      console.log('Limited context for AI length:', limitedContextForAI.length);
+      console.log('Messages for AI length:', messagesForAI.length);
+      console.log('Messages for AI roles:', messagesForAI.map(m => m.role));
+      console.log('=== END MESSAGE DEBUG ===');
+    }
 
     // Call the AI service with the combined context
     const response = await sendMessageToAI(query, systemPrompt, messagesForAI, config);
