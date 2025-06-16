@@ -63,6 +63,7 @@ runprod.bat
 open_source.bat
 dev.bat
 build.bat
+build.ps1
 
 # Temporary files
 *.tmp
