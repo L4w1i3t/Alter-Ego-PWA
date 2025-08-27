@@ -71,13 +71,13 @@ const CancelButton = styled(Button)`
 `;
 
 const ConfirmButton = styled(Button).withConfig({
-  shouldForwardProp: (prop) => prop !== 'variant',
+  shouldForwardProp: prop => prop !== 'variant',
 })<{ variant?: 'danger' | 'primary' }>`
-  border-color: ${props => props.variant === 'danger' ? '#f00' : '#0f0'};
-  color: ${props => props.variant === 'danger' ? '#f00' : '#0f0'};
+  border-color: ${props => (props.variant === 'danger' ? '#f00' : '#0f0')};
+  color: ${props => (props.variant === 'danger' ? '#f00' : '#0f0')};
 
   &:hover {
-    background: ${props => props.variant === 'danger' ? '#f00' : '#0f0'};
+    background: ${props => (props.variant === 'danger' ? '#f00' : '#0f0')};
     color: #000;
   }
 `;
@@ -101,7 +101,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   cancelText = 'Cancel',
   variant = 'primary',
   onConfirm,
-  onCancel
+  onCancel,
 }) => {
   if (!isOpen) return null;
 

@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { loadVoiceModels, saveVoiceModels, VoiceModel, loadApiKeys } from '../../utils/storageUtils';
+import {
+  loadVoiceModels,
+  saveVoiceModels,
+  VoiceModel,
+  loadApiKeys,
+} from '../../utils/storageUtils';
 import { getVoices, ElevenlabsModel } from '../../utils/elevenlabsApi';
 import { dispatchAppEvent, EVENTS } from '../../utils/events';
 import ConfirmationDialog from '../Common/ConfirmationDialog';
-import { showSuccess, showError, showWarning } from '../Common/NotificationManager';
+import {
+  showSuccess,
+  showError,
+  showWarning,
+} from '../Common/NotificationManager';
 
 const Container = styled.div`
   color: #0f0;
@@ -12,7 +21,7 @@ const Container = styled.div`
   min-height: 60vh;
   display: flex;
   flex-direction: column;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     min-height: 70vh;
@@ -23,7 +32,7 @@ const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
   text-align: center;
-  
+
   @media (max-width: 768px) {
     font-size: 1.4em;
     margin-bottom: 1.5em;
@@ -40,14 +49,14 @@ const VoiceModelGrid = styled.div`
   padding: 0.5em;
   border: 1px solid #0f03;
   border-radius: 0.3em;
-  
+
   @media (min-width: 769px) {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1.2em;
     max-height: 350px;
     padding: 1em;
   }
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     max-height: 50vh;
@@ -58,21 +67,25 @@ const VoiceModelGrid = styled.div`
 `;
 
 const VoiceModelCard = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'provider',
+  shouldForwardProp: prop => prop !== 'provider',
 })<{ provider?: string }>`
-  border: 1px solid ${props => props.provider === 'elevenlabs' ? '#0af3' : '#0f03'};
-  background-color: ${props => props.provider === 'elevenlabs' ? '#001022' : '#001000'};
+  border: 1px solid
+    ${props => (props.provider === 'elevenlabs' ? '#0af3' : '#0f03')};
+  background-color: ${props =>
+    props.provider === 'elevenlabs' ? '#001022' : '#001000'};
   padding: 1em;
   border-radius: 0.3em;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
-  
+
   &:hover {
-    border-color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
-    background-color: ${props => props.provider === 'elevenlabs' ? '#001830' : '#002000'};
+    border-color: ${props =>
+      props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+    background-color: ${props =>
+      props.provider === 'elevenlabs' ? '#001830' : '#002000'};
   }
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     margin-bottom: 0.5em;
@@ -98,20 +111,20 @@ const ModelDescription = styled.div`
 `;
 
 const ProviderBadge = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'provider',
+  shouldForwardProp: prop => prop !== 'provider',
 })<{ provider?: string }>`
   position: absolute;
   top: 0.5em;
   right: 0.5em;
   font-size: 1.2em;
-  color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+  color: ${props => (props.provider === 'elevenlabs' ? '#0af' : '#0f0')};
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: 0.5em;
   margin-top: 0.8em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.8em;
@@ -127,12 +140,12 @@ const Button = styled.button`
   font-size: 0.8em;
   cursor: pointer;
   border-radius: 0.2em;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (min-width: 769px) {
     padding: 0.6em 1.2em;
     font-size: 1em;
@@ -140,7 +153,7 @@ const Button = styled.button`
     border-radius: 0.3em;
     min-width: 100px;
   }
-  
+
   @media (max-width: 768px) {
     padding: 0.8em 1.2em;
     font-size: 1em;
@@ -150,7 +163,7 @@ const Button = styled.button`
 `;
 
 const IconButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => prop !== 'color',
+  shouldForwardProp: prop => prop !== 'color',
 })<{ color?: string }>`
   background: transparent;
   color: ${props => props.color || '#0f0'};
@@ -166,12 +179,12 @@ const IconButton = styled.button.withConfig({
   padding: 0;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  
+
   &:hover {
     background: ${props => props.color || '#0f0'};
     color: #000;
   }
-  
+
   @media (min-width: 769px) {
     width: 2.4em;
     height: 2.4em;
@@ -179,7 +192,7 @@ const IconButton = styled.button.withConfig({
     border-width: 2px;
     border-radius: 0.3em;
   }
-  
+
   @media (max-width: 768px) {
     width: 2.5em;
     height: 2.5em;
@@ -248,7 +261,7 @@ const FormContainer = styled.div`
   border: 1px solid #0f04;
   border-radius: 0.3em;
   background-color: #000800;
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     margin-top: 1.5em;
@@ -257,7 +270,7 @@ const FormContainer = styled.div`
 
 const FormGroup = styled.div`
   margin-bottom: 1.2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
   }
@@ -266,7 +279,7 @@ const FormGroup = styled.div`
 const Label = styled.label`
   display: block;
   margin-bottom: 0.5em;
-  
+
   @media (max-width: 768px) {
     font-size: 1.1em;
     margin-bottom: 0.8em;
@@ -282,7 +295,7 @@ const Input = styled.input`
   border-radius: 0.2em;
   margin-bottom: 0.5em;
   font-family: monospace;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     font-size: 1em;
@@ -301,7 +314,7 @@ const TextArea = styled.textarea`
   border-radius: 0.2em;
   font-family: monospace;
   resize: vertical;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     font-size: 1em;
@@ -314,12 +327,12 @@ const TabContainer = styled.div`
   display: flex;
   border-bottom: 1px solid #0f03;
   margin-bottom: 1.5em;
-  
+
   @media (min-width: 769px) {
     border-bottom: 2px solid #0f03;
     margin-bottom: 2em;
   }
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.5em;
@@ -328,29 +341,29 @@ const TabContainer = styled.div`
 `;
 
 const Tab = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'active',
+  shouldForwardProp: prop => prop !== 'active',
 })<{ active?: boolean }>`
   padding: 0.6em 1em;
   cursor: pointer;
-  border: 1px solid ${props => props.active ? '#0f0' : 'transparent'};
+  border: 1px solid ${props => (props.active ? '#0f0' : 'transparent')};
   border-bottom: none;
-  background: ${props => props.active ? '#001500' : 'transparent'};
-  color: ${props => props.active ? '#0f0' : '#0f08'};
+  background: ${props => (props.active ? '#001500' : 'transparent')};
+  color: ${props => (props.active ? '#0f0' : '#0f08')};
   border-top-left-radius: 0.3em;
   border-top-right-radius: 0.3em;
   margin-right: 0.5em;
-  
+
   &:hover {
     color: #0f0;
-    background: ${props => props.active ? '#001500' : '#000500'};
+    background: ${props => (props.active ? '#001500' : '#000500')};
   }
-  
+
   @media (min-width: 769px) {
     padding: 0.8em 1.2em;
     font-size: 1em;
     margin-right: 0.8em;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     margin-right: 0;
@@ -358,7 +371,7 @@ const Tab = styled.div.withConfig({
     text-align: center;
     font-size: 1.1em;
     border-radius: 0.3em;
-    border: 1px solid ${props => props.active ? '#0f0' : '#0f03'};
+    border: 1px solid ${props => (props.active ? '#0f0' : '#0f03')};
   }
 `;
 
@@ -366,7 +379,7 @@ const ProviderSelectionContainer = styled.div`
   display: flex;
   gap: 1em;
   margin-bottom: 1.5em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1.2em;
@@ -375,26 +388,35 @@ const ProviderSelectionContainer = styled.div`
 `;
 
 const ProviderCard = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['selected', 'provider'].includes(prop),
-})<{ selected?: boolean, provider?: string }>`
+  shouldForwardProp: prop => !['selected', 'provider'].includes(prop),
+})<{ selected?: boolean; provider?: string }>`
   flex: 1;
   padding: 1.5em 1em;
-  border: 2px solid ${props => props.selected 
-    ? (props.provider === 'elevenlabs' ? '#0af' : '#0f0') 
-    : '#333'};
-  background-color: ${props => props.selected 
-    ? (props.provider === 'elevenlabs' ? '#001020' : '#001000') 
-    : '#000'};
+  border: 2px solid
+    ${props =>
+      props.selected
+        ? props.provider === 'elevenlabs'
+          ? '#0af'
+          : '#0f0'
+        : '#333'};
+  background-color: ${props =>
+    props.selected
+      ? props.provider === 'elevenlabs'
+        ? '#001020'
+        : '#001000'
+      : '#000'};
   text-align: center;
   cursor: pointer;
   border-radius: 0.5em;
   transition: all 0.2s ease;
-  
+
   &:hover {
-    background-color: ${props => props.provider === 'elevenlabs' ? '#001830' : '#002000'};
-    border-color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+    background-color: ${props =>
+      props.provider === 'elevenlabs' ? '#001830' : '#002000'};
+    border-color: ${props =>
+      props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
   }
-  
+
   @media (max-width: 768px) {
     padding: 2em 1.5em;
     min-height: 120px;
@@ -410,11 +432,11 @@ const ProviderIcon = styled.div`
 `;
 
 const ProviderTitle = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'provider',
+  shouldForwardProp: prop => prop !== 'provider',
 })<{ provider?: string }>`
   font-weight: bold;
   font-size: 1.1em;
-  color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+  color: ${props => (props.provider === 'elevenlabs' ? '#0af' : '#0f0')};
   margin-bottom: 0.5em;
 `;
 
@@ -465,7 +487,7 @@ const FooterButtons = styled.div`
   margin-top: 1.5em;
   display: flex;
   justify-content: space-between;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1em;
@@ -476,7 +498,7 @@ const FooterButtons = styled.div`
 const ActionButton = styled(Button)`
   padding: 0.5em 1.2em;
   font-size: 0.9em;
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1.1em;
@@ -489,7 +511,7 @@ const BackButton = styled(ActionButton)``;
 const AddButton = styled(ActionButton)``;
 const SaveButton = styled(ActionButton)`
   background-color: #001500;
-  
+
   &:hover {
     background-color: #0f0;
   }
@@ -498,7 +520,7 @@ const CancelButton = styled(ActionButton)`
   background-color: #150000;
   border-color: #f00;
   color: #f00;
-  
+
   &:hover {
     background-color: #f00;
     color: #000;
@@ -513,20 +535,20 @@ const VoiceBrowserButton = styled(Button)`
   align-items: center;
   justify-content: center;
   gap: 0.5em;
-  background-color: ${props => props.disabled ? '#001' : '#001030'};
+  background-color: ${props => (props.disabled ? '#001' : '#001030')};
   border-color: #0af;
   color: #0af;
-  
+
   &:hover:not(:disabled) {
     background-color: #0af;
     color: #000;
   }
-  
+
   &:disabled {
     cursor: not-allowed;
     opacity: 0.6;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     font-size: 1.1em;
@@ -543,7 +565,7 @@ const VoiceBrowser = styled.div`
   overflow-y: auto;
   border-radius: 0.3em;
   background-color: #000818;
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     max-height: 40vh;
@@ -567,7 +589,7 @@ const VoiceItem = styled.div`
   &:hover {
     background-color: #001030;
   }
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
@@ -594,7 +616,7 @@ const VoiceDescription = styled.div`
 const SelectButton = styled(Button)`
   border-color: #0af;
   color: #0af;
-  
+
   &:hover {
     background: #0af;
     color: #000;
@@ -617,7 +639,7 @@ const BrowserVoiceGrid = styled.div`
   padding: 0.5em;
   border: 1px solid #0f03;
   border-radius: 0.3em;
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     max-height: 30vh;
@@ -627,21 +649,21 @@ const BrowserVoiceGrid = styled.div`
 `;
 
 const BrowserVoiceOption = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'selected',
+  shouldForwardProp: prop => prop !== 'selected',
 })<{ selected?: boolean }>`
   padding: 0.8em;
-  border: 1px solid ${props => props.selected ? '#0f0' : '#0f03'};
-  background-color: ${props => props.selected ? '#001500' : '#000'};
+  border: 1px solid ${props => (props.selected ? '#0f0' : '#0f03')};
+  background-color: ${props => (props.selected ? '#001500' : '#000')};
   border-radius: 0.3em;
   cursor: pointer;
   font-size: 0.9em;
   transition: all 0.2s ease;
-  
+
   &:hover {
-    background-color: ${props => props.selected ? '#001500' : '#000500'};
+    background-color: ${props => (props.selected ? '#001500' : '#000500')};
     border-color: #0f0;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     font-size: 1em;
@@ -663,12 +685,12 @@ const BrowserVoiceDetails = styled.div`
 `;
 
 const BrowserVoiceTag = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'islocal',
+  shouldForwardProp: prop => prop !== 'islocal',
 })<{ islocal?: boolean }>`
   display: inline-block;
   padding: 0.1em 0.4em;
-  background-color: ${props => props.islocal ? '#0f02' : '#00f2'};
-  color: ${props => props.islocal ? '#0f0' : '#00f'};
+  background-color: ${props => (props.islocal ? '#0f02' : '#00f2')};
+  color: ${props => (props.islocal ? '#0f0' : '#00f')};
   border-radius: 0.2em;
   font-size: 0.7em;
   margin-left: 0.5em;
@@ -683,7 +705,7 @@ const LoadingSpinner = styled.div`
   border-top-color: transparent;
   animation: spin 1s linear infinite;
   margin-right: 0.5em;
-  
+
   @keyframes spin {
     to {
       transform: rotate(360deg);
@@ -702,23 +724,25 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
   const [elevenlabsKeyExists, setElevenlabsKeyExists] = useState(false);
   const [loadingVoices, setLoadingVoices] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<any[]>([]);
-  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>(
+    []
+  );
   const [selectedBrowserVoice, setSelectedBrowserVoice] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'general' | 'settings'>('general');
-  
+
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<string>('');
-  
+
   useEffect(() => {
     // Load existing voice models
     const savedModels = loadVoiceModels();
     setModels(savedModels);
-    
+
     // Check if ElevenLabs API key exists
     const apiKeys = loadApiKeys();
     setElevenlabsKeyExists(!!apiKeys.ELEVENLABS_API_KEY);
-    
+
     // Get available browser voices
     if ('speechSynthesis' in window) {
       const loadVoices = () => {
@@ -727,29 +751,31 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
           setBrowserVoices(voices);
         }
       };
-      
+
       // Chrome loads voices asynchronously
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
       }
-      
+
       // Initial load attempt
       loadVoices();
     }
   }, []);
-    const fetchElevenLabsVoices = async () => {
+  const fetchElevenLabsVoices = async () => {
     if (!elevenlabsKeyExists) {
       showError('ElevenLabs API key is not set');
       return;
     }
-    
+
     try {
       setLoadingVoices(true);
-      
+
       const voicesData = await getVoices();
       setAvailableVoices(voicesData.voices || []);
-      
-      showSuccess(`Loaded ${voicesData.voices?.length || 0} voices from ElevenLabs`);
+
+      showSuccess(
+        `Loaded ${voicesData.voices?.length || 0} voices from ElevenLabs`
+      );
     } catch (error) {
       console.error('Error fetching ElevenLabs voices:', error);
       showError('Error loading ElevenLabs voices');
@@ -757,7 +783,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       setLoadingVoices(false);
     }
   };
-  
+
   const handleAddNew = () => {
     setEditingModel({
       id: `model_${Date.now()}`,
@@ -767,69 +793,71 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       voiceId: '',
       settings: {
         stability: 0.5,
-        similarity_boost: 0.5
-      }
+        similarity_boost: 0.5,
+      },
     });
     setIsEditing(false);
     setActiveTab('general');
   };
-  
+
   const handleEdit = (model: VoiceModel) => {
     setEditingModel({ ...model });
     setIsEditing(true);
     setActiveTab('general');
-    
+
     // If it's a browser voice, set the selected browser voice
     if (model.provider === 'browser' && model.voiceId) {
       setSelectedBrowserVoice(model.voiceId);
     }
   };
-    const handleDelete = (id: string) => {
+  const handleDelete = (id: string) => {
     // Show confirmation dialog
     setModelToDelete(id);
     setShowDeleteConfirmation(true);
   };
-    const confirmDelete = () => {
+  const confirmDelete = () => {
     const updatedModels = { ...models };
     delete updatedModels[modelToDelete];
     saveVoiceModels(updatedModels);
     setModels(updatedModels);
-    
+
     // Dispatch event to notify that voice models have been updated
     dispatchAppEvent(EVENTS.VOICE_MODELS_UPDATED, { models: updatedModels });
-    
+
     showSuccess('Voice model deleted successfully');
-    
+
     // Close dialog
     setShowDeleteConfirmation(false);
     setModelToDelete('');
   };
-  
+
   const cancelDelete = () => {
     setShowDeleteConfirmation(false);
     setModelToDelete('');
   };
-    const handleTestVoice = async (model: VoiceModel) => {
+  const handleTestVoice = async (model: VoiceModel) => {
     try {
       // Create a sample text to test with
       const testText = `This is a test of the ${model.name} voice model.`;
-      
+
       if (model.provider === 'browser') {
         // Use browser's speech synthesis
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(testText);
-          
+
           // Set the voice if a specific one is selected
           if (model.voiceId) {
             const voices = window.speechSynthesis.getVoices();
-            const selectedVoice = voices.find(v => v.voiceURI === model.voiceId);
+            const selectedVoice = voices.find(
+              v => v.voiceURI === model.voiceId
+            );
             if (selectedVoice) {
               utterance.voice = selectedVoice;
             }
           }
-          
+
           window.speechSynthesis.speak(utterance);
-          
+
           showSuccess('Testing browser voice synthesis');
         } else {
           showError('Speech synthesis not supported in this browser');
@@ -840,110 +868,117 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(testText);
           window.speechSynthesis.speak(utterance);
-          
+
           showSuccess('Testing ElevenLabs voice (simulated for demo)');
         } else {
           showError('Speech synthesis not supported in this browser');
         }
       }
-      
     } catch (error) {
       console.error('Error testing voice:', error);
       showError('Error testing voice');
     }
   };
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     if (!editingModel) return;
-    
+
     const { name, value } = e.target;
-    
+
     if (name.startsWith('settings.')) {
       const settingName = name.split('.')[1];
       setEditingModel({
         ...editingModel,
         settings: {
           ...editingModel.settings,
-          [settingName]: parseFloat(value)
-        }
+          [settingName]: parseFloat(value),
+        },
       });
     } else {
       setEditingModel({
         ...editingModel,
-        [name]: value
+        [name]: value,
       });
     }
   };
-  
+
   const handleSelectProvider = (provider: string) => {
     if (!editingModel) return;
-    
+
     setEditingModel({
       ...editingModel,
       provider,
       // Clear the voiceId when switching providers
-      voiceId: ''
+      voiceId: '',
     });
-    
+
     // Reset selected browser voice when changing providers
     if (provider === 'browser') {
       setSelectedBrowserVoice('');
     }
   };
-  
+
   const handleSelectBrowserVoice = (voiceURI: string) => {
     setSelectedBrowserVoice(voiceURI);
-    
+
     if (editingModel) {
       setEditingModel({
         ...editingModel,
-        voiceId: voiceURI
+        voiceId: voiceURI,
       });
     }
   };
-    const handleSave = () => {
+  const handleSave = () => {
     if (!editingModel || !editingModel.name.trim()) {
       showError('Please provide a name for the voice model');
       return;
     }
-    
+
     // Additional validation for ElevenLabs voice models
     if (editingModel.provider === 'elevenlabs' && !editingModel.voiceId) {
       showError('Please provide a Voice ID for ElevenLabs voice models');
       return;
     }
-    
+
     // For browser voice models, ensure a voice is selected
     if (editingModel.provider === 'browser' && !editingModel.voiceId) {
       showError('Please select a browser voice');
       return;
     }
-    
+
     const updatedModels = {
       ...models,
-      [editingModel.id]: editingModel
+      [editingModel.id]: editingModel,
     };
-    
+
     try {
       saveVoiceModels(updatedModels);
       setModels(updatedModels);
       setEditingModel(null);
-      
+
       // Dispatch event to notify that voice models have been updated
       dispatchAppEvent(EVENTS.VOICE_MODELS_UPDATED, { models: updatedModels });
-      
-      showSuccess(isEditing ? 'Voice model updated successfully' : 'Voice model added successfully');
+
+      showSuccess(
+        isEditing
+          ? 'Voice model updated successfully'
+          : 'Voice model added successfully'
+      );
     } catch (error) {
       showError('Error saving voice model');
       console.error('Failed to save voice model:', error);
     }
   };
-  
+
   const handleCancel = () => {
     setEditingModel(null);
     setSelectedBrowserVoice('');
   };
-  
+
   // Get provider icon for cards
   const getProviderIcon = (provider: string): JSX.Element => {
     if (provider === 'elevenlabs') {
@@ -952,23 +987,27 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       return <ProviderBadge provider="browser">🔊</ProviderBadge>;
     }
   };
-  
+
   return (
     <Container>
       <Title>Manage Voice Models</Title>
-      
+
       {!elevenlabsKeyExists && (
         <ErrorBox>
-          ElevenLabs API key is not set. You can still create browser-based voice models, but ElevenLabs premium voices require an API key from the "Manage API Keys" section.
+          ElevenLabs API key is not set. You can still create browser-based
+          voice models, but ElevenLabs premium voices require an API key from
+          the "Manage API Keys" section.
         </ErrorBox>
       )}
-      
+
       {elevenlabsKeyExists && !editingModel && (
         <InfoBox>
-          Voice models allow ALTER EGO to speak using different voices. You can add ElevenLabs premium voices for higher quality output or use free browser speech synthesis for basic functionality.
+          Voice models allow ALTER EGO to speak using different voices. You can
+          add ElevenLabs premium voices for higher quality output or use free
+          browser speech synthesis for basic functionality.
         </InfoBox>
       )}
-      
+
       {!editingModel ? (
         <>
           <VoiceModelGrid>
@@ -976,43 +1015,46 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
               <EmptyState>
                 <EmptyIcon>🔊</EmptyIcon>
                 <div>No voice models added yet.</div>
-              </EmptyState>            ) : (
+              </EmptyState>
+            ) : (
               Object.values(models).map(model => (
-                <VoiceModelCard 
-                  key={model.id} 
+                <VoiceModelCard
+                  key={model.id}
                   provider={model.provider}
                   onClick={() => handleEdit(model)}
                 >
                   {getProviderIcon(model.provider)}
                   <ModelName>{model.name}</ModelName>
-                  <ModelDescription>{model.description || 'No description'}</ModelDescription>
+                  <ModelDescription>
+                    {model.description || 'No description'}
+                  </ModelDescription>
                   <ActionButtons>
-                    <TestButton 
-                      color="#00f" 
-                      onClick={(e) => {
+                    <TestButton
+                      color="#00f"
+                      onClick={e => {
                         e.stopPropagation();
                         handleTestVoice(model);
-                      }} 
+                      }}
                       title="Test Voice"
                     >
                       🔈
                     </TestButton>
-                    <EditButton 
-                      color="#ff0" 
-                      onClick={(e) => {
+                    <EditButton
+                      color="#ff0"
+                      onClick={e => {
                         e.stopPropagation();
                         handleEdit(model);
-                      }} 
+                      }}
                       title="Edit"
                     >
                       ✏️
                     </EditButton>
-                    <DeleteButton 
-                      color="#f00" 
-                      onClick={(e) => {
+                    <DeleteButton
+                      color="#f00"
+                      onClick={e => {
                         e.stopPropagation();
                         handleDelete(model.id);
-                      }} 
+                      }}
                       title="Delete"
                     >
                       ×
@@ -1022,7 +1064,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
               ))
             )}
           </VoiceModelGrid>
-          
+
           <FooterButtons>
             <BackButton onClick={onBack}>Back</BackButton>
             <AddButton onClick={handleAddNew}>Add New Voice Model</AddButton>
@@ -1031,26 +1073,28 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
       ) : (
         <FormContainer>
           <TabContainer>
-            <Tab 
-              active={activeTab === 'general'} 
+            <Tab
+              active={activeTab === 'general'}
               onClick={() => setActiveTab('general')}
             >
               General
             </Tab>
             {editingModel.provider === 'elevenlabs' && (
-              <Tab 
-                active={activeTab === 'settings'} 
+              <Tab
+                active={activeTab === 'settings'}
                 onClick={() => setActiveTab('settings')}
               >
                 Voice Settings
               </Tab>
             )}
           </TabContainer>
-          
+
           {activeTab === 'general' ? (
             <>
               <FormGroup>
-                <Label htmlFor="name">Voice Model Name: <RequiredTag>Required</RequiredTag></Label>
+                <Label htmlFor="name">
+                  Voice Model Name: <RequiredTag>Required</RequiredTag>
+                </Label>
                 <Input
                   type="text"
                   id="name"
@@ -1060,8 +1104,10 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                   placeholder="e.g., British Male"
                 />
               </FormGroup>
-                <FormGroup>
-                <Label htmlFor="description">Description: <OptionalTag>Optional</OptionalTag></Label>
+              <FormGroup>
+                <Label htmlFor="description">
+                  Description: <OptionalTag>Optional</OptionalTag>
+                </Label>
                 <TextArea
                   id="description"
                   name="description"
@@ -1070,41 +1116,47 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                   placeholder="A brief description of this voice model"
                 />
               </FormGroup>
-              
+
               <FormGroup>
                 <Label>Voice Provider:</Label>
                 <ProviderSelectionContainer>
-                  <ProviderCard 
-                    selected={editingModel.provider === 'browser'} 
+                  <ProviderCard
+                    selected={editingModel.provider === 'browser'}
                     provider="browser"
                     onClick={() => handleSelectProvider('browser')}
                   >
                     <ProviderIcon>🔊</ProviderIcon>
-                    <ProviderTitle provider="browser">Browser Speech</ProviderTitle>
+                    <ProviderTitle provider="browser">
+                      Browser Speech
+                    </ProviderTitle>
                     <ProviderDescription>
-                      Free, works offline, available on all devices.
-                      Quality varies by browser and platform.
+                      Free, works offline, available on all devices. Quality
+                      varies by browser and platform.
                     </ProviderDescription>
                   </ProviderCard>
-                  
-                  <ProviderCard 
-                    selected={editingModel.provider === 'elevenlabs'} 
+
+                  <ProviderCard
+                    selected={editingModel.provider === 'elevenlabs'}
                     provider="elevenlabs"
                     onClick={() => handleSelectProvider('elevenlabs')}
                   >
                     <ProviderIcon>🌟</ProviderIcon>
-                    <ProviderTitle provider="elevenlabs">ElevenLabs</ProviderTitle>
+                    <ProviderTitle provider="elevenlabs">
+                      ElevenLabs
+                    </ProviderTitle>
                     <ProviderDescription>
-                      Premium quality AI voice synthesis.
-                      Requires API key and internet connection.
+                      Premium quality AI voice synthesis. Requires API key and
+                      internet connection.
                     </ProviderDescription>
                   </ProviderCard>
                 </ProviderSelectionContainer>
               </FormGroup>
-              
+
               {editingModel.provider === 'elevenlabs' ? (
                 <FormGroup>
-                  <Label htmlFor="voiceId">ElevenLabs Voice ID: <RequiredTag>Required</RequiredTag></Label>
+                  <Label htmlFor="voiceId">
+                    ElevenLabs Voice ID: <RequiredTag>Required</RequiredTag>
+                  </Label>
                   <Input
                     type="text"
                     id="voiceId"
@@ -1113,8 +1165,8 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                     onChange={handleChange}
                     placeholder="Enter ElevenLabs Voice ID"
                   />
-                  
-                  <VoiceBrowserButton 
+
+                  <VoiceBrowserButton
                     onClick={fetchElevenLabsVoices}
                     disabled={loadingVoices || !elevenlabsKeyExists}
                   >
@@ -1130,25 +1182,30 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                       </>
                     )}
                   </VoiceBrowserButton>
-                  
+
                   {!elevenlabsKeyExists && (
                     <ErrorBox>
-                      ElevenLabs API key is required to use premium voices. 
+                      ElevenLabs API key is required to use premium voices.
                       Please add your API key in "Manage API Keys".
                     </ErrorBox>
                   )}
-                  
+
                   {availableVoices.length > 0 && (
                     <VoiceBrowser>
                       {availableVoices.map(voice => (
-                        <VoiceItem key={voice.voice_id} onClick={() => {
-                          setEditingModel({
-                            ...editingModel,
-                            voiceId: voice.voice_id,
-                            name: editingModel.name || voice.name,
-                            description: editingModel.description || `${voice.name} - ${voice.labels?.accent || 'Unknown accent'}`
-                          });
-                        }}>
+                        <VoiceItem
+                          key={voice.voice_id}
+                          onClick={() => {
+                            setEditingModel({
+                              ...editingModel,
+                              voiceId: voice.voice_id,
+                              name: editingModel.name || voice.name,
+                              description:
+                                editingModel.description ||
+                                `${voice.name} - ${voice.labels?.accent || 'Unknown accent'}`,
+                            });
+                          }}
+                        >
                           <VoiceInfo>
                             <VoiceName>{voice.name}</VoiceName>
                             <VoiceDescription>
@@ -1165,11 +1222,14 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                 </FormGroup>
               ) : (
                 <BrowserVoiceSection>
-                  <Label>Select Browser Voice: <RequiredTag>Required</RequiredTag></Label>
-                  
+                  <Label>
+                    Select Browser Voice: <RequiredTag>Required</RequiredTag>
+                  </Label>
+
                   {browserVoices.length === 0 ? (
                     <InfoBox>
-                      No browser voices detected. Voice support may vary depending on your browser and operating system.
+                      No browser voices detected. Voice support may vary
+                      depending on your browser and operating system.
                     </InfoBox>
                   ) : (
                     <BrowserVoiceGrid>
@@ -1177,7 +1237,9 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                         <BrowserVoiceOption
                           key={`${voice.voiceURI}-${index}`}
                           selected={selectedBrowserVoice === voice.voiceURI}
-                          onClick={() => handleSelectBrowserVoice(voice.voiceURI)}
+                          onClick={() =>
+                            handleSelectBrowserVoice(voice.voiceURI)
+                          }
                         >
                           <BrowserVoiceName>
                             {voice.name}
@@ -1216,13 +1278,13 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                   <SliderValue>
                     <span>Less stable</span>
                     <SliderValueNumber>
-                      {editingModel.settings?.stability?.toFixed(2) || "0.50"}
+                      {editingModel.settings?.stability?.toFixed(2) || '0.50'}
                     </SliderValueNumber>
                     <span>More stable</span>
                   </SliderValue>
                 </SliderContainer>
               </FormGroup>
-              
+
               <FormGroup>
                 <Label htmlFor="settings.similarity_boost">
                   Similarity Boost: How closely to match the original voice
@@ -1241,27 +1303,35 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                   <SliderValue>
                     <span>More variation</span>
                     <SliderValueNumber>
-                      {editingModel.settings?.similarity_boost?.toFixed(2) || "0.50"}
+                      {editingModel.settings?.similarity_boost?.toFixed(2) ||
+                        '0.50'}
                     </SliderValueNumber>
                     <span>More similar</span>
                   </SliderValue>
                 </SliderContainer>
               </FormGroup>
-              
+
               <InfoBox>
-                <strong>Voice Settings Guide:</strong><br/>
-                <strong>Stability</strong> - Higher values create consistent output but may sound monotonous. Lower values add more emotion but may be unpredictable.<br/>
-                <strong>Similarity Boost</strong> - Higher values make the voice sound closer to the original voice sample, lower values allow more creativity.
+                <strong>Voice Settings Guide:</strong>
+                <br />
+                <strong>Stability</strong> - Higher values create consistent
+                output but may sound monotonous. Lower values add more emotion
+                but may be unpredictable.
+                <br />
+                <strong>Similarity Boost</strong> - Higher values make the voice
+                sound closer to the original voice sample, lower values allow
+                more creativity.
               </InfoBox>
             </>
           )}
-          
+
           <FooterButtons>
             <CancelButton onClick={handleCancel}>Cancel</CancelButton>
-            <SaveButton onClick={handleSave}>Save Voice Model</SaveButton>          </FooterButtons>
+            <SaveButton onClick={handleSave}>Save Voice Model</SaveButton>{' '}
+          </FooterButtons>
         </FormContainer>
       )}
-      
+
       <ConfirmationDialog
         isOpen={showDeleteConfirmation}
         title="Delete Voice Model"

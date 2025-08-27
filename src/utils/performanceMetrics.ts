@@ -23,23 +23,25 @@ interface PerformanceMetric {
 }
 
 interface WebVitalsData {
-  lcp?: number;      // Largest Contentful Paint (ms)
-  fid?: number;      // First Input Delay (ms)
-  cls?: number;      // Cumulative Layout Shift (unitless)
-  ttfb?: number;     // Time to First Byte (ms)
-  fcp?: number;      // First Contentful Paint (ms)
-  inp?: number;      // Interaction to Next Paint (ms)
+  lcp?: number; // Largest Contentful Paint (ms)
+  fid?: number; // First Input Delay (ms)
+  cls?: number; // Cumulative Layout Shift (unitless)
+  ttfb?: number; // Time to First Byte (ms)
+  fcp?: number; // First Contentful Paint (ms)
+  inp?: number; // Interaction to Next Paint (ms)
 }
 
 interface AiPerformanceData {
-  responseTime?: {   // AI response generation times (ms)
-    avg: number;     // Average response time
-    min: number;     // Minimum response time
-    max: number;     // Maximum response time
-    count: number;   // Number of responses
+  responseTime?: {
+    // AI response generation times (ms)
+    avg: number; // Average response time
+    min: number; // Minimum response time
+    max: number; // Maximum response time
+    count: number; // Number of responses
   };
-  tokenUsage?: {     // Token usage statistics
-    total: number;   // Total tokens used
+  tokenUsage?: {
+    // Token usage statistics
+    total: number; // Total tokens used
     byModel: Record<string, number>; // Tokens by model
   };
 }
@@ -65,8 +67,8 @@ interface PerformanceReport {
   resourceSummary?: {
     totalResources: number;
     totalSize: number;
-    byType: Record<string, {count: number, size: number}>;
-    slowestResources: Array<{name: string, duration: number}>;
+    byType: Record<string, { count: number; size: number }>;
+    slowestResources: Array<{ name: string; duration: number }>;
   };
   summary?: {
     overallPerformanceScore?: number;
@@ -95,37 +97,37 @@ let currentFPS = 0;
 // Track FPS using requestAnimationFrame for more accurate measurement
 const trackFPS = (): void => {
   if (!isMetricsEnabled) return;
-  
+
   // Add metrics to window object for sharing across components
   if (!window.ALTER_EGO_METRICS) {
     window.ALTER_EGO_METRICS = {
-      currentFPS: 0
+      currentFPS: 0,
     };
   }
-  
+
   const updateFPS = () => {
     rafFpsFrameCount++;
     const now = performance.now();
-    
+
     if (now - rafFpsLastTime >= 1000) {
       currentFPS = rafFpsFrameCount;
       rafFpsFrameCount = 0;
       rafFpsLastTime = now;
-      
+
       // Update the global metrics object
       if (window.ALTER_EGO_METRICS) {
         window.ALTER_EGO_METRICS.currentFPS = currentFPS;
       }
-      
+
       // Capture the FPS metric immediately when calculated
       if (currentReport) {
         captureMetric('fps', currentFPS);
       }
     }
-    
+
     requestAnimationFrame(updateFPS);
   };
-  
+
   // Start the FPS tracking loop
   requestAnimationFrame(updateFPS);
 };
@@ -135,19 +137,22 @@ const trackFPS = (): void => {
  */
 export const initPerformanceMonitoring = (): void => {
   if (!isMetricsEnabled) return;
-  
+
   const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  
+
   // Create device info object for better context
   const deviceInfo = {
     screenWidth: window.screen.width,
     screenHeight: window.screen.height,
     devicePixelRatio: window.devicePixelRatio,
     platform: navigator.platform,
-    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-    isOnline: navigator.onLine
+    isMobile:
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ),
+    isOnline: navigator.onLine,
   };
-  
+
   currentReport = {
     sessionId,
     startTime: Date.now(),
@@ -158,7 +163,7 @@ export const initPerformanceMonitoring = (): void => {
 
   // Initialize AI performance tracking
   aiResponseTimes.length = 0;
-  
+
   // Collect initial navigation timing
   if (window.performance && window.performance.timing) {
     setTimeout(() => {
@@ -168,21 +173,21 @@ export const initPerformanceMonitoring = (): void => {
 
   // Start periodic collection of metrics
   startPeriodicCollection();
-  
+
   // Start accurate FPS tracking
   trackFPS();
-  
+
   // Setup hotkey listener (only in dev mode and only once)
   if (isDevMode && !hotkeyListenerInitialized) {
     setupHotkeyListener();
     hotkeyListenerInitialized = true;
   }
-  
+
   // Capture Web Vitals after page load
   setTimeout(() => {
     captureWebVitals();
   }, 5000); // Wait 5 seconds for metrics to be available
-  
+
   console.log('Performance monitoring initialized', sessionId);
 };
 
@@ -191,24 +196,26 @@ export const initPerformanceMonitoring = (): void => {
  * Ctrl+Alt+P triggers a report generation
  */
 const setupHotkeyListener = (): void => {
-  window.addEventListener('keydown', (event) => {
+  window.addEventListener('keydown', event => {
     // Check for Ctrl+Alt+P (Cmd+Option+P on Mac)
     if ((event.ctrlKey || event.metaKey) && event.altKey && event.key === 'p') {
       console.log('Performance metrics hotkey detected, generating report...');
       event.preventDefault(); // Prevent any default browser action
-      
+
       // Generate a report now
       generateReport().then(() => {
         // Start a fresh session after the report is generated
         initPerformanceMonitoring();
-        
+
         // Show user feedback
         showHotkeyFeedback();
       });
     }
   });
-  
-  console.log('Performance metrics hotkey registered: Ctrl+Alt+P (Cmd+Option+P on Mac)');
+
+  console.log(
+    'Performance metrics hotkey registered: Ctrl+Alt+P (Cmd+Option+P on Mac)'
+  );
 };
 
 /**
@@ -230,9 +237,9 @@ const showHotkeyFeedback = (): void => {
     transition: opacity 0.3s;
   `;
   feedback.textContent = 'Performance report generated!';
-  
+
   document.body.appendChild(feedback);
-  
+
   // Remove after 3 seconds
   setTimeout(() => {
     feedback.style.opacity = '0';
@@ -245,14 +252,18 @@ const showHotkeyFeedback = (): void => {
 /**
  * Capture a performance metric with the given name and value
  */
-export const captureMetric = (type: string, value: number, details?: Record<string, any>): void => {
+export const captureMetric = (
+  type: string,
+  value: number,
+  details?: Record<string, any>
+): void => {
   if (!isMetricsEnabled || !currentReport) return;
-  
+
   currentReport.metrics.push({
     timestamp: Date.now(),
     type,
     value,
-    details
+    details,
   });
 };
 
@@ -262,37 +273,40 @@ export const captureMetric = (type: string, value: number, details?: Record<stri
  */
 const captureWebVitals = (): void => {
   if (!isMetricsEnabled || !currentReport) return;
-  
+
   // Initialize web vitals object
   currentReport.webVitals = {};
-  
+
   // Use newer API to get navigation timing for TTFB
   const navEntries = performance.getEntriesByType('navigation');
   if (navEntries.length > 0) {
     const navEntry = navEntries[0] as PerformanceNavigationTiming;
-    currentReport.webVitals.ttfb = navEntry.responseStart - navEntry.requestStart;
+    currentReport.webVitals.ttfb =
+      navEntry.responseStart - navEntry.requestStart;
   }
-  
+
   // For FCP, we get the entry from the paint observer (already captured)
   let fcpObserved = false;
-  const paintObserver = new PerformanceObserver((entries) => {
-    const fcpEntries = entries.getEntries().filter(entry => entry.name === 'first-contentful-paint');
+  const paintObserver = new PerformanceObserver(entries => {
+    const fcpEntries = entries
+      .getEntries()
+      .filter(entry => entry.name === 'first-contentful-paint');
     if (fcpEntries.length > 0 && currentReport) {
       currentReport.webVitals.fcp = fcpEntries[0].startTime;
       fcpObserved = true;
     }
   });
-  
+
   try {
     // Observe paint timing events (FCP)
     paintObserver.observe({ type: 'paint', buffered: true });
   } catch (e) {
     console.warn('Paint timing observation not supported', e);
   }
-  
+
   // For LCP, we use dedicated observer
   let lcpObserved = false;
-  const lcpObserver = new PerformanceObserver((entries) => {
+  const lcpObserver = new PerformanceObserver(entries => {
     // We only want the latest LCP entry
     const lcpEntry = entries.getEntries().pop();
     if (lcpEntry && currentReport) {
@@ -300,37 +314,37 @@ const captureWebVitals = (): void => {
       lcpObserved = true;
     }
   });
-  
+
   try {
     // Observe LCP events
     lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
   } catch (e) {
     console.warn('LCP observation not supported', e);
   }
-  
+
   // For CLS, we use a layout-shift observer
   let cumulativeLayoutShift = 0;
-  const clsObserver = new PerformanceObserver((entries) => {
+  const clsObserver = new PerformanceObserver(entries => {
     for (const entry of entries.getEntries()) {
       // Skip entries with 0 value (not relevant)
       if (!(entry as any).value) continue;
-      
+
       // Add up the layout shift values
       cumulativeLayoutShift += (entry as any).value;
     }
-    
+
     if (currentReport) {
       currentReport.webVitals.cls = cumulativeLayoutShift;
     }
   });
-  
+
   try {
     // Observe layout shift events
     clsObserver.observe({ type: 'layout-shift', buffered: true });
   } catch (e) {
     console.warn('Layout shift observation not supported', e);
   }
-  
+
   // Clean up observers after 5 seconds (enough time to collect initial metrics)
   setTimeout(() => {
     try {
@@ -340,11 +354,17 @@ const captureWebVitals = (): void => {
     } catch (e) {
       console.warn('Error disconnecting observers', e);
     }
-    
+
     // Final fallback for FCP/LCP
-    if (!fcpObserved && window.performance && window.performance.getEntriesByType) {
+    if (
+      !fcpObserved &&
+      window.performance &&
+      window.performance.getEntriesByType
+    ) {
       const paintEntries = performance.getEntriesByType('paint');
-      const fcpEntries = paintEntries.filter((entry) => entry.name === 'first-contentful-paint');
+      const fcpEntries = paintEntries.filter(
+        entry => entry.name === 'first-contentful-paint'
+      );
       if (fcpEntries.length > 0 && currentReport) {
         currentReport.webVitals.fcp = fcpEntries[0].startTime;
       }
@@ -358,9 +378,9 @@ const captureWebVitals = (): void => {
  */
 export const trackAiResponseTime = (responseTimeMs: number): void => {
   if (!isMetricsEnabled || !currentReport) return;
-  
+
   aiResponseTimes.push(responseTimeMs);
-  
+
   // Update the AI performance metrics immediately
   updateAiPerformanceMetrics();
 };
@@ -369,32 +389,33 @@ export const trackAiResponseTime = (responseTimeMs: number): void => {
  * Update AI Performance metrics based on collected data
  */
 const updateAiPerformanceMetrics = (): void => {
-  if (!isMetricsEnabled || !currentReport || aiResponseTimes.length === 0) return;
-  
+  if (!isMetricsEnabled || !currentReport || aiResponseTimes.length === 0)
+    return;
+
   if (!currentReport.aiPerformance) {
     currentReport.aiPerformance = {
       responseTime: {
         avg: 0,
         min: 0,
         max: 0,
-        count: 0
-      }
+        count: 0,
+      },
     };
   }
-  
+
   // Calculate response time statistics
   const sum = aiResponseTimes.reduce((sum, time) => sum + time, 0);
   const avg = sum / aiResponseTimes.length;
   const min = Math.min(...aiResponseTimes);
   const max = Math.max(...aiResponseTimes);
-  
+
   currentReport.aiPerformance.responseTime = {
     avg,
     min,
     max,
-    count: aiResponseTimes.length
+    count: aiResponseTimes.length,
   };
-  
+
   // Get token usage statistics
   try {
     currentReport.aiPerformance.tokenUsage = getTokenUsageStats();
@@ -407,35 +428,52 @@ const updateAiPerformanceMetrics = (): void => {
  * Capture navigation timing information using Performance Timeline API (Level 2)
  */
 const captureNavigationTiming = (): void => {
-  if (!isMetricsEnabled || !currentReport || !window.performance || !window.performance.getEntriesByType) return;
-  
+  if (
+    !isMetricsEnabled ||
+    !currentReport ||
+    !window.performance ||
+    !window.performance.getEntriesByType
+  )
+    return;
+
   // Get the navigation timing entries using the newer API
   const navEntries = window.performance.getEntriesByType('navigation');
   if (navEntries.length === 0) return;
-  
+
   // Cast to PerformanceNavigationTiming which has the timing metrics
   const navTiming = navEntries[0] as PerformanceNavigationTiming;
-  
+
   // Calculate key metrics using the modern API properties
   currentReport.navigationTiming = {
     startTime: navTiming.startTime,
     redirectTime: navTiming.redirectEnd - navTiming.redirectStart,
     dnsTime: navTiming.domainLookupEnd - navTiming.domainLookupStart,
     connectTime: navTiming.connectEnd - navTiming.connectStart,
-    tlsTime: navTiming.secureConnectionStart > 0 ? navTiming.connectEnd - navTiming.secureConnectionStart : 0,
+    tlsTime:
+      navTiming.secureConnectionStart > 0
+        ? navTiming.connectEnd - navTiming.secureConnectionStart
+        : 0,
     requestTime: navTiming.responseStart - navTiming.requestStart,
     responseTime: navTiming.responseEnd - navTiming.responseStart,
-    domProcessingTime: navTiming.domComplete - navTiming.domContentLoadedEventStart,
-    domInteractiveTime: navTiming.domInteractive - navTiming.domContentLoadedEventStart,
+    domProcessingTime:
+      navTiming.domComplete - navTiming.domContentLoadedEventStart,
+    domInteractiveTime:
+      navTiming.domInteractive - navTiming.domContentLoadedEventStart,
     loadEventTime: navTiming.loadEventEnd - navTiming.loadEventStart,
     fetchTime: navTiming.responseEnd - navTiming.fetchStart,
     totalPageLoadTime: navTiming.loadEventEnd - navTiming.startTime,
-    navigationTypeCode: navTiming.type === 'navigate' ? 0 : 
-                      navTiming.type === 'reload' ? 1 : 
-                      navTiming.type === 'back_forward' ? 2 : 
-                      navTiming.type === 'prerender' ? 3 : 4,
+    navigationTypeCode:
+      navTiming.type === 'navigate'
+        ? 0
+        : navTiming.type === 'reload'
+          ? 1
+          : navTiming.type === 'back_forward'
+            ? 2
+            : navTiming.type === 'prerender'
+              ? 3
+              : 4,
     navigationTypeName: navTiming.type,
-    redirectCount: navTiming.redirectCount
+    redirectCount: navTiming.redirectCount,
   };
 };
 
@@ -443,8 +481,14 @@ const captureNavigationTiming = (): void => {
  * Capture resource timing information for key resources
  */
 const captureResourceTiming = (): void => {
-  if (!isMetricsEnabled || !currentReport || !window.performance || !window.performance.getEntriesByType) return;
-  
+  if (
+    !isMetricsEnabled ||
+    !currentReport ||
+    !window.performance ||
+    !window.performance.getEntriesByType
+  )
+    return;
+
   const resources = window.performance.getEntriesByType('resource');
   const filteredResources = resources.map(resource => {
     const entry = resource as PerformanceResourceTiming;
@@ -458,9 +502,9 @@ const captureResourceTiming = (): void => {
       initiatorType: entry.initiatorType,
     };
   });
-  
+
   currentReport.resourceTiming = filteredResources;
-  
+
   // Generate resource summary
   generateResourceSummary(filteredResources);
 };
@@ -468,23 +512,25 @@ const captureResourceTiming = (): void => {
 /**
  * Generate summary information about loaded resources
  */
-const generateResourceSummary = (resources: Array<Record<string, any>>): void => {
+const generateResourceSummary = (
+  resources: Array<Record<string, any>>
+): void => {
   if (!currentReport) return;
-  
+
   // Initialize resource summary
   const summary = {
     totalResources: resources.length,
     totalSize: 0,
-    byType: {} as Record<string, {count: number, size: number}>,
-    slowestResources: [] as Array<{name: string, duration: number}>
+    byType: {} as Record<string, { count: number; size: number }>,
+    slowestResources: [] as Array<{ name: string; duration: number }>,
   };
-  
+
   // Process each resource
   resources.forEach(resource => {
     // Add to total size
     const size = resource.decodedBodySize || resource.transferSize || 0;
     summary.totalSize += size;
-    
+
     // Group by type
     const type = resource.initiatorType || 'other';
     if (!summary.byType[type]) {
@@ -492,18 +538,18 @@ const generateResourceSummary = (resources: Array<Record<string, any>>): void =>
     }
     summary.byType[type].count++;
     summary.byType[type].size += size;
-    
+
     // Track slowest resources
     summary.slowestResources.push({
       name: resource.name,
-      duration: resource.duration
+      duration: resource.duration,
     });
   });
-  
+
   // Sort and limit slowest resources
   summary.slowestResources.sort((a, b) => b.duration - a.duration);
   summary.slowestResources = summary.slowestResources.slice(0, 5); // Keep only top 5
-  
+
   currentReport.resourceSummary = summary;
 };
 
@@ -512,9 +558,9 @@ const generateResourceSummary = (resources: Array<Record<string, any>>): void =>
  */
 const captureMemoryInfo = (): void => {
   if (!isMetricsEnabled || !currentReport) return;
-  
+
   const memory = (performance as any).memory;
-  
+
   if (memory) {
     currentReport.memoryInfo = {
       jsHeapSizeLimit: memory.jsHeapSizeLimit,
@@ -529,13 +575,13 @@ const captureMemoryInfo = (): void => {
  */
 const startPeriodicCollection = (): void => {
   if (!isMetricsEnabled) return;
-  
+
   // Collect metrics every 10 seconds
   const intervalId = setInterval(() => {
     try {
       captureMemoryInfo();
       // FPS is now captured through requestAnimationFrame
-      
+
       // Update web vitals periodically
       captureWebVitals();
     } catch (error) {
@@ -552,9 +598,12 @@ const startPeriodicCollection = (): void => {
 /**
  * Mark a user interaction or event
  */
-export const markEvent = (name: string, details?: Record<string, any>): void => {
+export const markEvent = (
+  name: string,
+  details?: Record<string, any>
+): void => {
   if (!isMetricsEnabled || !currentReport) return;
-  
+
   const now = performance.now();
   captureMetric('event', now, { name, ...details });
 };
@@ -571,10 +620,10 @@ export const startTimer = (name: string): void => {
 
 export const endTimer = (name: string): number | null => {
   if (!isMetricsEnabled || !timers[name]) return null;
-  
+
   const duration = performance.now() - timers[name];
   delete timers[name];
-  
+
   captureMetric('timer', duration, { name });
   return duration;
 };
@@ -584,36 +633,59 @@ export const endTimer = (name: string): number | null => {
  */
 const generatePerformanceSummary = (): void => {
   if (!currentReport) return;
-  
+
   const keyFindings: string[] = [];
   const recommendations: string[] = [];
   let overallScore = 0;
   let scoreFactors = 0;
-  
+
   // Check memory usage
   if (currentReport.memoryInfo) {
-    const memoryUsage = currentReport.memoryInfo.usedJSHeapSize / currentReport.memoryInfo.jsHeapSizeLimit;
+    const memoryUsage =
+      currentReport.memoryInfo.usedJSHeapSize /
+      currentReport.memoryInfo.jsHeapSizeLimit;
     if (memoryUsage > 0.7) {
-      keyFindings.push('High memory usage detected: ' + (memoryUsage * 100).toFixed(1) + '% of available heap');
-      recommendations.push('Consider optimizing memory usage and implementing cleanup routines');
+      keyFindings.push(
+        'High memory usage detected: ' +
+          (memoryUsage * 100).toFixed(1) +
+          '% of available heap'
+      );
+      recommendations.push(
+        'Consider optimizing memory usage and implementing cleanup routines'
+      );
       overallScore += 30; // Poor score for high memory usage
     } else if (memoryUsage > 0.5) {
-      keyFindings.push('Moderate memory usage: ' + (memoryUsage * 100).toFixed(1) + '% of available heap');
+      keyFindings.push(
+        'Moderate memory usage: ' +
+          (memoryUsage * 100).toFixed(1) +
+          '% of available heap'
+      );
       overallScore += 70; // Average score for moderate memory usage
     } else {
-      keyFindings.push('Good memory usage: ' + (memoryUsage * 100).toFixed(1) + '% of available heap');
+      keyFindings.push(
+        'Good memory usage: ' +
+          (memoryUsage * 100).toFixed(1) +
+          '% of available heap'
+      );
       overallScore += 100; // Good score for low memory usage
     }
     scoreFactors++;
   }
-  
+
   // Check FPS
-  const fpsValues = currentReport.metrics.filter(m => m.type === 'fps').map(m => m.value);
+  const fpsValues = currentReport.metrics
+    .filter(m => m.type === 'fps')
+    .map(m => m.value);
   if (fpsValues.length > 0) {
-    const avgFps = fpsValues.reduce((sum, fps) => sum + fps, 0) / fpsValues.length;
+    const avgFps =
+      fpsValues.reduce((sum, fps) => sum + fps, 0) / fpsValues.length;
     if (avgFps < 30) {
-      keyFindings.push('Low frame rate detected: ' + avgFps.toFixed(1) + ' FPS');
-      recommendations.push('Optimize rendering performance or reduce animation complexity');
+      keyFindings.push(
+        'Low frame rate detected: ' + avgFps.toFixed(1) + ' FPS'
+      );
+      recommendations.push(
+        'Optimize rendering performance or reduce animation complexity'
+      );
       overallScore += 30; // Poor score for low FPS
     } else if (avgFps < 55) {
       keyFindings.push('Average frame rate: ' + avgFps.toFixed(1) + ' FPS');
@@ -624,27 +696,37 @@ const generatePerformanceSummary = (): void => {
     }
     scoreFactors++;
   }
-  
+
   // Check web vitals
   if (currentReport.webVitals) {
     if (currentReport.webVitals.lcp) {
       const lcp = currentReport.webVitals.lcp;
       if (lcp > 2500) {
-        keyFindings.push('Slow Largest Contentful Paint: ' + lcp.toFixed(0) + 'ms (goal is <2500ms)');
-        recommendations.push('Optimize critical rendering path and image loading');
+        keyFindings.push(
+          'Slow Largest Contentful Paint: ' +
+            lcp.toFixed(0) +
+            'ms (goal is <2500ms)'
+        );
+        recommendations.push(
+          'Optimize critical rendering path and image loading'
+        );
         overallScore += 30; // Poor score
       } else {
-        keyFindings.push('Good Largest Contentful Paint: ' + lcp.toFixed(0) + 'ms');
+        keyFindings.push(
+          'Good Largest Contentful Paint: ' + lcp.toFixed(0) + 'ms'
+        );
         overallScore += 100; // Good score
       }
       scoreFactors++;
     }
-    
+
     if (currentReport.webVitals.cls !== undefined) {
       const cls = currentReport.webVitals.cls;
       if (cls > 0.1) {
         keyFindings.push('High Cumulative Layout Shift: ' + cls.toFixed(3));
-        recommendations.push('Fix layout instability issues by setting explicit sizes for media elements');
+        recommendations.push(
+          'Fix layout instability issues by setting explicit sizes for media elements'
+        );
         overallScore += 30; // Poor score
       } else {
         keyFindings.push('Good Cumulative Layout Shift: ' + cls.toFixed(3));
@@ -653,65 +735,84 @@ const generatePerformanceSummary = (): void => {
       scoreFactors++;
     }
   }
-  
+
   // Check AI performance
   if (currentReport.aiPerformance && currentReport.aiPerformance.responseTime) {
     const avgResponseTime = currentReport.aiPerformance.responseTime.avg;
     if (avgResponseTime > 3000) {
-      keyFindings.push('Slow AI response time: ' + avgResponseTime.toFixed(0) + 'ms');
-      recommendations.push('Consider optimizing AI requests or using a faster model');
+      keyFindings.push(
+        'Slow AI response time: ' + avgResponseTime.toFixed(0) + 'ms'
+      );
+      recommendations.push(
+        'Consider optimizing AI requests or using a faster model'
+      );
       overallScore += 30; // Poor score
     } else if (avgResponseTime > 1000) {
-      keyFindings.push('Average AI response time: ' + avgResponseTime.toFixed(0) + 'ms');
+      keyFindings.push(
+        'Average AI response time: ' + avgResponseTime.toFixed(0) + 'ms'
+      );
       overallScore += 70; // Average score
     } else {
-      keyFindings.push('Fast AI response time: ' + avgResponseTime.toFixed(0) + 'ms');
+      keyFindings.push(
+        'Fast AI response time: ' + avgResponseTime.toFixed(0) + 'ms'
+      );
       overallScore += 100; // Good score
     }
     scoreFactors++;
   }
-  
+
   // Check resource loading
   if (currentReport.resourceSummary) {
     const totalSize = currentReport.resourceSummary.totalSize;
     const sizeMB = totalSize / (1024 * 1024);
-    
+
     if (sizeMB > 5) {
       keyFindings.push('Large resource footprint: ' + sizeMB.toFixed(2) + 'MB');
-      recommendations.push('Optimize asset sizes, implement lazy loading and consider code splitting');
+      recommendations.push(
+        'Optimize asset sizes, implement lazy loading and consider code splitting'
+      );
       overallScore += 30; // Poor score
     } else {
       keyFindings.push('Good resource size: ' + sizeMB.toFixed(2) + 'MB');
       overallScore += 100; // Good score
     }
     scoreFactors++;
-    
+
     // Add information about slowest resources
     if (currentReport.resourceSummary.slowestResources.length > 0) {
       const slowest = currentReport.resourceSummary.slowestResources[0];
       const slowestName = slowest.name.split('/').pop() || slowest.name;
       const slowestTime = slowest.duration;
-      
+
       if (slowestTime > 500) {
-        keyFindings.push('Slow resource loading: ' + slowestName + ' (' + slowestTime.toFixed(0) + 'ms)');
-        recommendations.push('Optimize loading of slow resources, especially ' + slowestName);
+        keyFindings.push(
+          'Slow resource loading: ' +
+            slowestName +
+            ' (' +
+            slowestTime.toFixed(0) +
+            'ms)'
+        );
+        recommendations.push(
+          'Optimize loading of slow resources, especially ' + slowestName
+        );
       }
     }
   }
-  
+
   // Calculate overall score
-  const finalScore = scoreFactors > 0 ? Math.round(overallScore / scoreFactors) : 0;
-  
+  const finalScore =
+    scoreFactors > 0 ? Math.round(overallScore / scoreFactors) : 0;
+
   // Add default recommendations if none were added
   if (recommendations.length === 0) {
     recommendations.push('Continue monitoring performance metrics regularly');
   }
-  
+
   // Set the summary
   currentReport.summary = {
     overallPerformanceScore: finalScore,
     keyFindings,
-    recommendations
+    recommendations,
   };
 };
 
@@ -720,25 +821,25 @@ const generatePerformanceSummary = (): void => {
  */
 export const generateReport = async (): Promise<void> => {
   if (!isMetricsEnabled || !currentReport || isGeneratingReport) return;
-  
+
   isGeneratingReport = true;
-  
+
   try {
     // Capture final metrics
     captureResourceTiming();
     captureMemoryInfo();
     captureWebVitals();
     updateAiPerformanceMetrics();
-    
+
     // Add session duration
     captureMetric('sessionDuration', Date.now() - currentReport.startTime);
-    
+
     // Generate human-readable summary
     generatePerformanceSummary();
-    
+
     // Format the report as a string
     const reportString = JSON.stringify(currentReport, null, 2);
-    
+
     // In development mode, send to server and save locally
     if (isDevMode) {
       // First try to send to our dev server endpoint
@@ -748,9 +849,9 @@ export const generateReport = async (): Promise<void> => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: reportString
+          body: reportString,
         });
-        
+
         if (response.ok) {
           const result = await response.json();
           console.log('Performance report saved to file:', result.filename);
@@ -758,12 +859,15 @@ export const generateReport = async (): Promise<void> => {
           throw new Error('Failed to save metrics to server');
         }
       } catch (serverError) {
-        console.warn('Failed to save metrics to server, falling back to local download:', serverError);
-        
+        console.warn(
+          'Failed to save metrics to server, falling back to local download:',
+          serverError
+        );
+
         // Fall back to browser download if server endpoint fails
         const blob = new Blob([reportString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
+
         // Create a link to download the file
         const a = document.createElement('a');
         a.href = url;
@@ -771,16 +875,16 @@ export const generateReport = async (): Promise<void> => {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        
+
         // Clean up the URL
         setTimeout(() => {
           URL.revokeObjectURL(url);
         }, 100);
       }
-      
+
       console.log('Performance report generated:', currentReport.sessionId);
     }
-    
+
     // Reset the current report
     currentReport = null;
   } catch (error) {
@@ -795,7 +899,7 @@ export const generateReport = async (): Promise<void> => {
  */
 export const setMetricsEnabled = (enabled: boolean): void => {
   isMetricsEnabled = enabled && isDevMode; // Only allow in dev mode
-  
+
   if (isMetricsEnabled && !currentReport) {
     initPerformanceMonitoring();
   }
@@ -810,7 +914,7 @@ export const triggerPerformanceReport = async (): Promise<boolean> => {
   if (!isMetricsEnabled || !currentReport) {
     return false;
   }
-  
+
   await generateReport();
   // Start a new monitoring session
   initPerformanceMonitoring();

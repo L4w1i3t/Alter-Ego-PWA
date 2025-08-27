@@ -24,7 +24,7 @@ const slideOut = keyframes`
   }
 `;
 
-const NotificationContainer = styled.div<{ 
+const NotificationContainer = styled.div<{
   $type: 'success' | 'error' | 'info' | 'warning';
   $isExiting: boolean;
 }>`
@@ -41,8 +41,9 @@ const NotificationContainer = styled.div<{
   font-family: 'Courier New', monospace;
   z-index: 10000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  animation: ${props => props.$isExiting ? slideOut : slideIn} 0.3s ease-in-out;
-  
+  animation: ${props => (props.$isExiting ? slideOut : slideIn)} 0.3s
+    ease-in-out;
+
   ${props => {
     switch (props.$type) {
       case 'success':
@@ -86,21 +87,28 @@ const NotificationHeader = styled.div`
   margin-bottom: 0.5em;
 `;
 
-const NotificationTitle = styled.div<{ $type: 'success' | 'error' | 'info' | 'warning' }>`
+const NotificationTitle = styled.div<{
+  $type: 'success' | 'error' | 'info' | 'warning';
+}>`
   font-weight: bold;
   font-size: 1em;
   display: flex;
   align-items: center;
   gap: 0.5em;
-  
+
   &::before {
     content: ${props => {
       switch (props.$type) {
-        case 'success': return '"✓"';
-        case 'error': return '"✗"';
-        case 'warning': return '"⚠"';
-        case 'info': return '"ⓘ"';
-        default: return '"✓"';
+        case 'success':
+          return '"✓"';
+        case 'error':
+          return '"✗"';
+        case 'warning':
+          return '"⚠"';
+        case 'info':
+          return '"ⓘ"';
+        default:
+          return '"✓"';
       }
     }};
     font-size: 1.2em;
@@ -116,7 +124,7 @@ const CloseButton = styled.button`
   padding: 0;
   margin-left: 1em;
   opacity: 0.7;
-  
+
   &:hover {
     opacity: 1;
   }
@@ -134,14 +142,16 @@ const ProgressContainer = styled.div`
   margin-top: 0.8em;
 `;
 
-const ProgressBar = styled.div<{ $type: 'success' | 'error' | 'info' | 'warning' }>`
+const ProgressBar = styled.div<{
+  $type: 'success' | 'error' | 'info' | 'warning';
+}>`
   flex: 1;
   height: 4px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
   overflow: hidden;
   position: relative;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -150,11 +160,16 @@ const ProgressBar = styled.div<{ $type: 'success' | 'error' | 'info' | 'warning'
     height: 100%;
     background: ${props => {
       switch (props.$type) {
-        case 'success': return '#0f0';
-        case 'error': return '#f00';
-        case 'warning': return '#ff0';
-        case 'info': return '#00f';
-        default: return '#0f0';
+        case 'success':
+          return '#0f0';
+        case 'error':
+          return '#f00';
+        case 'warning':
+          return '#ff0';
+        case 'info':
+          return '#00f';
+        default:
+          return '#0f0';
       }
     }};
     transition: width 0.1s linear;
@@ -171,14 +186,17 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'secondary' }>`
   background: transparent;
   border: 1px solid;
   color: inherit;
-  border-color: ${props => props.$variant === 'secondary' ? 'rgba(255, 255, 255, 0.3)' : 'currentColor'};
+  border-color: ${props =>
+    props.$variant === 'secondary'
+      ? 'rgba(255, 255, 255, 0.3)'
+      : 'currentColor'};
   padding: 0.3em 0.8em;
   border-radius: 0.3em;
   cursor: pointer;
   font-size: 0.8em;
   font-family: inherit;
-  opacity: ${props => props.$variant === 'secondary' ? '0.7' : '1'};
-  
+  opacity: ${props => (props.$variant === 'secondary' ? '0.7' : '1')};
+
   &:hover {
     background: currentColor;
     color: #000;
@@ -221,7 +239,7 @@ const Notification: React.FC<NotificationProps> = ({
   showProgress = true,
   actions = [],
   onClose,
-  onDismiss
+  onDismiss,
 }) => {
   const [progress, setProgress] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
@@ -233,11 +251,16 @@ const Notification: React.FC<NotificationProps> = ({
   const getTitle = () => {
     if (title) return title;
     switch (type) {
-      case 'success': return 'Success';
-      case 'error': return 'Error';
-      case 'warning': return 'Warning';
-      case 'info': return 'Information';
-      default: return 'Notification';
+      case 'success':
+        return 'Success';
+      case 'error':
+        return 'Error';
+      case 'warning':
+        return 'Warning';
+      case 'info':
+        return 'Information';
+      default:
+        return 'Notification';
     }
   };
 
@@ -296,9 +319,9 @@ const Notification: React.FC<NotificationProps> = ({
         <NotificationTitle $type={type}>{getTitle()}</NotificationTitle>
         <CloseButton onClick={handleClose}>×</CloseButton>
       </NotificationHeader>
-      
+
       <NotificationMessage>{message}</NotificationMessage>
-      
+
       {(showProgress || actions.length > 0) && (
         <ProgressContainer>
           {showProgress && duration > 0 && (
@@ -309,7 +332,7 @@ const Notification: React.FC<NotificationProps> = ({
               <TimerText>{formatTime(timeRemaining)}</TimerText>
             </>
           )}
-          
+
           <ActionButtons>
             {duration > 0 && (
               <ActionButton
@@ -319,7 +342,7 @@ const Notification: React.FC<NotificationProps> = ({
                 {isPaused ? '▶' : '⏸'}
               </ActionButton>
             )}
-            
+
             {actions.map((action, index) => (
               <ActionButton
                 key={index}
@@ -340,7 +363,7 @@ const Notification: React.FC<NotificationProps> = ({
 };
 
 interface NotificationManagerState {
-  notifications: (NotificationConfig & { id: string })[];
+  notification: (NotificationConfig & { id: string }) | null;
 }
 
 let notificationManagerInstance: {
@@ -350,28 +373,29 @@ let notificationManagerInstance: {
 } | null = null;
 
 export const NotificationManager: React.FC = () => {
-  const [state, setState] = useState<NotificationManagerState>({ notifications: [] });
+  const [state, setState] = useState<NotificationManagerState>({
+    notification: null,
+  });
   const nextIdRef = useRef(1);
 
   const show = (config: NotificationConfig): string => {
     const id = config.id || `notification-${nextIdRef.current++}`;
     const notification = { ...config, id };
-    
-    setState(prev => ({
-      notifications: [...prev.notifications, notification]
-    }));
-    
+
+    // Replace any existing notification immediately with the new one
+    setState({ notification });
+
     return id;
   };
 
   const dismiss = (id: string) => {
     setState(prev => ({
-      notifications: prev.notifications.filter(n => n.id !== id)
+      notification: prev.notification?.id === id ? null : prev.notification,
     }));
   };
 
   const clear = () => {
-    setState({ notifications: [] });
+    setState({ notification: null });
   };
 
   // Set up the global instance
@@ -384,22 +408,18 @@ export const NotificationManager: React.FC = () => {
 
   return (
     <>
-      {state.notifications.map((notification, index) => (
+      {state.notification && (
         <div
-          key={notification.id}
           style={{
             position: 'fixed',
-            top: `${20 + index * 80}px`,
+            top: '20px',
             right: '20px',
-            zIndex: 10000 - index
+            zIndex: 10000,
           }}
         >
-          <Notification
-            {...notification}
-            onDismiss={dismiss}
-          />
+          <Notification {...state.notification} onDismiss={dismiss} />
         </div>
-      ))}
+      )}
     </>
   );
 };
@@ -430,16 +450,24 @@ export const clearAllNotifications = (): void => {
 };
 
 // Convenience functions for common notification types
-export const showSuccess = (message: string, options?: Partial<NotificationConfig>) => 
-  showNotification({ type: 'success', message, ...options });
+export const showSuccess = (
+  message: string,
+  options?: Partial<NotificationConfig>
+) => showNotification({ type: 'success', message, ...options });
 
-export const showError = (message: string, options?: Partial<NotificationConfig>) => 
-  showNotification({ type: 'error', message, duration: 0, ...options }); // Errors don't auto-dismiss
+export const showError = (
+  message: string,
+  options?: Partial<NotificationConfig>
+) => showNotification({ type: 'error', message, duration: 0, ...options }); // Errors don't auto-dismiss
 
-export const showWarning = (message: string, options?: Partial<NotificationConfig>) => 
-  showNotification({ type: 'warning', message, ...options });
+export const showWarning = (
+  message: string,
+  options?: Partial<NotificationConfig>
+) => showNotification({ type: 'warning', message, ...options });
 
-export const showInfo = (message: string, options?: Partial<NotificationConfig>) => 
-  showNotification({ type: 'info', message, ...options });
+export const showInfo = (
+  message: string,
+  options?: Partial<NotificationConfig>
+) => showNotification({ type: 'info', message, ...options });
 
 export default NotificationManager;

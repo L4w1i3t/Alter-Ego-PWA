@@ -25,23 +25,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    
+
     // If a new message was added and it's from the AI, mark it for performance tracking
     if (messages.length > prevMessagesLength.current) {
       const latestMessage = messages[messages.length - 1];
-      
+
       if (!latestMessage.isUser) {
         // End the timer for message processing (started in ChatInput)
         const responseTime = endTimer('message_processing');
-        
+
         // Log the AI response event with its length and response time
-        markEvent('ai_response_received', { 
+        markEvent('ai_response_received', {
           length: latestMessage.text.length,
-          responseTime: responseTime || undefined
+          responseTime: responseTime || undefined,
         });
       }
     }
-    
+
     prevMessagesLength.current = messages.length;
   }, [messages]);
 

@@ -10,7 +10,7 @@ const WipInfoPanel = styled.div`
   position: relative;
   max-width: 500px;
   margin: 0 auto;
-  
+
   @media (max-width: 768px) {
     padding: 1.5em;
     margin: 1em;
@@ -28,7 +28,7 @@ const WipTitle = styled.h2`
   align-items: center;
   justify-content: center;
   gap: 0.5em;
-  
+
   @media (max-width: 768px) {
     font-size: 1.5em;
     margin-bottom: 1.2em;
@@ -43,7 +43,7 @@ const WipIcon = styled.span`
 
 const WipSection = styled.div`
   margin-bottom: 1.5em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2em;
   }
@@ -56,7 +56,7 @@ const WipSectionTitle = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.3em;
-  
+
   @media (max-width: 768px) {
     font-size: 1.2em;
     margin-bottom: 0.8em;
@@ -66,16 +66,16 @@ const WipSectionTitle = styled.h3`
 const WipList = styled.ul`
   margin: 0.5em 0;
   padding-left: 1.5em;
-  
+
   li {
     margin: 0.3em 0;
     color: #ffaa44;
   }
-  
+
   @media (max-width: 768px) {
     margin: 1em 0;
     padding-left: 1.2em;
-    
+
     li {
       margin: 0.6em 0;
       font-size: 1.05em;
@@ -88,7 +88,7 @@ const WipDescription = styled.p`
   margin: 0 0 1em 0;
   line-height: 1.5;
   color: #ffcc88;
-  
+
   @media (max-width: 768px) {
     margin: 0 0 1.5em 0;
     line-height: 1.6;
@@ -102,7 +102,7 @@ const RecommendationBox = styled.div`
   padding: 1em;
   border-radius: 0.3em;
   margin-top: 1.5em;
-  
+
   @media (max-width: 768px) {
     padding: 1.5em;
     margin-top: 2em;
@@ -117,7 +117,7 @@ const RecommendationTitle = styled.h4`
   display: flex;
   align-items: center;
   gap: 0.3em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 0.8em;
     font-size: 1.1em;
@@ -135,12 +135,12 @@ const BackButton = styled.button`
   display: block;
   margin-left: auto;
   margin-right: auto;
-  
+
   &:hover {
     background: #ff8800;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     margin-top: 2.5em;
     padding: 1em 2em;
@@ -164,12 +164,12 @@ const CloseButton = styled.button`
   cursor: pointer;
   font-weight: bold;
   padding: 0.2em 0.5em;
-  
+
   &:hover {
     background: #ff8800;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     top: 1em;
     right: 1em;
@@ -190,21 +190,20 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
   return (
     <WipInfoPanel>
       <CloseButton onClick={onBack}>X</CloseButton>
-      
+
       <WipTitle>
         <WipIcon>🚧</WipIcon>
         Open Source Model - Work in Progress
       </WipTitle>
-      
+
       <WipDescription>
-        The Open Source language model is currently under active development. 
-        We're working hard to bring you local AI capabilities with full privacy and offline functionality.
+        The Open Source language model is currently under active development.
+        We're working hard to bring you local AI capabilities with full privacy
+        and offline functionality.
       </WipDescription>
-      
+
       <WipSection>
-        <WipSectionTitle>
-          🔧 What's being developed:
-        </WipSectionTitle>
+        <WipSectionTitle>🔧 What's being developed:</WipSectionTitle>
         <WipList>
           <li>Local model integration and optimization</li>
           <li>Offline functionality for complete privacy</li>
@@ -213,30 +212,26 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
           <li>Custom model support and fine-tuning</li>
         </WipList>
       </WipSection>
-      
+
       <WipSection>
-        <WipSectionTitle>
-          ⏱️ Expected Timeline:
-        </WipSectionTitle>
+        <WipSectionTitle>⏱️ Expected Timeline:</WipSectionTitle>
         <WipDescription>
-          We're targeting the next major release for initial Open Source model support. 
-          Follow our development progress for the latest updates.
+          We're targeting the next major release for initial Open Source model
+          support. Follow our development progress for the latest updates.
         </WipDescription>
       </WipSection>
-      
+
       <RecommendationBox>
-        <RecommendationTitle>
-          💡 Current Recommendation:
-        </RecommendationTitle>
+        <RecommendationTitle>💡 Current Recommendation:</RecommendationTitle>
         <WipDescription style={{ color: '#aaffaa', margin: 0 }}>
-          For the best experience right now, please use the <strong>OpenAI</strong> model which provides:
-          full conversational AI capabilities, advanced reasoning, reliable performance, and regular updates.
+          For the best experience right now, please use the{' '}
+          <strong>OpenAI</strong> model which provides: full conversational AI
+          capabilities, advanced reasoning, reliable performance, and regular
+          updates.
         </WipDescription>
       </RecommendationBox>
-      
-      <BackButton onClick={onBack}>
-        Back to Settings
-      </BackButton>
+
+      <BackButton onClick={onBack}>Back to Settings</BackButton>
     </WipInfoPanel>
   );
 };

@@ -1,6 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import { handleOpenSourceSelection, getWipIndicatorText } from '../../utils/openSourceWip';
+import {
+  handleOpenSourceSelection,
+  getWipIndicatorText,
+} from '../../utils/openSourceWip';
 
 const Overlay = styled.div`
   position: fixed;
@@ -13,7 +16,7 @@ const Overlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  
+
   @media (max-width: 768px) {
     padding: 1rem;
     align-items: flex-start;
@@ -27,7 +30,7 @@ const OverlayContent = styled.div`
   border-radius: 5px;
   text-align: center;
   border: 1px solid #0f0;
-  
+
   @media (max-width: 768px) {
     width: 100%;
     max-width: none;
@@ -50,20 +53,20 @@ const Subtitle = styled.h2`
 `;
 
 const ModelButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isWip',
+  shouldForwardProp: prop => prop !== 'isWip',
 })<{ isWip?: boolean }>`
   margin: 10px;
   padding: 10px 20px;
   background: #000;
-  color: ${props => props.isWip ? '#ff6b00' : '#0f0'};
-  border: 1px solid ${props => props.isWip ? '#ff6b00' : '#0f0'};
+  color: ${props => (props.isWip ? '#ff6b00' : '#0f0')};
+  border: 1px solid ${props => (props.isWip ? '#ff6b00' : '#0f0')};
   position: relative;
-  
+
   &:hover {
-    background: ${props => props.isWip ? '#ff6b00' : '#0f0'};
+    background: ${props => (props.isWip ? '#ff6b00' : '#0f0')};
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1rem 2rem;
     margin: 0.5rem;
@@ -102,7 +105,7 @@ const WipInfoButton = styled.button`
   margin-top: 10px;
   font-size: 0.8em;
   cursor: pointer;
-  
+
   &:hover {
     background: #ff6b00;
     color: #000;
@@ -114,40 +117,51 @@ interface ModelSelectionProps {
   onShowWipInfo?: () => void;
 }
 
-const ModelSelection: React.FC<ModelSelectionProps> = ({ onSelectModel, onShowWipInfo }) => {
+const ModelSelection: React.FC<ModelSelectionProps> = ({
+  onSelectModel,
+  onShowWipInfo,
+}) => {
   const wipIndicator = getWipIndicatorText();
-    const handleOpenSourceClick = () => {
+  const handleOpenSourceClick = () => {
     // Disable in production mode
     if (process.env.NODE_ENV === 'production') {
       return;
     }
-    
+
     if (handleOpenSourceSelection()) {
       // If WIP mode is disabled or selection is allowed, proceed normally
       onSelectModel('Open Source');
     }
     // If blocked, the handleOpenSourceSelection already showed the warning
-  };const handleWipInfoClick = () => {
+  };
+  const handleWipInfoClick = () => {
     if (onShowWipInfo) {
       onShowWipInfo();
     } else {
       // Fallback if callback not provided
-      alert('🚧 Open Source model is under development.\n\nFor detailed information, check the Settings panel (⚙️ icon).\n\nFor full functionality, please use OpenAI.');
+      alert(
+        '🚧 Open Source model is under development.\n\nFor detailed information, check the Settings panel (⚙️ icon).\n\nFor full functionality, please use OpenAI.'
+      );
     }
   };
-  
+
   return (
     <Overlay>
       <OverlayContent>
         <Title>Choose Language Model.</Title>
         <Subtitle>If unsure, select OpenAI for full functionality.</Subtitle>
-        <ButtonContainer>          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <ModelButton 
+        <ButtonContainer>
+          {' '}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <ModelButton
               isWip={!!wipIndicator}
               onClick={handleOpenSourceClick}
-              style={{ 
-                cursor: process.env.NODE_ENV === 'production' ? 'not-allowed' : 'pointer',
-                opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1 
+              style={{
+                cursor:
+                  process.env.NODE_ENV === 'production'
+                    ? 'not-allowed'
+                    : 'pointer',
+                opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1,
               }}
             >
               Open Source

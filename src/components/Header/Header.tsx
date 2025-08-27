@@ -8,7 +8,7 @@ const HeaderContainer = styled.header`
   padding: 0.8em;
   background-color: #000;
   border-bottom: 1px solid #0f0;
-  
+
   @media (max-width: 768px) {
     padding: 0.75rem;
     min-height: 50px;
@@ -26,7 +26,7 @@ const LoadCharacterButton = styled.button`
     background-color: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 0.6em 0.8em;
     font-size: 0.9rem;
@@ -38,11 +38,11 @@ const LoadCharacterButton = styled.button`
 const MenuIcon = styled.div`
   font-size: 1.5em;
   cursor: pointer;
-  
+
   &:hover {
     color: #8f8;
   }
-  
+
   @media (max-width: 768px) {
     font-size: 1.8em;
     padding: 0.2em;
@@ -60,7 +60,10 @@ interface HeaderProps {
   onLoadCharacter: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSettingsClick, onLoadCharacter }) => {
+const Header: React.FC<HeaderProps> = ({
+  onSettingsClick,
+  onLoadCharacter,
+}) => {
   return (
     <HeaderContainer>
       <LoadCharacterButton onClick={onLoadCharacter}>

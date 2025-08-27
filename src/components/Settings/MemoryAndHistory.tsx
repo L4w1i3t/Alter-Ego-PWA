@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useApi } from '../../context/ApiContext';
 import { loadChatHistory, ChatHistoryEntry } from '../../utils/storageUtils';
-import { showSuccess, showError, showWarning, showInfo } from '../Common/NotificationManager';
+import {
+  showSuccess,
+  showError,
+  showWarning,
+  showInfo,
+} from '../Common/NotificationManager';
 
 const Container = styled.div`
   display: flex;
@@ -11,7 +16,7 @@ const Container = styled.div`
   color: #0f0;
   width: 100%;
   min-height: 60vh;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     min-height: 70vh;
@@ -22,7 +27,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     font-size: 1.4em;
     margin-bottom: 1.5em;
@@ -36,7 +41,7 @@ const TabContainer = styled.div`
   width: 100%;
   margin-bottom: 1.5em;
   border-bottom: 1px solid #0f04;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.5em;
@@ -45,25 +50,25 @@ const TabContainer = styled.div`
 `;
 
 const Tab = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'active',
+  shouldForwardProp: prop => prop !== 'active',
 })<{ active: boolean }>`
   padding: 0.5em 1em;
   cursor: pointer;
-  font-weight: ${props => props.active ? 'bold' : 'normal'};
-  color: ${props => props.active ? '#0f0' : '#0f08'};
-  border-bottom: ${props => props.active ? '2px solid #0f0' : 'none'};
-  
+  font-weight: ${props => (props.active ? 'bold' : 'normal')};
+  color: ${props => (props.active ? '#0f0' : '#0f08')};
+  border-bottom: ${props => (props.active ? '2px solid #0f0' : 'none')};
+
   &:hover {
     color: #0f0;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     text-align: center;
     font-size: 1.1em;
-    border: 1px solid ${props => props.active ? '#0f0' : '#0f03'};
+    border: 1px solid ${props => (props.active ? '#0f0' : '#0f03')};
     border-radius: 0.3em;
-    background: ${props => props.active ? '#001500' : 'transparent'};
+    background: ${props => (props.active ? '#001500' : 'transparent')};
   }
 `;
 
@@ -71,7 +76,7 @@ const Tab = styled.div.withConfig({
 const SearchSection = styled.div`
   width: 100%;
   margin-bottom: 1.5em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2em;
   }
@@ -80,7 +85,7 @@ const SearchSection = styled.div`
 const TimeSearchSection = styled.div`
   width: 100%;
   margin-bottom: 1.5em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2em;
   }
@@ -91,7 +96,7 @@ const FilterSection = styled.div`
   margin-bottom: 1.5em;
   display: flex;
   align-items: center;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -103,7 +108,7 @@ const InputGroup = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 0.8em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -114,7 +119,7 @@ const InputGroup = styled.div`
 const Label = styled.label`
   margin-right: 1em;
   min-width: 80px;
-  
+
   @media (max-width: 768px) {
     margin-right: 0;
     margin-bottom: 0.8em;
@@ -129,7 +134,7 @@ const Input = styled.input`
   border: 1px solid #0f0;
   padding: 0.5em;
   flex: 1;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     font-size: 1em;
@@ -145,7 +150,7 @@ const Select = styled.select`
   border: 1px solid #0f0;
   padding: 0.5em;
   flex: 1;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     font-size: 1em;
@@ -161,12 +166,12 @@ const Button = styled.button`
   padding: 0.5em 1em;
   cursor: pointer;
   margin-left: 0.5em;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1em;
@@ -183,7 +188,7 @@ const HistoryList = styled.div`
   overflow-y: auto;
   border: 1px solid #0f04;
   margin-bottom: 1em;
-  
+
   @media (max-width: 768px) {
     max-height: 50vh;
     margin-bottom: 1.5em;
@@ -194,15 +199,15 @@ const HistoryItem = styled.div`
   padding: 0.8em;
   border-bottom: 1px solid #0f03;
   cursor: pointer;
-  
+
   &:hover {
     background-color: #0f01;
   }
-  
+
   &:last-child {
     border-bottom: none;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     min-height: 4em;
@@ -213,7 +218,7 @@ const HistoryHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.5em;
@@ -223,7 +228,7 @@ const HistoryHeader = styled.div`
 
 const PersonaName = styled.div`
   font-weight: bold;
-  
+
   @media (max-width: 768px) {
     font-size: 1.1em;
   }
@@ -249,7 +254,7 @@ const ResultsSection = styled.div`
   margin-top: 1em;
   max-height: 300px;
   overflow-y: auto;
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     max-height: 50vh;
@@ -263,7 +268,7 @@ const ConversationDetail = styled.div`
   padding: 1em;
   max-height: 400px;
   overflow-y: auto;
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     max-height: 60vh;
@@ -274,7 +279,7 @@ const Message = styled.div`
   margin-bottom: 1em;
   padding: 0.5em;
   border-bottom: 1px solid #0f03;
-  
+
   @media (max-width: 768px) {
     padding: 0.8em;
     margin-bottom: 1.2em;
@@ -283,7 +288,7 @@ const Message = styled.div`
 
 const MessageContainer = styled.div`
   margin-bottom: 1em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
   }
@@ -293,7 +298,7 @@ const MessageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.3em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.3em;
@@ -302,13 +307,16 @@ const MessageHeader = styled.div`
 `;
 
 const MessageRole = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'role',
+  shouldForwardProp: prop => prop !== 'role',
 })<{ role: 'user' | 'assistant' | 'system' }>`
   font-weight: bold;
-  color: ${props => 
-    props.role === 'user' ? '#0f0' : 
-    props.role === 'assistant' ? '#0ff' : 
-    '#ff0'  /* Yellow color for system messages */
+  color: ${
+    props =>
+      props.role === 'user'
+        ? '#0f0'
+        : props.role === 'assistant'
+          ? '#0ff'
+          : '#ff0' /* Yellow color for system messages */
   };
 `;
 
@@ -320,7 +328,7 @@ const MessageTime = styled.div`
 const MessageContent = styled.div`
   white-space: pre-wrap;
   line-height: 1.4;
-  
+
   @media (max-width: 768px) {
     font-size: 1em;
     line-height: 1.5;
@@ -358,7 +366,7 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   width: 100%;
   margin-top: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1em;
@@ -376,39 +384,56 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
   // Active tab/view
   const [activeTab, setActiveTab] = useState<'browse' | 'search'>('browse');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('chronological');
-  
+
   // Chat history state (chronological view)
   const [history, setHistory] = useState<ChatHistoryEntry[]>([]);
-  const [filteredHistory, setFilteredHistory] = useState<ChatHistoryEntry[]>([]);
-  const [selectedEntry, setSelectedEntry] = useState<ChatHistoryEntry | null>(null);
+  const [filteredHistory, setFilteredHistory] = useState<ChatHistoryEntry[]>(
+    []
+  );
+  const [selectedEntry, setSelectedEntry] = useState<ChatHistoryEntry | null>(
+    null
+  );
   const [personaFilter, setPersonaFilter] = useState<string>('all');
   const [uniquePersonas, setUniquePersonas] = useState<string[]>([]);
-    // Search state
+  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [searchResults, setSearchResults] = useState<{ role: 'user' | 'assistant' | 'system', content: string, timestamp?: string }[]>([]);
+  const [searchResults, setSearchResults] = useState<
+    {
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+      timestamp?: string;
+    }[]
+  >([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  const { searchLongTermMemory, retrieveTimeBasedMemories, retrieveLastNMemories, currentPersona } = useApi();
-  
+
+  const {
+    searchLongTermMemory,
+    retrieveTimeBasedMemories,
+    retrieveLastNMemories,
+    currentPersona,
+  } = useApi();
+
   useEffect(() => {
     // Load chat history for chronological browsing
     loadHistoryData();
   }, []);
-  
+
   const loadHistoryData = () => {
     const chatHistory = loadChatHistory();
     setHistory(chatHistory);
-    
+
     // Extract unique persona names
-    const personas = Array.from(new Set(chatHistory.map(entry => entry.persona)));
+    const personas = Array.from(
+      new Set(chatHistory.map(entry => entry.persona))
+    );
     setUniquePersonas(personas);
-    
+
     // Initial filtering
     setFilteredHistory(chatHistory);
   };
-  
+
   // Handle tab switching
   const handleTabChange = (tab: 'browse' | 'search') => {
     setActiveTab(tab);
@@ -420,44 +445,46 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       setSearchResults([]);
     }
   };
-  
+
   // Chronological browsing handlers
-  const handlePersonaFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handlePersonaFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const filter = e.target.value;
     setPersonaFilter(filter);
-    
+
     if (filter === 'all') {
       setFilteredHistory(history);
     } else {
       setFilteredHistory(history.filter(entry => entry.persona === filter));
     }
-    
+
     // Clear selected entry when filter changes
     setSelectedEntry(null);
   };
-  
+
   const handleSelectEntry = (entry: ChatHistoryEntry) => {
     setSelectedEntry(entry);
     setDisplayMode('detail');
   };
-  
+
   const handleCloseDetail = () => {
     setSelectedEntry(null);
     setDisplayMode(activeTab === 'browse' ? 'chronological' : 'search');
   };
-    // Search handlers
+  // Search handlers
   const handleSearchQuery = async () => {
     if (!searchQuery.trim()) {
       showWarning('Please enter a search query');
       return;
     }
-    
+
     setIsSearching(true);
-    
+
     try {
       const results = await searchLongTermMemory(searchQuery);
       setSearchResults(results);
-      
+
       if (results.length === 0) {
         showWarning('No results found');
       } else {
@@ -471,33 +498,33 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       setIsSearching(false);
     }
   };
-    const handleTimeSearch = async () => {
+  const handleTimeSearch = async () => {
     if (!startDate || !endDate) {
       showWarning('Please select both start and end dates');
       return;
     }
-    
+
     setIsSearching(true);
-    
+
     try {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
+
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
         showError('Invalid date format');
         setIsSearching(false);
         return;
       }
-      
+
       if (start > end) {
         showError('Start date must be before end date');
         setIsSearching(false);
         return;
       }
-      
+
       const results = await retrieveTimeBasedMemories(start, end);
       setSearchResults(results);
-      
+
       if (results.length === 0) {
         showWarning('No results found in the specified time range');
       } else {
@@ -511,13 +538,13 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       setIsSearching(false);
     }
   };
-    const handleRetrieveRecent = async () => {
+  const handleRetrieveRecent = async () => {
     setIsSearching(true);
-    
+
     try {
       const results = await retrieveLastNMemories(20); // Retrieve last 20 messages
       setSearchResults(results);
-      
+
       if (results.length === 0) {
         showWarning('No recent memories found');
       } else {
@@ -531,7 +558,7 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       setIsSearching(false);
     }
   };
-  
+
   // Utility functions
   const formatDateTime = (timestamp: string) => {
     try {
@@ -541,29 +568,35 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       return timestamp;
     }
   };
-  
+
   // Function to get a short preview of the conversation
   const getPreview = (entry: ChatHistoryEntry) => {
-    if (entry.messages.length === 0) return "No messages";
-    
+    if (entry.messages.length === 0) return 'No messages';
+
     // Find the first assistant response, or use the first user message if no assistant responses
     const firstResponse = entry.messages.find(m => m.role === 'assistant');
     if (firstResponse) {
-      return firstResponse.content.substring(0, 60) + (firstResponse.content.length > 60 ? "..." : "");
+      return (
+        firstResponse.content.substring(0, 60) +
+        (firstResponse.content.length > 60 ? '...' : '')
+      );
     }
-    
+
     // Fall back to first user message
-    return entry.messages[0].content.substring(0, 60) + (entry.messages[0].content.length > 60 ? "..." : "");
+    return (
+      entry.messages[0].content.substring(0, 60) +
+      (entry.messages[0].content.length > 60 ? '...' : '')
+    );
   };
-  
+
   // Render functions for different views
   const renderChronologicalView = () => (
     <>
       <FilterSection>
         <Label htmlFor="persona-filter">Filter by character:</Label>
-        <Select 
-          id="persona-filter" 
-          value={personaFilter} 
+        <Select
+          id="persona-filter"
+          value={personaFilter}
           onChange={handlePersonaFilterChange}
         >
           <option value="all">All Characters</option>
@@ -574,14 +607,14 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
           ))}
         </Select>
       </FilterSection>
-      
+
       <HistoryList>
         {filteredHistory.length === 0 ? (
           <EmptyState>No chat history found.</EmptyState>
         ) : (
           filteredHistory.map(entry => (
-            <HistoryItem 
-              key={entry.id} 
+            <HistoryItem
+              key={entry.id}
               onClick={() => handleSelectEntry(entry)}
             >
               <HistoryHeader>
@@ -595,7 +628,7 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       </HistoryList>
     </>
   );
-  
+
   const renderSearchView = () => (
     <>
       <SearchSection>
@@ -605,21 +638,18 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
             id="searchQuery"
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             placeholder="Enter search terms..."
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               if (e.key === 'Enter') handleSearchQuery();
             }}
           />
-          <Button 
-            onClick={handleSearchQuery}
-            disabled={isSearching}
-          >
+          <Button onClick={handleSearchQuery} disabled={isSearching}>
             Search
           </Button>
         </InputGroup>
       </SearchSection>
-      
+
       <TimeSearchSection>
         <InputGroup>
           <Label htmlFor="startDate">From:</Label>
@@ -627,7 +657,7 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
             id="startDate"
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={e => setStartDate(e.target.value)}
           />
         </InputGroup>
         <InputGroup>
@@ -636,31 +666,38 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
             id="endDate"
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={e => setEndDate(e.target.value)}
           />
-          <Button 
-            onClick={handleTimeSearch}
-            disabled={isSearching}
-          >
+          <Button onClick={handleTimeSearch} disabled={isSearching}>
             Find
           </Button>
         </InputGroup>
       </TimeSearchSection>
-        <ButtonContainer>
-        <Button onClick={handleRetrieveRecent} disabled={isSearching}>Recent Memories</Button>
+      <ButtonContainer>
+        <Button onClick={handleRetrieveRecent} disabled={isSearching}>
+          Recent Memories
+        </Button>
       </ButtonContainer>
-      
+
       {searchResults.length > 0 ? (
         <ResultsSection>
           {searchResults.map((message, index) => (
             <Message key={index}>
               {message.role === 'user' ? (
                 <UserMessage>
-                  <strong>You</strong> ({message.timestamp ? formatDateTime(message.timestamp) : 'unknown time'}): {message.content}
+                  <strong>You</strong> (
+                  {message.timestamp
+                    ? formatDateTime(message.timestamp)
+                    : 'unknown time'}
+                  ): {message.content}
                 </UserMessage>
               ) : message.role === 'assistant' ? (
                 <AIMessage>
-                  <strong>{currentPersona}</strong> ({message.timestamp ? formatDateTime(message.timestamp) : 'unknown time'}): {message.content}
+                  <strong>{currentPersona}</strong> (
+                  {message.timestamp
+                    ? formatDateTime(message.timestamp)
+                    : 'unknown time'}
+                  ): {message.content}
                 </AIMessage>
               ) : (
                 <SystemMessage>
@@ -675,25 +712,25 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       )}
     </>
   );
-  
+
   const renderDetailView = () => {
     if (!selectedEntry) return null;
-    
+
     return (
       <ConversationDetail>
         <HistoryHeader>
           <PersonaName>{selectedEntry.persona}</PersonaName>
           <Timestamp>{formatDateTime(selectedEntry.timestamp)}</Timestamp>
         </HistoryHeader>
-        
+
         {selectedEntry.messages.map((message, index) => (
           <MessageContainer key={index}>
             <MessageHeader>
               <MessageRole role={message.role}>
-                {message.role === 'user' 
-                  ? 'You' 
-                  : message.role === 'system' 
-                    ? 'System' 
+                {message.role === 'user'
+                  ? 'You'
+                  : message.role === 'system'
+                    ? 'System'
                     : selectedEntry.persona}
               </MessageRole>
               <MessageTime>{formatDateTime(message.timestamp)}</MessageTime>
@@ -701,37 +738,37 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
             <MessageContent>{message.content}</MessageContent>
           </MessageContainer>
         ))}
-        
+
         <ButtonContainer>
           <Button onClick={handleCloseDetail}>Back to List</Button>
         </ButtonContainer>
       </ConversationDetail>
     );
   };
-  
+
   return (
     <Container>
       <Title>Memory & History</Title>
-      
+
       <TabContainer>
-        <Tab 
-          active={activeTab === 'browse'} 
+        <Tab
+          active={activeTab === 'browse'}
           onClick={() => handleTabChange('browse')}
         >
           Browse Conversations
         </Tab>
-        <Tab 
-          active={activeTab === 'search'} 
+        <Tab
+          active={activeTab === 'search'}
           onClick={() => handleTabChange('search')}
         >
           Search Memory
         </Tab>
       </TabContainer>
-      
+
       {displayMode === 'chronological' && renderChronologicalView()}
       {displayMode === 'search' && renderSearchView()}
       {displayMode === 'detail' && renderDetailView()}
-      
+
       {displayMode !== 'detail' && (
         <ButtonContainer>
           <Button onClick={onBack}>Back to Settings</Button>

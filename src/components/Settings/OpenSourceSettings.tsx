@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
-import { 
-  getOpenSourceModels, 
-  getBackendStatus, 
+import {
+  getOpenSourceModels,
+  getBackendStatus,
   testBackendConnection,
   loadBackendModel,
-  OPEN_SOURCE_CONFIG 
+  OPEN_SOURCE_CONFIG,
 } from '../../utils/openSourceApi';
-import { showSuccess, showError, showWarning } from '../Common/NotificationManager';
+import {
+  showSuccess,
+  showError,
+  showWarning,
+} from '../Common/NotificationManager';
 
 const Container = styled.div`
   color: #0f0;
@@ -16,7 +20,7 @@ const Container = styled.div`
   min-height: 60vh;
   display: flex;
   flex-direction: column;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     min-height: 70vh;
@@ -26,7 +30,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     font-size: 1.4em;
     margin-bottom: 1.5em;
@@ -69,7 +73,7 @@ const StatusRow = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5em;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
@@ -80,13 +84,16 @@ const StatusLabel = styled.span`
 `;
 
 const StatusValue = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'status',
+  shouldForwardProp: prop => prop !== 'status',
 })<{ status?: 'good' | 'warning' | 'error' }>`
-  color: ${props => 
-    props.status === 'good' ? '#0f0' :
-    props.status === 'warning' ? '#fa0' :
-    props.status === 'error' ? '#f44' : '#0f0'
-  };
+  color: ${props =>
+    props.status === 'good'
+      ? '#0f0'
+      : props.status === 'warning'
+        ? '#fa0'
+        : props.status === 'error'
+          ? '#f44'
+          : '#0f0'};
 `;
 
 const FormGroup = styled.div`
@@ -108,12 +115,12 @@ const Select = styled.select`
   padding: 0.7em;
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
-  
+
   &:focus {
     outline: none;
     border-color: #0af;
   }
-  
+
   option {
     background: black;
     color: #0f0;
@@ -128,12 +135,12 @@ const Input = styled.input`
   padding: 0.7em;
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
-  
+
   &:focus {
     outline: none;
     border-color: #0af;
   }
-  
+
   &::placeholder {
     color: #666;
   }
@@ -143,7 +150,7 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 1em;
   margin-top: 2em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
   }
@@ -158,16 +165,16 @@ const Button = styled.button`
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
   transition: all 0.2s;
-  
+
   &:hover {
     background: #0f0;
     color: black;
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    
+
     &:hover {
       background: transparent;
       color: #0f0;
@@ -178,7 +185,7 @@ const Button = styled.button`
 const TestButton = styled(Button)`
   border-color: #0af;
   color: #0af;
-  
+
   &:hover {
     background: #0af;
     color: black;
@@ -188,7 +195,7 @@ const TestButton = styled(Button)`
 const LoadButton = styled(Button)`
   border-color: #fa0;
   color: #fa0;
-  
+
   &:hover {
     background: #fa0;
     color: black;
@@ -217,8 +224,12 @@ interface ModelInfo {
 
 const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
   const [backendUrl, setBackendUrl] = useState('http://127.0.0.1:8000');
-  const [selectedModel, setSelectedModel] = useState(OPEN_SOURCE_CONFIG.defaultModel);
-  const [backendStatus, setBackendStatus] = useState<BackendStatus>({ connected: false });
+  const [selectedModel, setSelectedModel] = useState(
+    OPEN_SOURCE_CONFIG.defaultModel
+  );
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>({
+    connected: false,
+  });
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -247,27 +258,29 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
           connected: true,
           device: status.device,
           loadedModels: status.loadedModels,
-          version: status.version
+          version: status.version,
         });
-        
+
         // Load available models
         const models = await getOpenSourceModels();
         setAvailableModels(models);
-        
+
         showSuccess('Backend connection successful!');
       } else {
-        setBackendStatus({ 
-          connected: false, 
-          error: 'Cannot connect to backend server' 
+        setBackendStatus({
+          connected: false,
+          error: 'Cannot connect to backend server',
         });
         showError('Cannot connect to backend server');
       }
     } catch (error) {
-      setBackendStatus({ 
-        connected: false, 
-        error: error instanceof Error ? error.message : 'Unknown error'
+      setBackendStatus({
+        connected: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      showError(`Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showError(
+        `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setTesting(false);
     }
@@ -275,16 +288,18 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
 
   const handleLoadModel = async () => {
     if (!selectedModel) return;
-    
+
     setLoading(true);
     try {
       await loadBackendModel(selectedModel);
       showSuccess(`Loading ${selectedModel}... This may take a few minutes.`);
-      
+
       // Refresh status after a delay to see if model was loaded
       setTimeout(testConnection, 3000);
     } catch (error) {
-      showError(`Failed to load model: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showError(
+        `Failed to load model: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setLoading(false);
     }
@@ -296,9 +311,9 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
       saveSettings({
         ...currentSettings,
         backendUrl: backendUrl.trim(),
-        openSourceModel: selectedModel
+        openSourceModel: selectedModel,
       });
-      
+
       showSuccess('Open-source settings saved successfully!');
     } catch (error) {
       showError('Failed to save settings');
@@ -309,23 +324,32 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
   return (
     <Container>
       <Title>Open Source Model Settings</Title>
-      
+
       {!backendStatus.connected ? (
         <ErrorBox>
-          <strong>Backend Not Connected</strong><br />
-          {backendStatus.error || 'The open-source backend server is not running or not accessible.'}
-          <br /><br />
-          <strong>To set up the backend:</strong><br />
-          1. Navigate to the <code>backend</code> folder in your project<br />
-          2. Run <code>setup.bat</code> (Windows) or <code>setup.sh</code> (Mac/Linux)<br />
-          3. Start the server with <code>python main.py</code><br />
+          <strong>Backend Not Connected</strong>
+          <br />
+          {backendStatus.error ||
+            'The open-source backend server is not running or not accessible.'}
+          <br />
+          <br />
+          <strong>To set up the backend:</strong>
+          <br />
+          1. Navigate to the <code>backend</code> folder in your project
+          <br />
+          2. Run <code>setup.bat</code> (Windows) or <code>setup.sh</code>{' '}
+          (Mac/Linux)
+          <br />
+          3. Start the server with <code>python main.py</code>
+          <br />
           4. Click "Test Connection" below
         </ErrorBox>
       ) : (
         <InfoBox>
-          <strong>✅ Backend Connected!</strong><br />
-          You can now use open-source language models for conversations.
-          These models run locally and don't require API keys.
+          <strong>✅ Backend Connected!</strong>
+          <br />
+          You can now use open-source language models for conversations. These
+          models run locally and don't require API keys.
         </InfoBox>
       )}
 
@@ -344,7 +368,9 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
           <>
             <StatusRow>
               <StatusLabel>Device:</StatusLabel>
-              <StatusValue status={backendStatus.device === 'cuda' ? 'good' : 'warning'}>
+              <StatusValue
+                status={backendStatus.device === 'cuda' ? 'good' : 'warning'}
+              >
                 {backendStatus.device?.toUpperCase() || 'Unknown'}
               </StatusValue>
             </StatusRow>
@@ -370,7 +396,7 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
           type="text"
           id="backendUrl"
           value={backendUrl}
-          onChange={(e) => setBackendUrl(e.target.value)}
+          onChange={e => setBackendUrl(e.target.value)}
           placeholder="http://127.0.0.1:8000"
         />
       </FormGroup>
@@ -380,7 +406,7 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
         <Select
           id="modelSelect"
           value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value)}
+          onChange={e => setSelectedModel(e.target.value)}
           disabled={!backendStatus.connected}
         >
           {availableModels.length > 0 ? (
@@ -398,12 +424,13 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
         </Select>
       </FormGroup>
 
-      {backendStatus.connected && !backendStatus.loadedModels?.includes(selectedModel) && (
-        <WarningBox>
-          The selected model is not currently loaded in memory. 
-          Click "Load Model" to load it for faster inference.
-        </WarningBox>
-      )}
+      {backendStatus.connected &&
+        !backendStatus.loadedModels?.includes(selectedModel) && (
+          <WarningBox>
+            The selected model is not currently loaded in memory. Click "Load
+            Model" to load it for faster inference.
+          </WarningBox>
+        )}
 
       <ButtonContainer>
         <Button onClick={onBack}>Back</Button>
@@ -411,7 +438,10 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
           {testing ? 'Testing...' : 'Test Connection'}
         </TestButton>
         {backendStatus.connected && (
-          <LoadButton onClick={handleLoadModel} disabled={loading || !selectedModel}>
+          <LoadButton
+            onClick={handleLoadModel}
+            disabled={loading || !selectedModel}
+          >
             {loading ? 'Loading...' : 'Load Model'}
           </LoadButton>
         )}

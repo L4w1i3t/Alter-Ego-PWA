@@ -4,7 +4,7 @@ import { loadChatHistory, ChatHistoryEntry } from '../../utils/storageUtils';
 
 const Container = styled.div`
   color: #0f0;
-  
+
   @media (max-width: 768px) {
     padding: 0 0.5em;
   }
@@ -13,7 +13,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.3em;
@@ -26,7 +26,7 @@ const HistoryFilterContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
@@ -47,7 +47,7 @@ const Select = styled.select`
   color: #0f0;
   border: 1px solid #0f0;
   padding: 0.3em;
-  
+
   @media (max-width: 768px) {
     padding: 0.8em;
     font-size: 1em;
@@ -63,7 +63,7 @@ const HistoryList = styled.div`
   overflow-y: auto;
   border: 1px solid #0f04;
   margin-bottom: 1em;
-  
+
   @media (max-width: 768px) {
     max-height: 400px;
     border-width: 2px;
@@ -76,19 +76,19 @@ const HistoryItem = styled.div`
   padding: 0.8em;
   border-bottom: 1px solid #0f03;
   cursor: pointer;
-  
+
   &:hover {
     background-color: #0f01;
   }
-  
+
   &:last-child {
     border-bottom: none;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     touch-action: manipulation;
-    
+
     &:hover {
       background-color: #0f02;
     }
@@ -99,7 +99,7 @@ const HistoryHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
@@ -110,7 +110,7 @@ const HistoryHeader = styled.div`
 
 const PersonaName = styled.div`
   font-weight: bold;
-  
+
   @media (max-width: 768px) {
     font-size: 1.1em;
   }
@@ -119,7 +119,7 @@ const PersonaName = styled.div`
 const Timestamp = styled.div`
   font-size: 0.8em;
   color: #0f08;
-  
+
   @media (max-width: 768px) {
     font-size: 0.9em;
   }
@@ -131,7 +131,7 @@ const MessagePreview = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   color: #0f0a;
-  
+
   @media (max-width: 768px) {
     font-size: 1em;
     white-space: normal;
@@ -149,7 +149,7 @@ const HistoryDetail = styled.div`
   padding: 1em;
   max-height: 400px;
   overflow-y: auto;
-  
+
   @media (max-width: 768px) {
     border-width: 2px;
     border-radius: 0.3em;
@@ -160,7 +160,7 @@ const HistoryDetail = styled.div`
 
 const MessageContainer = styled.div`
   margin-bottom: 1em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
   }
@@ -170,7 +170,7 @@ const MessageHeader = styled.div`
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.3em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
@@ -180,15 +180,18 @@ const MessageHeader = styled.div`
 `;
 
 const MessageRole = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'role',
+  shouldForwardProp: prop => prop !== 'role',
 })<{ role: 'user' | 'assistant' | 'system' }>`
   font-weight: bold;
-  color: ${props => 
-    props.role === 'user' ? '#0f0' : 
-    props.role === 'assistant' ? '#0ff' : 
-    '#ff0'  /* Yellow color for system messages */
+  color: ${
+    props =>
+      props.role === 'user'
+        ? '#0f0'
+        : props.role === 'assistant'
+          ? '#0ff'
+          : '#ff0' /* Yellow color for system messages */
   };
-  
+
   @media (max-width: 768px) {
     font-size: 1.1em;
   }
@@ -197,7 +200,7 @@ const MessageRole = styled.div.withConfig({
 const MessageTime = styled.div`
   font-size: 0.8em;
   color: #0f08;
-  
+
   @media (max-width: 768px) {
     font-size: 0.9em;
   }
@@ -206,7 +209,7 @@ const MessageTime = styled.div`
 const MessageContent = styled.div`
   white-space: pre-wrap;
   line-height: 1.4;
-  
+
   @media (max-width: 768px) {
     font-size: 1em;
     line-height: 1.5;
@@ -217,7 +220,7 @@ const EmptyState = styled.div`
   padding: 2em;
   text-align: center;
   color: #0f06;
-  
+
   @media (max-width: 768px) {
     padding: 3em 1.5em;
     font-size: 1.1em;
@@ -229,7 +232,7 @@ const ButtonContainer = styled.div`
   margin-top: 1em;
   display: flex;
   justify-content: space-between;
-  
+
   @media (max-width: 768px) {
     margin-top: 1.5em;
     flex-direction: column;
@@ -243,12 +246,12 @@ const Button = styled.button`
   border: 1px solid #0f0;
   padding: 0.5em 1em;
   cursor: pointer;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 0.8em 1.5em;
     font-size: 1em;
@@ -268,46 +271,52 @@ interface ChatHistoryProps {
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({ onBack }) => {
   const [history, setHistory] = useState<ChatHistoryEntry[]>([]);
-  const [filteredHistory, setFilteredHistory] = useState<ChatHistoryEntry[]>([]);
-  const [selectedEntry, setSelectedEntry] = useState<ChatHistoryEntry | null>(null);
+  const [filteredHistory, setFilteredHistory] = useState<ChatHistoryEntry[]>(
+    []
+  );
+  const [selectedEntry, setSelectedEntry] = useState<ChatHistoryEntry | null>(
+    null
+  );
   const [personaFilter, setPersonaFilter] = useState<string>('all');
   const [uniquePersonas, setUniquePersonas] = useState<string[]>([]);
-  
+
   useEffect(() => {
     // Load chat history
     const chatHistory = loadChatHistory();
     setHistory(chatHistory);
-    
+
     // Extract unique persona names
-    const personas = Array.from(new Set(chatHistory.map(entry => entry.persona)));
+    const personas = Array.from(
+      new Set(chatHistory.map(entry => entry.persona))
+    );
     setUniquePersonas(personas);
-    
+
     // Initial filtering
     setFilteredHistory(chatHistory);
   }, []);
-  
+
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const filter = e.target.value;
     setPersonaFilter(filter);
-    
+
     if (filter === 'all') {
       setFilteredHistory(history);
     } else {
       setFilteredHistory(history.filter(entry => entry.persona === filter));
     }
-    
+
     // Clear selected entry when filter changes
     setSelectedEntry(null);
   };
-  
+
   const handleSelectEntry = (entry: ChatHistoryEntry) => {
     setSelectedEntry(entry);
   };
-  
+
   const handleCloseDetail = () => {
     setSelectedEntry(null);
   };
-  
+
   const formatDateTime = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
@@ -316,30 +325,36 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ onBack }) => {
       return timestamp;
     }
   };
-  
+
   // Function to get a short preview of the conversation
   const getPreview = (entry: ChatHistoryEntry) => {
-    if (entry.messages.length === 0) return "No messages";
-    
+    if (entry.messages.length === 0) return 'No messages';
+
     // Find the first assistant response, or use the first user message if no assistant responses
     const firstResponse = entry.messages.find(m => m.role === 'assistant');
     if (firstResponse) {
-      return firstResponse.content.substring(0, 60) + (firstResponse.content.length > 60 ? "..." : "");
+      return (
+        firstResponse.content.substring(0, 60) +
+        (firstResponse.content.length > 60 ? '...' : '')
+      );
     }
-    
+
     // Fall back to first user message
-    return entry.messages[0].content.substring(0, 60) + (entry.messages[0].content.length > 60 ? "..." : "");
+    return (
+      entry.messages[0].content.substring(0, 60) +
+      (entry.messages[0].content.length > 60 ? '...' : '')
+    );
   };
-  
+
   return (
     <Container>
       <Title>Chat History</Title>
-      
+
       <HistoryFilterContainer>
         <Label htmlFor="persona-filter">Filter by character:</Label>
-        <Select 
-          id="persona-filter" 
-          value={personaFilter} 
+        <Select
+          id="persona-filter"
+          value={personaFilter}
           onChange={handleFilterChange}
         >
           <option value="all">All Characters</option>
@@ -350,22 +365,22 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ onBack }) => {
           ))}
         </Select>
       </HistoryFilterContainer>
-      
+
       {selectedEntry ? (
         <HistoryDetail>
           <HistoryHeader>
             <PersonaName>{selectedEntry.persona}</PersonaName>
             <Timestamp>{formatDateTime(selectedEntry.timestamp)}</Timestamp>
           </HistoryHeader>
-          
+
           {selectedEntry.messages.map((message, index) => (
             <MessageContainer key={index}>
               <MessageHeader>
                 <MessageRole role={message.role}>
-                  {message.role === 'user' 
-                    ? 'You' 
-                    : message.role === 'system' 
-                      ? 'System' 
+                  {message.role === 'user'
+                    ? 'You'
+                    : message.role === 'system'
+                      ? 'System'
                       : selectedEntry.persona}
                 </MessageRole>
                 <MessageTime>{formatDateTime(message.timestamp)}</MessageTime>
@@ -373,9 +388,11 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ onBack }) => {
               <MessageContent>{message.content}</MessageContent>
             </MessageContainer>
           ))}
-          
+
           <ButtonContainer>
-            <CloseDetailButton onClick={handleCloseDetail}>Back to List</CloseDetailButton>
+            <CloseDetailButton onClick={handleCloseDetail}>
+              Back to List
+            </CloseDetailButton>
           </ButtonContainer>
         </HistoryDetail>
       ) : (
@@ -385,8 +402,8 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ onBack }) => {
               <EmptyState>No chat history found.</EmptyState>
             ) : (
               filteredHistory.map(entry => (
-                <HistoryItem 
-                  key={entry.id} 
+                <HistoryItem
+                  key={entry.id}
                   onClick={() => handleSelectEntry(entry)}
                 >
                   <HistoryHeader>
@@ -398,7 +415,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({ onBack }) => {
               ))
             )}
           </HistoryList>
-          
+
           <ButtonContainer>
             <BackButton onClick={onBack}>Back</BackButton>
           </ButtonContainer>

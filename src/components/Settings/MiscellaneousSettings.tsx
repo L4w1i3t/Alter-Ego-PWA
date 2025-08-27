@@ -8,7 +8,7 @@ const Container = styled.div`
   flex-direction: column;
   color: #0f0;
   width: 100%;
-  
+
   @media (max-width: 768px) {
     padding: 0 0.5em;
   }
@@ -17,7 +17,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.3em;
@@ -32,7 +32,7 @@ const InfoBox = styled.div`
   margin-bottom: 2em;
   font-size: 0.9em;
   line-height: 1.5;
-  
+
   @media (max-width: 768px) {
     padding: 1.5em;
     margin-bottom: 2.5em;
@@ -49,7 +49,7 @@ const SettingRow = styled.div`
   align-items: center;
   width: 100%;
   margin-bottom: 1.5em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
@@ -61,7 +61,7 @@ const SettingRow = styled.div`
 const Label = styled.label`
   flex: 1;
   margin-right: 1em;
-  
+
   @media (max-width: 768px) {
     margin-right: 0;
     font-size: 1.1em;
@@ -73,7 +73,7 @@ const InputContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 1em;
-  
+
   @media (max-width: 768px) {
     width: 100%;
     justify-content: space-between;
@@ -89,18 +89,18 @@ const NumberInput = styled.input`
   width: 80px;
   text-align: center;
   font-family: monospace;
-  
+
   &:focus {
     outline: none;
     border-color: #0ff;
   }
-  
+
   &:disabled {
     background: #111;
     color: #666;
     border-color: #333;
   }
-  
+
   @media (max-width: 768px) {
     width: 100px;
     padding: 0.8em;
@@ -114,7 +114,7 @@ const CheckboxContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5em;
-  
+
   @media (max-width: 768px) {
     gap: 1em;
   }
@@ -124,7 +124,7 @@ const Checkbox = styled.input`
   width: 16px;
   height: 16px;
   accent-color: #0f0;
-  
+
   @media (max-width: 768px) {
     width: 20px;
     height: 20px;
@@ -135,7 +135,7 @@ const CheckboxLabel = styled.label`
   color: #0f0;
   font-size: 0.9em;
   cursor: pointer;
-  
+
   @media (max-width: 768px) {
     font-size: 1em;
   }
@@ -147,7 +147,7 @@ const ButtonContainer = styled.div`
   width: 100%;
   margin-top: 2em;
   gap: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     margin-top: 2.5em;
@@ -164,12 +164,12 @@ const Button = styled.button`
   border: 1px solid #0f0;
   padding: 0.5em 1em;
   cursor: pointer;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1.1em;
@@ -184,7 +184,7 @@ const InfoText = styled.p`
   color: #0f08;
   text-align: center;
   font-style: italic;
-  
+
   @media (max-width: 768px) {
     margin: 1.5em 0;
     font-size: 1em;
@@ -199,7 +199,7 @@ const PreviewSection = styled.div`
   border: 1px solid #0f03;
   border-radius: 0.3em;
   background-color: #000510;
-  
+
   @media (max-width: 768px) {
     margin: 2em 0;
     padding: 1.5em;
@@ -210,7 +210,7 @@ const PreviewSection = styled.div`
 const PreviewLabel = styled.h4`
   margin: 0 0 0.5em 0;
   color: #0ff;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1em;
     font-size: 1.1em;
@@ -224,7 +224,7 @@ const PreviewText = styled.div`
   padding: 0.5em;
   border: 1px solid #0f03;
   background-color: #000;
-  
+
   @media (max-width: 768px) {
     min-height: 2em;
     padding: 1em;
@@ -238,23 +238,28 @@ interface MiscellaneousSettingsProps {
   onBack: () => void;
 }
 
-const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack }) => {
+const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
+  onBack,
+}) => {
   const [textSpeed, setTextSpeed] = useState<number>(40);
   const [isInstantText, setIsInstantText] = useState<boolean>(false);
   const [previewText, setPreviewText] = useState<string>('');
   const [previewIndex, setPreviewIndex] = useState<number>(0);
   const [isPreviewRunning, setIsPreviewRunning] = useState<boolean>(false);
-    // New settings states
-  const [notificationDuration, setNotificationDuration] = useState<number>(5000);
+  // New settings states
+  const [notificationDuration, setNotificationDuration] =
+    useState<number>(5000);
   const [soundNotifications, setSoundNotifications] = useState<boolean>(false);
   const [showTimestamps, setShowTimestamps] = useState<boolean>(true);
   const [compactMode, setCompactMode] = useState<boolean>(false);
   const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(true);
   const [autoBackup, setAutoBackup] = useState<boolean>(false);
   const [developerMode, setDeveloperMode] = useState<boolean>(false);
-  const [showEmotionDetection, setShowEmotionDetection] = useState<boolean>(false);
+  const [showEmotionDetection, setShowEmotionDetection] =
+    useState<boolean>(false);
 
-  const sampleText = "Hello! This is how ALTER EGO will type responses at this speed.";
+  const sampleText =
+    'Hello! This is how ALTER EGO will type responses at this speed.';
   useEffect(() => {
     // Load current settings
     const settings = loadSettings();
@@ -268,7 +273,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
         setIsInstantText(false);
       }
     }
-    
+
     // Load emotion detection setting
     setShowEmotionDetection(settings.showEmotionDetection ?? false);
   }, []);
@@ -301,7 +306,9 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
     setIsInstantText(e.target.checked);
   };
 
-  const handleEmotionDetectionToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmotionDetectionToggle = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setShowEmotionDetection(e.target.checked);
   };
 
@@ -314,29 +321,28 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
     try {
       const currentSettings = loadSettings();
       const speedToSave = isInstantText ? 1000 : textSpeed; // Use 1000 for instant
-      
+
       saveSettings({
         ...currentSettings,
         textSpeed: speedToSave,
-        showEmotionDetection: showEmotionDetection
+        showEmotionDetection: showEmotionDetection,
       });
-      showSuccess("Miscellaneous settings saved successfully.");
-      setTimeout(() => {
-        onBack();
-      }, 1500);
+      onBack(); // Navigate back first
+      showSuccess('Miscellaneous settings saved successfully.'); // Then show notification
     } catch (error) {
-      showError("Error saving miscellaneous settings.");
-      console.error("Failed to save miscellaneous settings:", error);
+      showError('Error saving miscellaneous settings.');
+      console.error('Failed to save miscellaneous settings:', error);
     }
   };
   return (
     <Container>
       <Title>Miscellaneous Settings</Title>
-      
       <InfoBox>
-        Customize your ALTER EGO experience with these additional settings. These options allow you to 
-        fine-tune how the application behaves and feels during use.
-      </InfoBox>      <SettingRow>
+        Customize your ALTER EGO experience with these additional settings.
+        These options allow you to fine-tune how the application behaves and
+        feels during use.
+      </InfoBox>{' '}
+      <SettingRow>
         <Label htmlFor="instantText">Instant Text:</Label>
         <CheckboxContainer>
           <Checkbox
@@ -350,7 +356,6 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
           </CheckboxLabel>
         </CheckboxContainer>
       </SettingRow>
-
       <SettingRow>
         <Label htmlFor="textSpeed">Text Speed (CPS):</Label>
         <InputContainer>
@@ -370,14 +375,12 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
         </InputContainer>
       </SettingRow>
       <InfoText>
-        {isInstantText 
+        {isInstantText
           ? "Instant text will show ALTER EGO's complete responses immediately without any typing animation."
           : `Text speed controls how fast ALTER EGO's responses appear on screen (${textSpeed} characters per second). 
              Slower speeds create a more dramatic, visual novel-like experience, while faster speeds 
-             provide quicker response delivery.`
-        }
-      </InfoText>      
-
+             provide quicker response delivery.`}
+      </InfoText>
       <PreviewSection>
         <PreviewLabel>Preview Text Speed:</PreviewLabel>
         <PreviewText>{previewText}</PreviewText>
@@ -387,7 +390,6 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
           </Button>
         </ButtonContainer>
       </PreviewSection>
-
       {process.env.NODE_ENV === 'development' && (
         <SettingRow>
           <Label htmlFor="emotionDetection">Show Emotion Detection:</Label>
@@ -404,14 +406,13 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({ onBack })
           </CheckboxContainer>
         </SettingRow>
       )}
-
       <InfoText style={{ fontSize: '0.9em', color: '#0f06' }}>
-        <strong>Emotion Detection:</strong> Shows boxes analyzing the emotional content of both 
-        your messages and ALTER EGO's responses. This feature is automatically hidden in production mode 
-        for a cleaner interface. {process.env.NODE_ENV === 'development' && 
-        'In development mode, you can toggle this feature on/off above.'}
+        <strong>Emotion Detection:</strong> Shows boxes analyzing the emotional
+        content of both your messages and ALTER EGO's responses. This feature is
+        automatically hidden in production mode for a cleaner interface.{' '}
+        {process.env.NODE_ENV === 'development' &&
+          'In development mode, you can toggle this feature on/off above.'}
       </InfoText>
-
       <ButtonContainer>
         <Button onClick={onBack}>Cancel</Button>
         <Button onClick={handleSave}>Save Settings</Button>

@@ -15,7 +15,7 @@ db.version(1).stores({
   users: '++id, name',
   aiConfig: '++id, apiKey, model',
   voiceConfig: '++id, enabled, language',
-  ltmDatabase: '++id, persona, lastAccessed'
+  ltmDatabase: '++id, persona, lastAccessed',
 });
 
 // Define the database tables
@@ -33,14 +33,17 @@ export async function addMessage(message: Message): Promise<number> {
 }
 
 export async function getMessages(): Promise<Message[]> {
-  return await messagesTable.toArray() as Message[];
+  return (await messagesTable.toArray()) as Message[];
 }
 
 export async function getMessageById(id: number): Promise<Message | undefined> {
-  return await messagesTable.get(id) as Message | undefined;
+  return (await messagesTable.get(id)) as Message | undefined;
 }
 
-export async function updateMessage(id: number, message: Partial<Message>): Promise<void> {
+export async function updateMessage(
+  id: number,
+  message: Partial<Message>
+): Promise<void> {
   await messagesTable.update(id, message);
 }
 
@@ -59,14 +62,17 @@ export async function addUser(user: User): Promise<number> {
 }
 
 export async function getUsers(): Promise<User[]> {
-  return await usersTable.toArray() as User[];
+  return (await usersTable.toArray()) as User[];
 }
 
 export async function getUserById(id: number): Promise<User | undefined> {
-  return await usersTable.get(id) as User | undefined;
+  return (await usersTable.get(id)) as User | undefined;
 }
 
-export async function updateUser(id: number, user: Partial<User>): Promise<void> {
+export async function updateUser(
+  id: number,
+  user: Partial<User>
+): Promise<void> {
   await usersTable.update(id, user);
 }
 
@@ -91,7 +97,10 @@ export async function getAIConfig(): Promise<AIConfig | undefined> {
   return configs[0];
 }
 
-export async function updateAIConfig(id: number, config: Partial<AIConfig>): Promise<void> {
+export async function updateAIConfig(
+  id: number,
+  config: Partial<AIConfig>
+): Promise<void> {
   await aiConfigTable.update(id, config);
 }
 
@@ -112,7 +121,10 @@ export async function getVoiceConfig(): Promise<VoiceConfig | undefined> {
   return configs[0];
 }
 
-export async function updateVoiceConfig(id: number, config: Partial<VoiceConfig>): Promise<void> {
+export async function updateVoiceConfig(
+  id: number,
+  config: Partial<VoiceConfig>
+): Promise<void> {
   await voiceConfigTable.update(id, config);
 }
 
@@ -121,7 +133,11 @@ export async function clearVoiceConfig(): Promise<void> {
 }
 
 // Memory retrieval operations
-export async function getMessagesByTimeRange(startDate: Date, endDate: Date, personaName: string): Promise<Message[]> {
+export async function getMessagesByTimeRange(
+  startDate: Date,
+  endDate: Date,
+  personaName: string
+): Promise<Message[]> {
   try {
     // Get all messages for this persona
     const ltm = await getPersonaMemory(personaName);
@@ -131,7 +147,9 @@ export async function getMessagesByTimeRange(startDate: Date, endDate: Date, per
 
     // Filter messages by time range
     return ltm.messages.filter(message => {
-      const msgDate = message.timestamp ? new Date(message.timestamp) : new Date();
+      const msgDate = message.timestamp
+        ? new Date(message.timestamp)
+        : new Date();
       return msgDate >= startDate && msgDate <= endDate;
     });
   } catch (error) {
@@ -140,7 +158,10 @@ export async function getMessagesByTimeRange(startDate: Date, endDate: Date, per
   }
 }
 
-export async function getLastNMessages(n: number, personaName: string): Promise<Message[]> {
+export async function getLastNMessages(
+  n: number,
+  personaName: string
+): Promise<Message[]> {
   try {
     // Get all messages for this persona
     const ltm = await getPersonaMemory(personaName);
@@ -163,7 +184,10 @@ export async function getLastNMessages(n: number, personaName: string): Promise<
 }
 
 // Simple keyword search (updated to be persona-aware)
-export async function searchMessages(query: string, personaName: string): Promise<Message[]> {
+export async function searchMessages(
+  query: string,
+  personaName: string
+): Promise<Message[]> {
   try {
     // Get all messages for this persona
     const ltm = await getPersonaMemory(personaName);
@@ -172,7 +196,7 @@ export async function searchMessages(query: string, personaName: string): Promis
     }
 
     // Filter messages by keyword match
-    const matchingMessages = ltm.messages.filter(message => 
+    const matchingMessages = ltm.messages.filter(message =>
       message.text.toLowerCase().includes(query.toLowerCase())
     );
 
@@ -185,9 +209,9 @@ export async function searchMessages(query: string, personaName: string): Promis
 
 // Advanced semantic search implementation
 export async function semanticSearchMessages(
-  query: string, 
+  query: string,
   personaName: string,
-  excludeIds: number[] = [], 
+  excludeIds: number[] = [],
   maxResults: number = 5
 ): Promise<Message[]> {
   try {
@@ -198,8 +222,8 @@ export async function semanticSearchMessages(
     }
 
     // Extract all messages that aren't in the excludeIds list
-    const allMessages = ltm.messages.filter(msg => 
-      !msg.id || !excludeIds.includes(msg.id)
+    const allMessages = ltm.messages.filter(
+      msg => !msg.id || !excludeIds.includes(msg.id)
     );
 
     // If no messages after filtering, return empty array
@@ -213,7 +237,7 @@ export async function semanticSearchMessages(
 
     // Extract important keywords from the query
     const keywords = extractKeywords(query);
-    
+
     // Score each message based on semantic similarity approximation
     const scoredMessages = allMessages.map(message => {
       const score = calculateSemanticSimilarity(message.text, keywords, query);
@@ -239,39 +263,60 @@ export async function semanticSearchMessages(
 // Helper function to extract keywords from a query
 function extractKeywords(query: string): string[] {
   // Remove common stop words
-  const stopWords = ['the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'but', 'in', 'with', 'to', 'of', 'for'];
-  
+  const stopWords = [
+    'the',
+    'is',
+    'at',
+    'which',
+    'on',
+    'a',
+    'an',
+    'and',
+    'or',
+    'but',
+    'in',
+    'with',
+    'to',
+    'of',
+    'for',
+  ];
+
   // Tokenize and filter
   const words = query
     .toLowerCase()
     .replace(/[.,?!;:()[\]{}""'']/g, '') // Remove punctuation
     .split(/\s+/) // Split by whitespace
-    .filter(word => 
-      word.length > 2 && // Skip very short words
-      !stopWords.includes(word) // Skip stop words
+    .filter(
+      word =>
+        word.length > 2 && // Skip very short words
+        !stopWords.includes(word) // Skip stop words
     );
-  
+
   return Array.from(new Set(words)); // Remove duplicates - fixed for ES5 compatibility
 }
 
 // Helper function to calculate semantic similarity score
-function calculateSemanticSimilarity(text: string, keywords: string[], originalQuery: string): number {
+function calculateSemanticSimilarity(
+  text: string,
+  keywords: string[],
+  originalQuery: string
+): number {
   const lowerText = text.toLowerCase();
-  
+
   // Base score: keyword matches
   let score = 0;
-  
+
   // 1. Exact phrase match (highest weight)
   if (lowerText.includes(originalQuery.toLowerCase())) {
     score += 0.8; // Big boost for exact phrase match
   }
-  
+
   // 2. Keyword matches
   for (const keyword of keywords) {
     if (lowerText.includes(keyword)) {
       // Award points for each keyword match
       score += 0.1;
-      
+
       // Award more points for keywords appearing earlier in the text (likely more important)
       const position = lowerText.indexOf(keyword);
       if (position !== -1) {
@@ -280,28 +325,32 @@ function calculateSemanticSimilarity(text: string, keywords: string[], originalQ
       }
     }
   }
-  
+
   // 3. Calculate keyword density (what percentage of keywords are matched)
   const matchedKeywords = keywords.filter(kw => lowerText.includes(kw));
-  const keywordDensity = keywords.length > 0 ? matchedKeywords.length / keywords.length : 0;
+  const keywordDensity =
+    keywords.length > 0 ? matchedKeywords.length / keywords.length : 0;
   score += keywordDensity * 0.2;
-  
+
   // 4. Consider text length - slightly prefer shorter, more focused responses
   const lengthFactor = Math.min(1, 100 / text.length); // Higher score for shorter texts (up to a point)
   score += lengthFactor * 0.05;
-  
+
   // Cap the score at 1.0
   return Math.min(1.0, score);
 }
 
 // Persona-specific memory operations
-export async function savePersonaMemory(personaName: string, memory: LTMDatabase): Promise<number> {
+export async function savePersonaMemory(
+  personaName: string,
+  memory: LTMDatabase
+): Promise<number> {
   memory.lastAccessed = new Date();
   const existingMemory = await ltmDatabase
     .where('persona')
     .equals(personaName)
     .first();
-  
+
   if (existingMemory) {
     // Use explicit fields to update rather than the entire object
     await ltmDatabase.update(existingMemory.id as number, {
@@ -309,37 +358,33 @@ export async function savePersonaMemory(personaName: string, memory: LTMDatabase
       users: memory.users,
       aiConfig: memory.aiConfig,
       voiceConfig: memory.voiceConfig,
-      lastAccessed: memory.lastAccessed
+      lastAccessed: memory.lastAccessed,
     });
     return existingMemory.id as number;
   } else {
     const id = await ltmDatabase.add({
       ...memory,
-      persona: personaName
+      persona: personaName,
     });
     return id as number;
   }
 }
 
-export async function getPersonaMemory(personaName: string): Promise<LTMDatabase | undefined> {
-  const memory = await ltmDatabase
-    .where('persona')
-    .equals(personaName)
-    .first();
-  
+export async function getPersonaMemory(
+  personaName: string
+): Promise<LTMDatabase | undefined> {
+  const memory = await ltmDatabase.where('persona').equals(personaName).first();
+
   if (memory) {
     // Update last accessed timestamp
     await ltmDatabase.update(memory.id as number, { lastAccessed: new Date() });
   }
-  
+
   return memory;
 }
 
 export async function deletePersonaMemory(personaName: string): Promise<void> {
-  await ltmDatabase
-    .where('persona')
-    .equals(personaName)
-    .delete();
+  await ltmDatabase.where('persona').equals(personaName).delete();
 }
 
 // Database management
@@ -349,7 +394,7 @@ export async function clearAllMemory(): Promise<void> {
     usersTable.clear(),
     aiConfigTable.clear(),
     voiceConfigTable.clear(),
-    ltmDatabase.clear()
+    ltmDatabase.clear(),
   ]);
 }
 
@@ -375,42 +420,47 @@ export const exportDatabaseContent = async (): Promise<Record<string, any>> => {
     const aiConfigs = await aiConfigTable.toArray();
     const voiceConfigs = await voiceConfigTable.toArray();
     const memories = await ltmDatabase.toArray();
-    
+
     return {
       version: db.verno,
       lastUpdated: new Date().toISOString(),
       tables: {
         messages: {
           count: messages.length,
-          data: messages
+          data: messages,
         },
         users: {
           count: users.length,
-          data: users
+          data: users,
         },
         aiConfig: {
           count: aiConfigs.length,
-          data: aiConfigs
+          data: aiConfigs,
         },
         voiceConfig: {
           count: voiceConfigs.length,
-          data: voiceConfigs
+          data: voiceConfigs,
         },
         ltmDatabase: {
           count: memories.length,
-          data: memories
-        }
+          data: memories,
+        },
       },
       summary: {
-        totalEntities: messages.length + users.length + aiConfigs.length + voiceConfigs.length + memories.length,
-        tableCount: 5
-      }
+        totalEntities:
+          messages.length +
+          users.length +
+          aiConfigs.length +
+          voiceConfigs.length +
+          memories.length,
+        tableCount: 5,
+      },
     };
   } catch (error) {
     console.error('Error exporting database content:', error);
     return {
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 };

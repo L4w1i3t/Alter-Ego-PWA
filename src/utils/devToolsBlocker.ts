@@ -1,6 +1,6 @@
 /**
  * Developer Tools Blocker Utility - Mobile-Friendly Version
- * Only blocks access to browser developer tools (F12, inspect) without interfering 
+ * Only blocks access to browser developer tools (F12, inspect) without interfering
  * with normal mobile functionality like keyboards, copy/paste, etc.
  */
 
@@ -31,8 +31,12 @@ export class DevToolsBlocker {
    * Detect if we're on a mobile device
    */
   private detectMobileDevice(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-           (window.screen.width <= 768 && window.screen.height <= 1024);
+    return (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) ||
+      (window.screen.width <= 768 && window.screen.height <= 1024)
+    );
   }
 
   /**
@@ -45,24 +49,26 @@ export class DevToolsBlocker {
     }
 
     this.isBlocking = true;
-    
+
     // Only block specific desktop dev tools shortcuts
     this.blockDevToolsShortcuts();
-    
+
     // Only block right-click on desktop (not mobile)
     if (!this.isMobile && this.config.blockContextMenu) {
       this.blockContextMenuDesktopOnly();
     }
-    
+
     // Detect dev tools opening (less aggressive on mobile)
     if (this.config.detectDevToolsOpening) {
       this.detectDevToolsOpening();
     }
-    
+
     // Add emergency disable sequence
     this.addEmergencyDisable();
-    
-    console.log(`Developer tools blocking activated (Mobile: ${this.isMobile})`);
+
+    console.log(
+      `Developer tools blocking activated (Mobile: ${this.isMobile})`
+    );
   }
 
   /**
@@ -111,7 +117,7 @@ export class DevToolsBlocker {
         this.showMobileWarning(`${shortcutName} is disabled`);
         return false;
       }
-      
+
       // DON'T block other shortcuts like:
       // - Ctrl+C/V/X (copy/paste/cut) - essential for mobile
       // - Ctrl+A (select all) - essential for mobile
@@ -127,7 +133,7 @@ export class DevToolsBlocker {
   private blockContextMenuDesktopOnly(): void {
     document.addEventListener('contextmenu', (event: MouseEvent) => {
       if (!this.isBlocking || this.isMobile) return;
-      
+
       // Only block right-click on desktop
       event.preventDefault();
       event.stopPropagation();
@@ -156,9 +162,9 @@ export class DevToolsBlocker {
       font-family: system-ui, -apple-system, sans-serif;
     `;
     toast.textContent = message;
-    
+
     document.body.appendChild(toast);
-    
+
     // Auto-remove after 2 seconds
     setTimeout(() => {
       toast.style.opacity = '0';
@@ -178,20 +184,31 @@ export class DevToolsBlocker {
     if (this.isMobile) return;
 
     const konamiCode = [
-      'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
-      'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
-      'KeyB', 'KeyA'
+      'ArrowUp',
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'ArrowLeft',
+      'ArrowRight',
+      'KeyB',
+      'KeyA',
     ];
     let konamiIndex = 0;
 
-    document.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', event => {
       if (event.code === konamiCode[konamiIndex]) {
         konamiIndex++;
         if (konamiIndex === konamiCode.length) {
-          const confirmed = confirm('Do you want to disable developer tools protection? This should only be used for support purposes.');
+          const confirmed = confirm(
+            'Do you want to disable developer tools protection? This should only be used for support purposes.'
+          );
           if (confirmed) {
             this.disableBlocking();
-            this.showMobileWarning('Developer tools protection disabled for this session');
+            this.showMobileWarning(
+              'Developer tools protection disabled for this session'
+            );
           }
           konamiIndex = 0;
         }
@@ -222,8 +239,9 @@ export class DevToolsBlocker {
       if (!this.isBlocking || this.detectionPaused) return;
 
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-      const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-      
+      const heightThreshold =
+        window.outerHeight - window.innerHeight > threshold;
+
       if (widthThreshold || heightThreshold) {
         detectionCount++;
         if (detectionCount >= requiredDetections && !this.devToolsOpen) {
@@ -275,14 +293,14 @@ export class DevToolsBlocker {
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       max-width: 90vw;
     `;
-    
+
     warning.innerHTML = `
       <div style="margin-bottom: 8px;">⚠️ Developer Tools Detected</div>
       <div style="font-size: 12px; opacity: 0.9;">Please close dev tools for optimal experience</div>
     `;
-    
+
     document.body.appendChild(warning);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
       if (warning.parentNode) {
@@ -364,7 +382,7 @@ export class DevToolsBlocker {
       isBlocking: this.isBlocking,
       devToolsOpen: this.devToolsOpen,
       detectionPaused: this.detectionPaused,
-      isMobile: this.isMobile
+      isMobile: this.isMobile,
     };
   }
 }

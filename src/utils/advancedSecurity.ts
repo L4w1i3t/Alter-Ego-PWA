@@ -30,27 +30,27 @@ export class AdvancedSecurity {
     }
 
     this.isEnabled = true;
-    
+
     if (this.config.disableConsole) {
       this.disableConsoleLogging();
     }
-    
+
     if (this.config.preventSourceViewing) {
       this.preventSourceViewing();
     }
-    
+
     if (this.config.enableAntiDebugging) {
       this.addAntiDebugging();
     }
-    
+
     if (this.config.protectAgainstInjection) {
       this.protectAgainstInjection();
     }
-    
+
     if (this.config.obfuscateErrors) {
       this.obfuscateErrors();
     }
-    
+
     console.log('Advanced security features activated');
   }
 
@@ -72,7 +72,7 @@ export class AdvancedSecurity {
     Object.defineProperty(window, 'console', {
       value: console,
       writable: false,
-      configurable: false
+      configurable: false,
     });
   }
 
@@ -83,7 +83,7 @@ export class AdvancedSecurity {
     if (!this.isEnabled) return;
 
     // Block Ctrl+A (Select All)
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
       if (e.ctrlKey && e.key === 'a') {
         e.preventDefault();
         return false;
@@ -91,7 +91,7 @@ export class AdvancedSecurity {
     });
 
     // Disable print functionality
-    window.addEventListener('beforeprint', (e) => {
+    window.addEventListener('beforeprint', e => {
       e.preventDefault();
       return false;
     });
@@ -122,11 +122,13 @@ export class AdvancedSecurity {
     // Function integrity check
     const originalSetInterval = window.setInterval;
     const originalSetTimeout = window.setTimeout;
-    
+
     // Monitor for function tampering
     setInterval(() => {
-      if (window.setInterval !== originalSetInterval || 
-          window.setTimeout !== originalSetTimeout) {
+      if (
+        window.setInterval !== originalSetInterval ||
+        window.setTimeout !== originalSetTimeout
+      ) {
         this.triggerSecurityBreach();
       }
     }, 1000);
@@ -137,17 +139,17 @@ export class AdvancedSecurity {
       const startTime = performance.now();
       debugger;
       const endTime = performance.now();
-      
+
       if (endTime - startTime > 100) {
         this.triggerSecurityBreach();
       }
-      
+
       callCount++;
       if (callCount < 1000 && this.isEnabled) {
         setTimeout(devToolsChecker, Math.random() * 1000 + 500);
       }
     };
-    
+
     setTimeout(devToolsChecker, 1000);
   }
 
@@ -168,10 +170,10 @@ export class AdvancedSecurity {
     };
 
     // Monitor for script injection
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
         if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach((node) => {
+          mutation.addedNodes.forEach(node => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               const element = node as Element;
               if (element.tagName === 'SCRIPT') {
@@ -186,7 +188,7 @@ export class AdvancedSecurity {
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
   }
 
@@ -196,16 +198,18 @@ export class AdvancedSecurity {
   private obfuscateErrors(): void {
     if (!this.isEnabled) return;
 
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       event.stopImmediatePropagation();
       console.log('An error occurred but details are hidden in production');
       return false;
     });
 
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', event => {
       event.stopImmediatePropagation();
       event.preventDefault();
-      console.log('A promise rejection occurred but details are hidden in production');
+      console.log(
+        'A promise rejection occurred but details are hidden in production'
+      );
     });
   }
 
@@ -215,10 +219,10 @@ export class AdvancedSecurity {
   private triggerSecurityBreach(): void {
     // Log the security breach (you might want to send this to your analytics)
     console.warn('Security breach detected');
-    
+
     // Clear sensitive data
     this.clearSensitiveData();
-    
+
     // Redirect to a safe page or reload
     setTimeout(() => {
       window.location.reload();
@@ -245,10 +249,11 @@ export class AdvancedSecurity {
 
     // Clear cookies (if possible)
     try {
-      document.cookie.split(";").forEach((c) => {
-        const eqPos = c.indexOf("=");
+      document.cookie.split(';').forEach(c => {
+        const eqPos = c.indexOf('=');
         const name = eqPos > -1 ? c.substr(0, eqPos) : c;
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        document.cookie =
+          name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
       });
     } catch (e) {
       // Ignore errors

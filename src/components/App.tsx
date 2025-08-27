@@ -12,7 +12,14 @@ import NotificationManager from './Common/NotificationManager';
 import { useApi } from '../context/ApiContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import '../styles/mobile.css';
-import { loadSettings, saveSettings, loadPersonas, getPersona, loadVoiceModels, loadApiKeys } from '../utils/storageUtils';
+import {
+  loadSettings,
+  saveSettings,
+  loadPersonas,
+  getPersona,
+  loadVoiceModels,
+  loadApiKeys,
+} from '../utils/storageUtils';
 import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
 import { getTokenUsageStats } from '../utils/openaiApi';
 import { exportDatabaseContent } from '../memory/longTermDB';
@@ -24,7 +31,7 @@ import {
   generateReport,
   setMetricsEnabled,
   triggerPerformanceReport,
-  isPerformanceMonitoringEnabled
+  isPerformanceMonitoringEnabled,
 } from '../utils/performanceMetrics';
 
 // Dev mode UI components for performance metrics
@@ -46,7 +53,9 @@ const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
   transition: all 0.3s ease;
   backdrop-filter: blur(2px);
 
-  ${props => props.$collapsed && `
+  ${props =>
+    props.$collapsed &&
+    `
     padding: 8px;
     gap: 0;
     max-width: 50px;
@@ -64,7 +73,9 @@ const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
     opacity: 0.95;
     border-width: 2px;
 
-    ${props => props.$collapsed && `
+    ${props =>
+      props.$collapsed &&
+      `
       left: auto;
       right: 10px;
       max-width: 50px;
@@ -142,7 +153,7 @@ const CollapseButton = styled.button`
 `;
 
 const DevMetricsContent = styled.div<{ $collapsed?: boolean }>`
-  display: ${props => props.$collapsed ? 'none' : 'flex'};
+  display: ${props => (props.$collapsed ? 'none' : 'flex')};
   flex-direction: column;
   gap: 8px;
   transition: opacity 0.3s ease;
@@ -221,10 +232,16 @@ const PerformanceIndicator = styled.div<{ value: number }>`
     height: 100%;
     width: ${props => Math.min(100, props.value)}%;
     background: ${props =>
-      props.value > 80 ? '#00ff00' :
-      props.value > 50 ? '#aaff00' :
-      props.value > 30 ? '#ffaa00' : '#ff3300'};
-    transition: width 0.5s ease, background 0.5s ease;
+      props.value > 80
+        ? '#00ff00'
+        : props.value > 50
+          ? '#aaff00'
+          : props.value > 30
+            ? '#ffaa00'
+            : '#ff3300'};
+    transition:
+      width 0.5s ease,
+      background 0.5s ease;
   }
 `;
 
@@ -251,7 +268,7 @@ const AppContainer = styled.div`
   height: 100vh;
   background-color: #000;
   color: #0f0;
-  font-family: monospace, "Courier New", Courier;
+  font-family: monospace, 'Courier New', Courier;
   overflow: hidden;
 
   @media (max-width: 768px) {
@@ -270,14 +287,21 @@ let renderCount = 0;
 // LiveMetrics component to show real-time performance data
 const LiveMetrics: React.FC = () => {
   const [fps, setFps] = useState<number>(0);
-  const [memory, setMemory] = useState<{used: number, total: number, percent: number}>({
+  const [memory, setMemory] = useState<{
+    used: number;
+    total: number;
+    percent: number;
+  }>({
     used: 0,
     total: 0,
-    percent: 0
+    percent: 0,
   });
-  const [tokenStats, setTokenStats] = useState<{total: number, byModel: Record<string, number>}>({
+  const [tokenStats, setTokenStats] = useState<{
+    total: number;
+    byModel: Record<string, number>;
+  }>({
     total: 0,
-    byModel: {}
+    byModel: {},
   });
   const [expanded, setExpanded] = useState<boolean>(false);
 
@@ -306,7 +330,9 @@ const LiveMetrics: React.FC = () => {
       if (memory) {
         const used = Math.round(memory.usedJSHeapSize / (1024 * 1024));
         const total = Math.round(memory.jsHeapSizeLimit / (1024 * 1024));
-        const percent = Math.round((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100);
+        const percent = Math.round(
+          (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100
+        );
 
         setMemory({ used, total, percent });
       }
@@ -333,7 +359,9 @@ const LiveMetrics: React.FC = () => {
 
       <MetricsRow>
         <MetricsLabel>Memory:</MetricsLabel>
-        <MetricsValue>{memory.used} MB / {memory.total} MB</MetricsValue>
+        <MetricsValue>
+          {memory.used} MB / {memory.total} MB
+        </MetricsValue>
       </MetricsRow>
       <PerformanceIndicator value={100 - memory.percent} />
 
@@ -355,7 +383,9 @@ const LiveMetrics: React.FC = () => {
           <MetricsTitle>System Info</MetricsTitle>
           <MetricsRow>
             <MetricsLabel>Screen:</MetricsLabel>
-            <MetricsValue>{window.innerWidth}x{window.innerHeight}</MetricsValue>
+            <MetricsValue>
+              {window.innerWidth}x{window.innerHeight}
+            </MetricsValue>
           </MetricsRow>
           <MetricsRow>
             <MetricsLabel>Platform:</MetricsLabel>
@@ -376,7 +406,6 @@ const LiveMetrics: React.FC = () => {
 };
 
 const App: React.FC = () => {
-
   const { setCurrentPersona } = useApi();
 
   // Log mounting for debugging
@@ -395,20 +424,22 @@ const App: React.FC = () => {
       window.removeEventListener('beforeunload', beforeUnloadHandler);
     };
   }, []);
-    // UI state
+  // UI state
   const [showSettings, setShowSettings] = useState(false);
-  const [settingsInitialView, setSettingsInitialView] = useState<string | undefined>(undefined);
+  const [settingsInitialView, setSettingsInitialView] = useState<
+    string | undefined
+  >(undefined);
   const [showModelSelection, setShowModelSelection] = useState(false); // Default to not showing
   const [showWarmingUp, setShowWarmingUp] = useState(false);
   const [showCharacterSelector, setShowCharacterSelector] = useState(false);
 
   // App state
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [activeCharacter, setActiveCharacter] = useState("ALTER EGO");
-  const [currentPersonaContent, setCurrentPersonaContent] = useState("");
-  const [voiceModel, setVoiceModel] = useState("None");
+  const [activeCharacter, setActiveCharacter] = useState('ALTER EGO');
+  const [currentPersonaContent, setCurrentPersonaContent] = useState('');
+  const [voiceModel, setVoiceModel] = useState('None');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-    // Performance monitoring state
+  // Performance monitoring state
   const isDevelopment = process.env.NODE_ENV === 'development';
   const [showDevTools, setShowDevTools] = useState(isDevelopment);
   const [devToolsCollapsed, setDevToolsCollapsed] = useState(false);
@@ -482,16 +513,16 @@ const App: React.FC = () => {
         }
       }, 300);
     }
-      // Save the selected model to settings
+    // Save the selected model to settings
     saveSettings({
       selectedModel: model,
       activeCharacter,
       voiceModel,
       memoryBuffer: loadSettings().memoryBuffer, // Preserve existing memoryBuffer value
-      textSpeed: loadSettings().textSpeed // Preserve existing textSpeed value
+      textSpeed: loadSettings().textSpeed, // Preserve existing textSpeed value
     });
   };
-    const handleModelChange = (model: string) => {
+  const handleModelChange = (model: string) => {
     setSelectedModel(model);
 
     // Save the selected model to settings
@@ -500,14 +531,14 @@ const App: React.FC = () => {
       activeCharacter,
       voiceModel,
       memoryBuffer: loadSettings().memoryBuffer,
-      textSpeed: loadSettings().textSpeed
+      textSpeed: loadSettings().textSpeed,
     });
   };
 
   const handleLoadCharacterClick = () => {
     setShowCharacterSelector(true);
   };
-    const handleCharacterSelected = (characterName: string) => {
+  const handleCharacterSelected = (characterName: string) => {
     setActiveCharacter(characterName);
 
     // Update the current persona in the API context
@@ -518,7 +549,7 @@ const App: React.FC = () => {
     if (persona) {
       setCurrentPersonaContent(persona.content);
     } else {
-      setCurrentPersonaContent("");
+      setCurrentPersonaContent('');
     }
 
     // Save to settings
@@ -527,9 +558,9 @@ const App: React.FC = () => {
       activeCharacter: characterName,
       voiceModel,
       memoryBuffer: loadSettings().memoryBuffer,
-      textSpeed: loadSettings().textSpeed // Preserve existing textSpeed value
+      textSpeed: loadSettings().textSpeed, // Preserve existing textSpeed value
     });
-      setShowCharacterSelector(false);
+    setShowCharacterSelector(false);
   };
 
   const handleShowWipInfo = () => {
@@ -540,7 +571,7 @@ const App: React.FC = () => {
   const handleCloseCharacterSelector = () => {
     setShowCharacterSelector(false);
   };
-    const handleVoiceModelChange = (modelName: string) => {
+  const handleVoiceModelChange = (modelName: string) => {
     setVoiceModel(modelName);
 
     // Save to settings
@@ -549,7 +580,7 @@ const App: React.FC = () => {
       activeCharacter,
       voiceModel: modelName,
       memoryBuffer: loadSettings().memoryBuffer,
-      textSpeed: loadSettings().textSpeed // Preserve existing textSpeed value
+      textSpeed: loadSettings().textSpeed, // Preserve existing textSpeed value
     });
   };
 
@@ -597,11 +628,17 @@ const App: React.FC = () => {
     };
 
     // Add event listener
-    window.addEventListener('query-response', handleQueryResponse as EventListener);
+    window.addEventListener(
+      'query-response',
+      handleQueryResponse as EventListener
+    );
 
     // Clean up
     return () => {
-      window.removeEventListener('query-response', handleQueryResponse as EventListener);
+      window.removeEventListener(
+        'query-response',
+        handleQueryResponse as EventListener
+      );
     };
   }, [voiceModel]);
   // Initialize performance monitoring
@@ -618,7 +655,12 @@ const App: React.FC = () => {
         }
 
         // Ctrl+Shift+C to toggle collapse state when dev tools are visible (Cmd+Shift+C on Mac)
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'c' && showDevTools) {
+        if (
+          (e.ctrlKey || e.metaKey) &&
+          e.shiftKey &&
+          e.key === 'c' &&
+          showDevTools
+        ) {
           e.preventDefault();
           setDevToolsCollapsed(prev => !prev);
         }
@@ -645,19 +687,24 @@ const App: React.FC = () => {
           const response = await fetch('/save-db-metrics', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify(dbContent)
+            body: JSON.stringify(dbContent),
           });
 
           const result = await response.json();
           if (result.success) {
-            console.log(`Database content exported successfully to db-metrics/${result.filename}`);
+            console.log(
+              `Database content exported successfully to db-metrics/${result.filename}`
+            );
           } else {
             throw new Error('Failed to save to server');
           }
         } catch (serverError) {
-          console.error('Error saving to server, falling back to client download:', serverError);
+          console.error(
+            'Error saving to server, falling back to client download:',
+            serverError
+          );
 
           // Fall back to client-side download if server save fails
           saveClientSideFile(dbContent);
@@ -673,7 +720,9 @@ const App: React.FC = () => {
 
   // Helper function to save file on client side
   const saveClientSideFile = (content: any) => {
-    const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(content, null, 2)], {
+      type: 'application/json',
+    });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
@@ -690,62 +739,59 @@ const App: React.FC = () => {
   return (
     <AppContainer>
       <GlobalStyles />
-        {showModelSelection && (
-        <ModelSelection 
-          onSelectModel={handleModelSelection} 
+      {showModelSelection && (
+        <ModelSelection
+          onSelectModel={handleModelSelection}
           onShowWipInfo={handleShowWipInfo}
         />
       )}
-      
-      {showWarmingUp && (
-        <WarmingUp />
-      )}
-      
-      <Header 
-        onSettingsClick={() => setShowSettings(!showSettings)} 
+      {showWarmingUp && <WarmingUp />}
+      <Header
+        onSettingsClick={() => setShowSettings(!showSettings)}
         onLoadCharacter={handleLoadCharacterClick}
       />
-      
-      <QuerySection 
+      <QuerySection
         personaContent={currentPersonaContent}
         activeCharacter={activeCharacter}
       />
-      
-      <MainContent 
+      <MainContent
         personaContent={currentPersonaContent}
         activeCharacter={activeCharacter}
       />
-      
-      <Footer 
+      <Footer
         activeCharacter={activeCharacter}
         voiceModel={voiceModel}
         onVoiceModelChange={handleVoiceModelChange}
       />
-        {showSettings && (
-        <Settings 
+      {showSettings && (
+        <Settings
           onClose={() => {
             setShowSettings(false);
             setSettingsInitialView(undefined);
-          }} 
+          }}
           onModelChange={handleModelChange}
           initialView={settingsInitialView}
         />
       )}
-      
       {showCharacterSelector && (
         <CharacterSelector
           onSelect={handleCharacterSelected}
           onClose={handleCloseCharacterSelector}
         />
-      )}      {isDevelopment && showDevTools && (
+      )}{' '}
+      {isDevelopment && showDevTools && (
         <DevMetricsControl $collapsed={devToolsCollapsed}>
-          <CollapseButton 
+          <CollapseButton
             onClick={() => setDevToolsCollapsed(!devToolsCollapsed)}
-            title={devToolsCollapsed ? 'Expand Performance Monitor' : 'Collapse Performance Monitor'}
+            title={
+              devToolsCollapsed
+                ? 'Expand Performance Monitor'
+                : 'Collapse Performance Monitor'
+            }
           >
             {devToolsCollapsed ? '▲' : '▼'}
           </CollapseButton>
-          
+
           <DevMetricsContent $collapsed={devToolsCollapsed}>
             <LiveMetrics />
             <ButtonRow>
@@ -754,10 +800,9 @@ const App: React.FC = () => {
               </DevButton>
             </ButtonRow>
             <ButtonRow>
-              <DevButton onClick={exportDbContent}>
-                Export Dexie DB
-              </DevButton>
-            </ButtonRow>            <HotkeyInfo>
+              <DevButton onClick={exportDbContent}>Export Dexie DB</DevButton>
+            </ButtonRow>{' '}
+            <HotkeyInfo>
               Hotkey: Ctrl+Alt+P
               <br />
               Toggle panel: Ctrl+Shift+D
@@ -767,7 +812,6 @@ const App: React.FC = () => {
           </DevMetricsContent>
         </DevMetricsControl>
       )}
-      
       <NotificationManager />
     </AppContainer>
   );

@@ -1,30 +1,67 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { sendMessageToAI, AIConfig, MessageHistory } from '../services/aiService';
-import { loadChatHistory, saveChatHistory, ChatHistoryEntry, loadSettings } from '../utils/storageUtils';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
+import {
+  sendMessageToAI,
+  AIConfig,
+  MessageHistory,
+} from '../services/aiService';
+import {
+  loadChatHistory,
+  saveChatHistory,
+  ChatHistoryEntry,
+  loadSettings,
+} from '../utils/storageUtils';
 import { v4 as uuidv4 } from 'uuid';
 // Import functions from our long-term memory database
-import { 
-  getPersonaMemory, 
-  savePersonaMemory, 
+import {
+  getPersonaMemory,
+  savePersonaMemory,
   deletePersonaMemory,
   searchMessages,
   semanticSearchMessages,
   getMessagesByTimeRange,
-  getLastNMessages
+  getLastNMessages,
 } from '../memory/longTermDB';
 // Import emotion classification service
-import { classifyConversationEmotion, analyzeUserEmotions, analyzeResponseEmotions } from '../services/emotionService';
+import {
+  classifyConversationEmotion,
+  analyzeUserEmotions,
+  analyzeResponseEmotions,
+} from '../services/emotionService';
+// Import image utilities
+import {
+  saveImageToCache,
+  fileToDataUrl,
+  validateImageFile,
+  processImage,
+  CachedImage,
+} from '../utils/imageUtils';
+// Import image analysis service
+import { queueImageForAnalysis } from '../services/imageAnalysisQueue';
 
 // Define message type
 interface Message {
-  role: 'user' | 'assistant' | 'system';  // Added 'system' role for RAG context
+  role: 'user' | 'assistant' | 'system'; // Added 'system' role for RAG context
   content: string;
   id?: number;
+  images?: string[]; // Array of image URLs/data URLs
+  imageIds?: string[]; // Array of cached image IDs for reference
 }
 
 // Define context types
 interface ApiContextType {
-  sendQuery: (query: string, systemPrompt?: string, config?: Partial<AIConfig>, personaName?: string) => Promise<{
+  sendQuery: (
+    query: string,
+    systemPrompt?: string,
+    config?: Partial<AIConfig>,
+    personaName?: string,
+    images?: File[] // Add support for image files
+  ) => Promise<{
     response: string;
     userEmotions: string[];
     responseEmotions: string[];
@@ -37,27 +74,30 @@ interface ApiContextType {
   currentPersona: string;
   setCurrentPersona: (personaName: string) => void;
   searchLongTermMemory: (query: string) => Promise<Message[]>;
-  retrieveTimeBasedMemories: (startDate: Date, endDate: Date) => Promise<Message[]>;
+  retrieveTimeBasedMemories: (
+    startDate: Date,
+    endDate: Date
+  ) => Promise<Message[]>;
   retrieveLastNMemories: (count: number) => Promise<Message[]>;
 }
 
 // Create context with default values
 const ApiContext = createContext<ApiContextType>({
-  sendQuery: async () => ({ 
-    response: '', 
-    userEmotions: [], 
+  sendQuery: async () => ({
+    response: '',
+    userEmotions: [],
     responseEmotions: [],
-    emotion: 'neutral'
+    emotion: 'neutral',
   }),
   isLoading: false,
   error: null,
   conversationHistory: [],
   clearConversation: () => {},
-  currentPersona: "ALTER EGO",
+  currentPersona: 'ALTER EGO',
   setCurrentPersona: () => {},
   searchLongTermMemory: async () => [],
   retrieveTimeBasedMemories: async () => [],
-  retrieveLastNMemories: async () => []
+  retrieveLastNMemories: async () => [],
 });
 
 // Provider component
@@ -69,8 +109,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [currentPersona, setCurrentPersona] = useState<string>("ALTER EGO");
-  const [activeSessionId, setActiveSessionId] = useState<string>("");
+  const [currentPersona, setCurrentPersona] = useState<string>('ALTER EGO');
+  const [activeSessionId, setActiveSessionId] = useState<string>('');
 
   // Load the conversation history for the current persona
   useEffect(() => {
@@ -82,7 +122,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     const allHistory = loadChatHistory();
 
     // Find an existing session for this persona or create a new one
-    let personaSession = allHistory.find(entry => entry.persona === personaName);
+    let personaSession = allHistory.find(
+      entry => entry.persona === personaName
+    );
 
     if (personaSession) {
       // Use existing session
@@ -91,7 +133,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       // Convert stored format to the format used in the component
       const messages: Message[] = personaSession.messages.map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
       }));
 
       // Apply memory buffer limit to loaded conversations
@@ -105,7 +147,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           const ltmMessages = messages.map(msg => ({
             text: msg.content,
             isUser: msg.role === 'user',
-            timestamp: new Date()
+            timestamp: new Date(),
           }));
 
           // Store in long-term memory
@@ -113,7 +155,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
             messages: ltmMessages,
             users: [],
             aiConfig: {},
-            voiceConfig: { enabled: false, language: 'en-US' }
+            voiceConfig: { enabled: false, language: 'en-US' },
           });
         }
       } catch (err) {
@@ -130,7 +172,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         id: newSessionId,
         persona: personaName,
         timestamp: new Date().toISOString(),
-        messages: []
+        messages: [],
       };
 
       saveChatHistory([...allHistory, newSession]);
@@ -143,9 +185,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       const searchResults = await searchMessages(query, currentPersona);
       // Convert to the Message format
       return searchResults.map(msg => ({
-        role: msg.isUser ? 'user' as const : 'assistant' as const,
+        role: msg.isUser ? ('user' as const) : ('assistant' as const),
         content: msg.text,
-        id: msg.id
+        id: msg.id,
       }));
     } catch (err) {
       console.error('Error searching long-term memory:', err);
@@ -154,14 +196,21 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   };
 
   // Function to retrieve time-based memories
-  const retrieveTimeBasedMemories = async (startDate: Date, endDate: Date): Promise<Message[]> => {
+  const retrieveTimeBasedMemories = async (
+    startDate: Date,
+    endDate: Date
+  ): Promise<Message[]> => {
     try {
-      const messages = await getMessagesByTimeRange(startDate, endDate, currentPersona);
+      const messages = await getMessagesByTimeRange(
+        startDate,
+        endDate,
+        currentPersona
+      );
       // Convert to the Message format
       return messages.map(msg => ({
-        role: msg.isUser ? 'user' as const : 'assistant' as const,
+        role: msg.isUser ? ('user' as const) : ('assistant' as const),
         content: msg.text,
-        id: msg.id
+        id: msg.id,
       }));
     } catch (err) {
       console.error('Error retrieving time-based memories:', err);
@@ -175,9 +224,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       const messages = await getLastNMessages(count, currentPersona);
       // Convert to the Message format
       return messages.map(msg => ({
-        role: msg.isUser ? 'user' as const : 'assistant' as const,
+        role: msg.isUser ? ('user' as const) : ('assistant' as const),
         content: msg.text,
-        id: msg.id
+        id: msg.id,
       }));
     } catch (err) {
       console.error('Error retrieving last N memories:', err);
@@ -187,7 +236,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
   // Advanced semantic search function for long-term memory retrieval
   const semanticSearchLongTermMemory = async (
-    query: string, 
+    query: string,
     excludeIds: number[] = []
   ): Promise<Message[]> => {
     try {
@@ -201,9 +250,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
       // Convert to Message format
       return searchResults.map(msg => ({
-        role: msg.isUser ? 'user' as const : 'assistant' as const,
+        role: msg.isUser ? ('user' as const) : ('assistant' as const),
         content: msg.text,
-        id: msg.id
+        id: msg.id,
       }));
     } catch (err) {
       console.error('Error in semantic search of long-term memory:', err);
@@ -211,7 +260,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     }
   };
 
-  const limitConversationHistory = (messages: Message[], forAiContext: boolean = false) => {
+  const limitConversationHistory = (
+    messages: Message[],
+    forAiContext: boolean = false
+  ) => {
     // Only apply memory buffer limit when preparing context for AI requests
     if (forAiContext) {
       const { memoryBuffer } = loadSettings();
@@ -236,9 +288,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           messages: messages.map(msg => ({
             role: msg.role,
             content: msg.content,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           })),
-          timestamp: new Date().toISOString() // Update the timestamp
+          timestamp: new Date().toISOString(), // Update the timestamp
         };
       }
       return entry;
@@ -253,8 +305,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content,
-          timestamp: new Date().toISOString()
-        }))
+          timestamp: new Date().toISOString(),
+        })),
       });
     }
 
@@ -267,7 +319,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         text: msg.content,
         isUser: msg.role === 'user',
         timestamp: new Date(),
-        id: msg.id
+        id: msg.id,
       }));
 
       // Get existing LTM for this persona or create new
@@ -282,7 +334,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           messages: ltmMessages,
           users: [],
           aiConfig: {},
-          voiceConfig: { enabled: false, language: 'en-US' }
+          voiceConfig: { enabled: false, language: 'en-US' },
         });
       }
     } catch (err) {
@@ -306,7 +358,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         return {
           ...entry,
           messages: [],
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
       }
       return entry;
@@ -321,12 +373,14 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
       // Update the session ID in saved history
       const historyCopy = [...updatedHistory];
-      const personaIndex = historyCopy.findIndex(entry => entry.persona === targetPersona);
+      const personaIndex = historyCopy.findIndex(
+        entry => entry.persona === targetPersona
+      );
 
       if (personaIndex >= 0) {
         historyCopy[personaIndex] = {
           ...historyCopy[personaIndex],
-          id: newSessionId
+          id: newSessionId,
         };
         saveChatHistory(historyCopy);
       }
@@ -351,164 +405,252 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     }
   };
 
-// Function to format memories for RAG
-const formatMemoriesForRAG = (memories: Message[]): Message[] => {
-  if (memories.length === 0) return [];
+  // Function to format memories for RAG
+  const formatMemoriesForRAG = (memories: Message[]): Message[] => {
+    if (memories.length === 0) return [];
 
-  // Add a header to indicate these are from long-term memory
-  const header: Message = {
-    role: 'system',
-    content: `The following are relevant past conversations with ${currentPersona} retrieved from long-term memory:`
-  };
-
-  // Format each memory as a clear exchange
-  const formattedMemories: Message[] = memories.map((msg, index) => {
-    // For better clarity, add context about who said what
-    const prefix = msg.role === 'user' ? '(From past conversation) User asked: ' : 
-                                        '(From past conversation) ALTER EGO replied: ';
-
-    return {
-      role: 'system' as const,
-      content: `${prefix}${msg.content}`
+    // Add a header to indicate these are from long-term memory
+    const header: Message = {
+      role: 'system',
+      content: `The following are relevant past conversations with ${currentPersona} retrieved from long-term memory:`,
     };
-  });
 
-  // Add a footer to separate memories from current conversation
-  const footer: Message = {
-    role: 'system',
-    content: 'End of past memories. Return to current conversation:'
+    // Format each memory as a clear exchange
+    const formattedMemories: Message[] = memories.map((msg, index) => {
+      // For better clarity, add context about who said what
+      const prefix =
+        msg.role === 'user'
+          ? '(From past conversation) User asked: '
+          : '(From past conversation) ALTER EGO replied: ';
+
+      return {
+        role: 'system' as const,
+        content: `${prefix}${msg.content}`,
+      };
+    });
+
+    // Add a footer to separate memories from current conversation
+    const footer: Message = {
+      role: 'system',
+      content: 'End of past memories. Return to current conversation:',
+    };
+
+    return [header, ...formattedMemories, footer];
   };
 
-  return [header, ...formattedMemories, footer];
-};
+  // Function to get IDs of messages in short-term memory buffer
+  const getShortTermMemoryIds = (): number[] => {
+    return conversationHistory
+      .filter(msg => msg.id !== undefined)
+      .map(msg => msg.id as number);
+  };
 
-// Function to get IDs of messages in short-term memory buffer
-const getShortTermMemoryIds = (): number[] => {
-  return conversationHistory
-    .filter(msg => msg.id !== undefined)
-    .map(msg => msg.id as number);
-};
-
-// Function to send a query to the AI
-const sendQuery = async (
-  query: string, 
-  systemPrompt: string = "You are ALTER EGO, an intelligent and helpful AI assistant. This is dummy text to fall back on.",
-  config?: Partial<AIConfig>,
-  personaName?: string
-) => {
-  // If a specific persona is provided and it's different from current,
-  // switch to that persona first (useful for direct API calls)
-  if (personaName && personaName !== currentPersona) {
-    handleSetCurrentPersona(personaName);
-  }
-
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    // Add the new user message to history
-    const updatedFullHistory: Message[] = [
-      ...conversationHistory, 
-      { role: 'user' as const, content: query }
-    ];    // Apply memory buffer limitation ONLY for the AI context
-    const { memoryBuffer } = loadSettings();
-    // Take only the last N exchanges based on memory buffer setting, but exclude the current user message
-    // since it will be added separately by the AI service
-    const limitedContextForAI = conversationHistory.slice(-memoryBuffer * 2);
-
-    console.log(`Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`);
-
-    // Get IDs of messages already in short-term memory to avoid duplicates
-    const shortTermMemoryIds = getShortTermMemoryIds();
-
-    // Try to retrieve relevant context from long-term memory using semantic search
-    let relevantMemories: Message[] = [];
-    try {
-      // Use semantic search to find memories related to the query
-      // Pass in short-term memory IDs to exclude those messages
-      const searchResults = await semanticSearchLongTermMemory(query, shortTermMemoryIds);
-
-      // Only include if we found something meaningful
-      if (searchResults.length > 0) {
-        // Format memories properly for RAG
-        relevantMemories = formatMemoriesForRAG(searchResults);
-
-        console.log(`Retrieved ${searchResults.length} semantically relevant memories from long-term storage`);
-      }
-    } catch (err) {
-      console.error('Error retrieving from long-term memory:', err);
-    }    // Construct the full message history for the AI (excluding system prompt and current user message)
-    const messagesForAI: MessageHistory[] = [
-      // Add any relevant memories from long-term storage (already formatted for RAG)
-      ...relevantMemories.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-
-      // Then add the current conversation context (excluding current user message)
-      ...limitedContextForAI.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }))
-    ];
-
-    // Debug logging to verify no duplicate user messages    // Debug logging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('=== MESSAGE CONSTRUCTION DEBUG ===');
-      console.log('Current user query:', query);
-      console.log('Conversation history length:', conversationHistory.length);
-      console.log('Limited context for AI length:', limitedContextForAI.length);
-      console.log('Messages for AI length:', messagesForAI.length);
-      console.log('Messages for AI roles:', messagesForAI.map(m => m.role));
-      console.log('=== END MESSAGE DEBUG ===');
+  // Function to send a query to the AI
+  const sendQuery = async (
+    query: string,
+    systemPrompt: string = 'You are ALTER EGO, an intelligent and helpful AI assistant. This is dummy text to fall back on.',
+    config?: Partial<AIConfig>,
+    personaName?: string,
+    images?: File[]
+  ) => {
+    // If a specific persona is provided and it's different from current,
+    // switch to that persona first (useful for direct API calls)
+    if (personaName && personaName !== currentPersona) {
+      handleSetCurrentPersona(personaName);
     }
 
-    // Call the AI service with the combined context
-    const response = await sendMessageToAI(query, systemPrompt, messagesForAI, config);
+    setIsLoading(true);
+    setError(null);
 
-    // Update conversation history with the AI's response
-    const finalHistory: Message[] = [
-      ...updatedFullHistory,
-      { role: 'assistant' as const, content: response }
-    ];    // Save the complete conversation history
-    setConversationHistory(finalHistory);
-    await saveCurrentConversation(finalHistory);    // Classify emotions using the new emotion service
-    const primaryEmotion = classifyConversationEmotion(query, response);
-    const userEmotions = analyzeUserEmotions(query);
-    const responseEmotions = analyzeResponseEmotions(response);
+    try {
+      let imageUrls: string[] = [];
+      let imageIds: string[] = [];
 
-    setIsLoading(false);
-    return { 
-      response, 
-      userEmotions: userEmotions.emotions, 
-      responseEmotions: responseEmotions.emotions, 
-      emotion: primaryEmotion 
-    };} catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    setError(errorMessage);
-    setIsLoading(false);
-    return { 
-      response: `Error: ${errorMessage}`, 
-      userEmotions: ['ERROR (100%)'], 
-      responseEmotions: ['ERROR (100%)'],
-      emotion: 'neutral'
-    };
-  }
-};
+      // Process images if provided
+      if (images && images.length > 0) {
+        console.log(`Processing ${images.length} images...`);
+
+        // Validate all images first
+        for (const image of images) {
+          const validation = validateImageFile(image);
+          if (!validation.valid) {
+            throw new Error(validation.error);
+          }
+        }
+
+        // Process and cache images
+        for (const image of images) {
+          try {
+            // Save to cache for future reference
+            const cachedImage = await saveImageToCache(
+              image,
+              currentPersona,
+              `Image uploaded by ${currentPersona}`
+            );
+
+            // Compress image for API efficiency (reduce token usage)
+            const compressedDataUrl = await processImage(image, {
+              maxWidth: 800, // Smaller max size for API calls
+              maxHeight: 800,
+              quality: 0.7, // Lower quality for API efficiency
+              format: 'jpeg', // JPEG is more compressed than PNG
+            });
+
+            imageUrls.push(compressedDataUrl);
+            imageIds.push(cachedImage.id);
+
+            console.log(`Processed image: ${image.name} (${cachedImage.id})`);
+
+            // Queue image for background AI analysis (doesn't block user response)
+            queueImageForAnalysis(
+              cachedImage.id,
+              compressedDataUrl,
+              currentPersona,
+              2
+            ); // Priority 2 for user uploads
+          } catch (err) {
+            console.error('Error processing image:', err);
+            throw new Error(
+              `Failed to process image ${image.name}: ${err instanceof Error ? err.message : 'Unknown error'}`
+            );
+          }
+        }
+      }
+
+      // Add the new user message to history (with images if any)
+      const userMessage: Message = {
+        role: 'user' as const,
+        content: query,
+        ...(imageUrls.length > 0 && { images: imageUrls }),
+        ...(imageIds.length > 0 && { imageIds: imageIds }),
+      };
+
+      const updatedFullHistory: Message[] = [
+        ...conversationHistory,
+        userMessage,
+      ]; // Apply memory buffer limitation ONLY for the AI context
+      const { memoryBuffer } = loadSettings();
+      // Take only the last N exchanges based on memory buffer setting, but exclude the current user message
+      // since it will be added separately by the AI service
+      const limitedContextForAI = conversationHistory.slice(-memoryBuffer * 2);
+
+      console.log(
+        `Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`
+      );
+
+      // Get IDs of messages already in short-term memory to avoid duplicates
+      const shortTermMemoryIds = getShortTermMemoryIds();
+
+      // Try to retrieve relevant context from long-term memory using semantic search
+      let relevantMemories: Message[] = [];
+      try {
+        // Use semantic search to find memories related to the query
+        // Pass in short-term memory IDs to exclude those messages
+        const searchResults = await semanticSearchLongTermMemory(
+          query,
+          shortTermMemoryIds
+        );
+
+        // Only include if we found something meaningful
+        if (searchResults.length > 0) {
+          // Format memories properly for RAG
+          relevantMemories = formatMemoriesForRAG(searchResults);
+
+          console.log(
+            `Retrieved ${searchResults.length} semantically relevant memories from long-term storage`
+          );
+        }
+      } catch (err) {
+        console.error('Error retrieving from long-term memory:', err);
+      } // Construct the full message history for the AI (excluding system prompt and current user message)
+      const messagesForAI: MessageHistory[] = [
+        // Add any relevant memories from long-term storage (already formatted for RAG)
+        ...relevantMemories.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+
+        // Then add the current conversation context (excluding current user message)
+        ...limitedContextForAI.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          ...(msg.images && { images: msg.images }),
+        })),
+      ];
+
+      // Debug logging to verify no duplicate user messages    // Debug logging (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('=== MESSAGE CONSTRUCTION DEBUG ===');
+        console.log('Current user query:', query);
+        console.log('Images attached:', imageUrls.length);
+        console.log('Conversation history length:', conversationHistory.length);
+        console.log(
+          'Limited context for AI length:',
+          limitedContextForAI.length
+        );
+        console.log('Messages for AI length:', messagesForAI.length);
+        console.log(
+          'Messages for AI roles:',
+          messagesForAI.map(m => m.role)
+        );
+        console.log('=== END MESSAGE DEBUG ===');
+      }
+
+      // Call the AI service with the combined context (including images)
+      const response = await sendMessageToAI(
+        query,
+        systemPrompt,
+        messagesForAI,
+        config,
+        imageUrls // Pass images to AI service
+      );
+
+      // Update conversation history with the AI's response
+      const finalHistory: Message[] = [
+        ...updatedFullHistory,
+        { role: 'assistant' as const, content: response },
+      ]; // Save the complete conversation history
+      setConversationHistory(finalHistory);
+      await saveCurrentConversation(finalHistory); // Classify emotions using the new emotion service
+      const primaryEmotion = classifyConversationEmotion(query, response);
+      const userEmotions = analyzeUserEmotions(query);
+      const responseEmotions = analyzeResponseEmotions(response);
+
+      setIsLoading(false);
+      return {
+        response,
+        userEmotions: userEmotions.emotions,
+        responseEmotions: responseEmotions.emotions,
+        emotion: primaryEmotion,
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      setIsLoading(false);
+      return {
+        response: `Error: ${errorMessage}`,
+        userEmotions: ['ERROR (100%)'],
+        responseEmotions: ['ERROR (100%)'],
+        emotion: 'neutral',
+      };
+    }
+  };
 
   return (
-    <ApiContext.Provider value={{ 
-      sendQuery, 
-      isLoading, 
-      error, 
-      conversationHistory, 
-      clearConversation,
-      currentPersona,
-      setCurrentPersona: handleSetCurrentPersona,
-      searchLongTermMemory,
-      retrieveTimeBasedMemories,
-      retrieveLastNMemories
-    }}>
+    <ApiContext.Provider
+      value={{
+        sendQuery,
+        isLoading,
+        error,
+        conversationHistory,
+        clearConversation,
+        currentPersona,
+        setCurrentPersona: handleSetCurrentPersona,
+        searchLongTermMemory,
+        retrieveTimeBasedMemories,
+        retrieveLastNMemories,
+      }}
+    >
       {children}
     </ApiContext.Provider>
   );

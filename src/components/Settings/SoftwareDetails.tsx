@@ -24,13 +24,11 @@ const pulse = keyframes`
   }
 `;
 
-
-
 const DetailsContainer = styled.div`
   color: #0f0;
   position: relative;
   animation: ${fadeIn} 0.8s ease-out;
-  
+
   @media (max-width: 768px) {
     padding: 0 0.5em;
   }
@@ -43,7 +41,7 @@ const DetailsTitle = styled.h2`
   text-align: center;
   text-shadow: 0 0 10px #0f0;
   position: relative;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -54,14 +52,12 @@ const DetailsTitle = styled.h2`
     height: 2px;
     background: linear-gradient(90deg, transparent, #0f0, transparent);
   }
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2em;
     font-size: 1.6em;
   }
 `;
-
-
 
 const matrixSplit = keyframes`
   0% {
@@ -93,7 +89,7 @@ const HeaderSection = styled.div`
   overflow: visible;
   animation: ${fadeIn} 0.8s ease-out 0.1s both;
   z-index: 1;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -101,7 +97,8 @@ const HeaderSection = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, 
+    background: linear-gradient(
+      135deg,
       rgba(0, 255, 0, 0.15) 0%,
       rgba(0, 255, 0, 0.05) 25%,
       rgba(0, 0, 0, 0.8) 50%,
@@ -111,7 +108,7 @@ const HeaderSection = styled.div`
     border-radius: 10px;
     z-index: 1;
   }
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -119,12 +116,13 @@ const HeaderSection = styled.div`
     left: -3px;
     right: -3px;
     bottom: -3px;
-    background: linear-gradient(45deg, 
-      #0f0 0%, 
-      transparent 20%, 
-      #00ff88 40%, 
-      transparent 60%, 
-      #0f0 80%, 
+    background: linear-gradient(
+      45deg,
+      #0f0 0%,
+      transparent 20%,
+      #00ff88 40%,
+      transparent 60%,
+      #0f0 80%,
       transparent 100%
     );
     border-radius: 10px;
@@ -134,16 +132,12 @@ const HeaderSection = styled.div`
   }
 `;
 
-
-
-
-
 const HeaderContent = styled.div`
   position: relative;
   z-index: 2;
   animation: ${fadeIn} 1.2s ease-out 0.5s both;
   padding: 15px 0;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -151,19 +145,20 @@ const HeaderContent = styled.div`
     left: 20%;
     right: 20%;
     height: 2px;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      #0f0 30%, 
-      #00ff88 50%, 
-      #0f0 70%, 
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #0f0 30%,
+      #00ff88 50%,
+      #0f0 70%,
       transparent 100%
     );
-    box-shadow: 
+    box-shadow:
       0 0 8px #0f0,
       0 0 16px rgba(0, 255, 0, 0.3);
     animation: ${digitalGlitch} 0.8s infinite;
   }
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -171,14 +166,15 @@ const HeaderContent = styled.div`
     left: 20%;
     right: 20%;
     height: 2px;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      #0f0 30%, 
-      #00ff88 50%, 
-      #0f0 70%, 
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #0f0 30%,
+      #00ff88 50%,
+      #0f0 70%,
       transparent 100%
     );
-    box-shadow: 
+    box-shadow:
       0 0 8px #0f0,
       0 0 16px rgba(0, 255, 0, 0.3);
     animation: ${digitalGlitch} 0.8s infinite reverse;
@@ -224,7 +220,7 @@ const InfoCard = styled.div<{ $delay?: number }>`
   padding: 1.5em;
   transition: all 0.3s ease;
   animation: ${fadeIn} 0.8s ease-out ${props => props.$delay || 0}s both;
-  
+
   &:hover {
     background: rgba(0, 255, 0, 0.1);
     border-color: #0f0;
@@ -240,7 +236,7 @@ const CardTitle = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.5em;
-  
+
   &::before {
     content: attr(data-icon);
     font-size: 1.2em;
@@ -261,7 +257,7 @@ const DetailsItem = styled.li`
   margin: 0.5em 0;
   padding-left: 1.5em;
   position: relative;
-  
+
   &::before {
     content: '▶';
     position: absolute;
@@ -269,7 +265,7 @@ const DetailsItem = styled.li`
     color: #0f0;
     transition: transform 0.2s ease;
   }
-  
+
   &:hover::before {
     transform: translateX(3px);
   }
@@ -284,14 +280,12 @@ const TechBadge = styled.span`
   border-radius: 15px;
   font-size: 0.9em;
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: rgba(0, 255, 0, 0.2);
     transform: scale(1.05);
   }
 `;
-
-
 
 const BackButton = styled.button`
   margin-top: 2em;
@@ -306,7 +300,7 @@ const BackButton = styled.button`
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -314,21 +308,26 @@ const BackButton = styled.button`
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.2), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 255, 0, 0.2),
+      transparent
+    );
     transition: left 0.5s;
   }
-  
+
   &:hover {
     background: #0f0;
     color: #000;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 255, 0, 0.4);
-    
+
     &::before {
       left: 100%;
     }
   }
-  
+
   @media (max-width: 768px) {
     width: 100%;
     max-width: 300px;
@@ -337,19 +336,18 @@ const BackButton = styled.button`
   }
 `;
 
-
-
 const DigitalTear = styled.div<{ $side: 'left' | 'right'; $delay: number }>`
   position: absolute;
   top: 30%;
   ${props => props.$side}: 8px;
   width: 2px;
   height: 40%;
-  background: linear-gradient(180deg, 
-    transparent 0%, 
-    #0f0 20%, 
-    #ffffff 50%, 
-    #0f0 80%, 
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    #0f0 20%,
+    #ffffff 50%,
+    #0f0 80%,
     transparent 100%
   );
   box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
@@ -357,7 +355,7 @@ const DigitalTear = styled.div<{ $side: 'left' | 'right'; $delay: number }>`
   animation-delay: ${props => props.$delay}s;
   z-index: 2;
   border-radius: 1px;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -377,76 +375,82 @@ interface SoftwareDetailsProps {
 
 const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
   const currentYear = new Date().getFullYear();
-  
+
   const details = {
-    softwareName: "ALTER EGO",
-    version: "0.8.0",
-    buildDate: "July 2024",
-    developedBy: "L4w1i3t",
+    softwareName: 'ALTER EGO',
+    version: '0.8.0',
+    buildDate: 'July 2024',
+    developedBy: 'L4w1i3t',
     technologies: [
-      "React 18.2.0",
-      "TypeScript",
-      "Python 3.12",
-      "Styled Components",
-      "Web Speech API",
-      "Dexie.js",
-      "Service Workers",
-      "PWA Technologies",
-      "OpenAI API",
-      "ElevenLabs API",
-      "Webpack 5"
+      'React 18.2.0',
+      'TypeScript',
+      'Python 3.12',
+      'Styled Components',
+      'Web Speech API',
+      'Dexie.js',
+      'Service Workers',
+      'PWA Technologies',
+      'OpenAI API',
+      'OpenAI Vision API (GPT-4o)',
+      'ElevenLabs API',
+      'Webpack 5',
     ],
     features: [
-      "Real-time AI conversations",
-      "Voice synthesis (ElevenLabs)",
-      "Custom persona management",
-      "Short-term and long-term memory system",
-      "Offline capability",
-      "Cross-platform compatibility",
-      "Basic emotion processing",
-      "API key management",
-      "Desktop installation support"
+      'Real-time AI conversations',
+      'Advanced image vision and analysis',
+      'Image upload and parsing capabilities',
+      'Smart image cache with AI descriptions',
+      'Voice synthesis (ElevenLabs)',
+      'Custom persona management',
+      'Short-term and long-term memory system',
+      'Offline capability',
+      'Cross-platform compatibility',
+      'Basic emotion processing',
+      'API key management',
+      'Desktop installation support',
     ],
     credits: [
-      "React Development Team",
-      "OpenAI GPT Models",
-      "ElevenLabs TTS",
+      'React Development Team',
+      'OpenAI GPT Models & Vision',
+      'ElevenLabs TTS',
     ],
     legal: [
-      "Licensed under MIT License",
-      "Complies with OpenAI Terms of Service",
-      "Complies with ElevenLabs API Guidelines",
-      "Privacy-focused data handling",
-      "No personal data tracking",
-      "Local storage for user preferences"
+      'Licensed under MIT License',
+      'Complies with OpenAI Terms of Service',
+      'Complies with ElevenLabs API Guidelines',
+      'Privacy-focused data handling',
+      'No personal data tracking',
+      'Local storage for user preferences',
     ],
     knownIssues: [
-      "Voice recognition is not yet implemented",
-      "Open-source language models are still in development",
-      "Emotion detection algorithm is basic and may produce false positives",
-      "Limited offline AI processing capabilities",
-      "Voice synthesis latency depends on internet connection",
-      "Open-source backend integration is work-in-progress"
+      'Voice recognition is not yet implemented',
+      'Open-source language models are still in development',
+      'Emotion detection algorithm is basic and may produce false positives',
+      'Limited offline AI processing capabilities',
+      'Voice synthesis latency depends on internet connection',
+      'Open-source backend integration is work-in-progress',
     ],
     roadmap: [
-      "Implement Web Speech API for voice recognition",
-      "Add support for local language models (Ollama, etc.)",
-      "Enhance emotion detection with advanced algorithms",
-      "Improve offline functionality with local AI processing",
-      "Add conversation export/import features",
-      "Create plugin system for custom AI providers",
-    ]
+      'Implement Web Speech API for voice recognition',
+      'Add support for local language models (Ollama, etc.)',
+      'Enhance emotion detection with advanced algorithms',
+      'Improve offline functionality with local AI processing',
+      'Add conversation export/import features',
+      'Create plugin system for custom AI providers',
+      'Expand image analysis with OCR and document processing',
+      'Add multi-image batch analysis capabilities',
+    ],
   };
   return (
     <DetailsContainer>
       <DetailsTitle>Software Information</DetailsTitle>
-        <HeaderSection>        
-          <HeaderContent>
+      <HeaderSection>
+        <HeaderContent>
           <AppIcon src="../assets/logo.webp" alt="ALTER EGO Logo" />
           <Version> v{details.version}</Version>
         </HeaderContent>
-      </HeaderSection>      
-      <InfoGrid>        
+      </HeaderSection>
+      <InfoGrid>
         <InfoCard $delay={0.2}>
           <CardTitle data-icon="🔧">Technologies</CardTitle>
           <CardContent>
@@ -454,7 +458,8 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
               <TechBadge key={`tech-${index}`}>{tech}</TechBadge>
             ))}
           </CardContent>
-        </InfoCard>        <InfoCard $delay={0.3}>
+        </InfoCard>{' '}
+        <InfoCard $delay={0.3}>
           <CardTitle data-icon="⚡">Key Features</CardTitle>
           <CardContent>
             <DetailsList>
@@ -463,18 +468,30 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
               ))}
             </DetailsList>
           </CardContent>
-        </InfoCard>        <InfoCard $delay={0.4}>
+        </InfoCard>{' '}
+        <InfoCard $delay={0.4}>
           <CardTitle data-icon="📝">Project Info</CardTitle>
           <CardContent>
             <DetailsList>
-              <DetailsItem><strong>Developer:</strong> {details.developedBy}</DetailsItem>
-              <DetailsItem><strong>Build Date:</strong> {details.buildDate}</DetailsItem>
-              <DetailsItem><strong>Copyright:</strong> © {currentYear} {details.developedBy}</DetailsItem>
-              <DetailsItem><strong>Platform:</strong> Progressive Web App</DetailsItem>
-              <DetailsItem><strong>License:</strong> MIT License</DetailsItem>
+              <DetailsItem>
+                <strong>Developer:</strong> {details.developedBy}
+              </DetailsItem>
+              <DetailsItem>
+                <strong>Build Date:</strong> {details.buildDate}
+              </DetailsItem>
+              <DetailsItem>
+                <strong>Copyright:</strong> © {currentYear}{' '}
+                {details.developedBy}
+              </DetailsItem>
+              <DetailsItem>
+                <strong>Platform:</strong> Progressive Web App
+              </DetailsItem>
+              <DetailsItem>
+                <strong>License:</strong> MIT License
+              </DetailsItem>
             </DetailsList>
           </CardContent>
-        </InfoCard>        
+        </InfoCard>
         <InfoCard $delay={0.5}>
           <CardTitle data-icon="👏">Credits & Acknowledgments</CardTitle>
           <CardContent>
@@ -484,7 +501,8 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
               ))}
             </DetailsList>
           </CardContent>
-        </InfoCard>        <InfoCard $delay={0.6}>
+        </InfoCard>{' '}
+        <InfoCard $delay={0.6}>
           <CardTitle data-icon="⚖️">Legal & Compliance</CardTitle>
           <CardContent>
             <DetailsList>
@@ -493,31 +511,40 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
               ))}
             </DetailsList>
           </CardContent>
-        </InfoCard>        
+        </InfoCard>
         <InfoCard $delay={0.7} style={{ gridColumn: '1 / -1' }}>
           <CardTitle data-icon="⚠️">Known Issues & Limitations</CardTitle>
           <CardContent>
             <DetailsList>
               {details.knownIssues.map((issue, index) => (
-                <DetailsItem key={`issue-${index}`} style={{ color: '#ffaa00' }}>{issue}</DetailsItem>
+                <DetailsItem
+                  key={`issue-${index}`}
+                  style={{ color: '#ffaa00' }}
+                >
+                  {issue}
+                </DetailsItem>
               ))}
             </DetailsList>
           </CardContent>
-        </InfoCard>        <InfoCard $delay={0.8} style={{ gridColumn: '1 / -1' }}>
+        </InfoCard>{' '}
+        <InfoCard $delay={0.8} style={{ gridColumn: '1 / -1' }}>
           <CardTitle data-icon="🚧">Development Roadmap</CardTitle>
           <CardContent>
             <DetailsList>
               {details.roadmap.map((item, index) => (
-                <DetailsItem key={`roadmap-${index}`} style={{ color: '#00aaff' }}>{item}</DetailsItem>
+                <DetailsItem
+                  key={`roadmap-${index}`}
+                  style={{ color: '#00aaff' }}
+                >
+                  {item}
+                </DetailsItem>
               ))}
             </DetailsList>
           </CardContent>
         </InfoCard>
       </InfoGrid>
-      
-      <BackButton onClick={onBack}>
-        ← Back to Settings
-      </BackButton>
+
+      <BackButton onClick={onBack}>← Back to Settings</BackButton>
     </DetailsContainer>
   );
 };

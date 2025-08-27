@@ -6,7 +6,7 @@ import { showSuccess, showError } from '../Common/NotificationManager';
 const Container = styled.div`
   color: #0f0;
   max-width: 100%;
-  
+
   @media (max-width: 768px) {
     padding: 0 0.5em;
   }
@@ -15,7 +15,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.3em;
@@ -25,7 +25,7 @@ const Title = styled.h2`
 
 const FormGroup = styled.div`
   margin-bottom: 1.5em; /* Increased spacing between form groups */
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2em;
   }
@@ -34,7 +34,7 @@ const FormGroup = styled.div`
 const Label = styled.label`
   display: block;
   margin-bottom: 0.3em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 0.8em;
     font-size: 1.1em;
@@ -50,7 +50,7 @@ const Input = styled.input`
   border: 1px solid #0f0;
   border-radius: 0.2em;
   font-family: monospace;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     font-size: 1em;
@@ -64,7 +64,7 @@ const Description = styled.p`
   margin-top: 0.5em;
   color: #0f09;
   line-height: 1.4; /* Improved readability */
-  
+
   @media (max-width: 768px) {
     font-size: 0.95em;
     margin-top: 1em;
@@ -80,7 +80,7 @@ const InfoBox = styled.div`
   margin-bottom: 2em;
   font-size: 0.9em;
   line-height: 1.5; /* Improved readability */
-  
+
   @media (max-width: 768px) {
     padding: 1.5em;
     margin-bottom: 2.5em;
@@ -96,7 +96,7 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   margin-top: 1.5em;
   gap: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     margin-top: 2.5em;
@@ -113,12 +113,12 @@ const Button = styled.button`
   border: 1px solid #0f0;
   padding: 0.5em 1em;
   cursor: pointer;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1.1em;
@@ -137,23 +137,23 @@ interface ApiKeyManagerProps {
 const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
   const [keys, setKeys] = useState<ApiKeys>({
     OPENAI_API_KEY: '',
-    ELEVENLABS_API_KEY: ''
+    ELEVENLABS_API_KEY: '',
   });
-  
+
   useEffect(() => {
     // Load existing API keys
     const savedKeys = loadApiKeys();
     setKeys(savedKeys);
   }, []);
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setKeys(prevKeys => ({
       ...prevKeys,
-      [name]: value
+      [name]: value,
     }));
   };
-    const handleSaveKeys = () => {
+  const handleSaveKeys = () => {
     try {
       // Basic validation for OpenAI key format (starts with "sk-")
       if (keys.OPENAI_API_KEY && !keys.OPENAI_API_KEY.startsWith('sk-')) {
@@ -174,24 +174,28 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       console.error('Failed to save API keys:', error);
     }
   };
-  
+
   // Function to mask API keys for display
   const maskApiKey = (key: string): string => {
     if (!key) return '';
     if (key.length <= 8) return '*'.repeat(key.length);
-    return key.substring(0, 4) + '*'.repeat(key.length - 8) + key.substring(key.length - 4);
+    return (
+      key.substring(0, 4) +
+      '*'.repeat(key.length - 8) +
+      key.substring(key.length - 4)
+    );
   };
-  
+
   return (
     <Container>
       <Title>Manage API Keys</Title>
-      
+
       <InfoBox>
-        You'll need API keys to use certain features of ALTER EGO. 
-        The OpenAI API key is required for using OpenAI models, and 
-        the ElevenLabs key is needed for voice synthesis.
+        You'll need API keys to use certain features of ALTER EGO. The OpenAI
+        API key is required for using OpenAI models, and the ElevenLabs key is
+        needed for voice synthesis.
       </InfoBox>
-      
+
       <FormGroup>
         <Label htmlFor="OPENAI_API_KEY">OpenAI API Key:</Label>
         <Input
@@ -203,10 +207,19 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           placeholder="sk-..."
         />
         <Description>
-          Required for OpenAI models. Get your API key from the <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0af' }}>OpenAI dashboard</a>.
+          Required for OpenAI models. Get your API key from the{' '}
+          <a
+            href="https://platform.openai.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#0af' }}
+          >
+            OpenAI dashboard
+          </a>
+          .
         </Description>
       </FormGroup>
-      
+
       <FormGroup>
         <Label htmlFor="ELEVENLABS_API_KEY">ElevenLabs API Key:</Label>
         <Input
@@ -218,10 +231,19 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           placeholder="..."
         />
         <Description>
-          Required for ElevenLabs voice synthesis. Get your API key from the <a href="https://elevenlabs.io/" target="_blank" rel="noopener noreferrer" style={{ color: '#0af' }}>ElevenLabs website</a>.
+          Required for ElevenLabs voice synthesis. Get your API key from the{' '}
+          <a
+            href="https://elevenlabs.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#0af' }}
+          >
+            ElevenLabs website
+          </a>
+          .
         </Description>
       </FormGroup>
-        <ButtonContainer>
+      <ButtonContainer>
         <BackButton onClick={onBack}>Back</BackButton>
         <SaveButton onClick={handleSaveKeys}>Save</SaveButton>
       </ButtonContainer>

@@ -9,7 +9,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   color: #0f0;
-  
+
   @media (max-width: 768px) {
     min-height: 60vh;
     justify-content: center;
@@ -19,7 +19,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.3em;
@@ -31,7 +31,7 @@ const Message = styled.p`
   margin-bottom: 1em;
   text-align: center;
   line-height: 1.5;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2em;
     font-size: 1.1em;
@@ -45,7 +45,7 @@ const ButtonContainer = styled.div`
   width: 100%;
   margin-top: 1em;
   gap: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     margin-top: 2em;
@@ -60,12 +60,12 @@ const Button = styled.button`
   border: 1px solid #0f0;
   padding: 0.5em 1em;
   cursor: pointer;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1.1em;
@@ -77,7 +77,7 @@ const Button = styled.button`
 const DangerButton = styled(Button)`
   border-color: #f00;
   color: #f00;
-  
+
   &:hover {
     background: #f00;
     color: #000;
@@ -95,21 +95,19 @@ const ClearMemory: React.FC<ClearMemoryProps> = ({ onBack }) => {
     try {
       // Clear memory in local storage
       clearMemory();
-      
+
       // Clear conversation in API context
       clearConversation();
-      
+
       // Dispatch custom event to clear the chat display
       const clearChatEvent = new CustomEvent('clear-chat-display');
       window.dispatchEvent(clearChatEvent);
-      
-      showSuccess("Memory cleared successfully.");
-      setTimeout(() => {
-        onBack();
-      }, 1500);
+
+      onBack(); // Navigate back first
+      showSuccess('Memory cleared successfully.'); // Then show notification
     } catch (error) {
-      showError("Error clearing memory.");
-      console.error("Failed to clear memory:", error);
+      showError('Error clearing memory.');
+      console.error('Failed to clear memory:', error);
     }
   };
 
@@ -117,10 +115,10 @@ const ClearMemory: React.FC<ClearMemoryProps> = ({ onBack }) => {
     <Container>
       <Title>Clear Memory</Title>
       <Message>
-        This will erase all conversation history with ALTER EGO.
-        This action cannot be undone.
+        This will erase all conversation history with ALTER EGO. This action
+        cannot be undone.
       </Message>
-        <ButtonContainer>
+      <ButtonContainer>
         <Button onClick={onBack}>Cancel</Button>
         <DangerButton onClick={handleClearMemory}>Clear Memory</DangerButton>
       </ButtonContainer>

@@ -19,7 +19,7 @@ export const useVirtualKeyboard = () => {
     // Modern browsers with Virtual Keyboard API
     if ('virtualKeyboard' in navigator) {
       const vk = navigator.virtualKeyboard!;
-      
+
       const handleGeometryChange = () => {
         const rect = vk.boundingRect;
         const isVisible = rect.height > 0;
@@ -28,18 +28,19 @@ export const useVirtualKeyboard = () => {
       };
 
       vk.addEventListener('geometrychange', handleGeometryChange);
-      
+
       return () => {
         vk.removeEventListener('geometrychange', handleGeometryChange);
       };
     } else {
       // Fallback for older browsers - detect viewport changes
       let initialViewport = window.visualViewport?.height || window.innerHeight;
-      
+
       const handleViewportChange = () => {
-        const currentViewport = window.visualViewport?.height || window.innerHeight;
+        const currentViewport =
+          window.visualViewport?.height || window.innerHeight;
         const heightDifference = initialViewport - currentViewport;
-        
+
         // Consider keyboard visible if viewport height decreased by more than 150px
         const keyboardVisible = heightDifference > 150;
         setIsKeyboardVisible(keyboardVisible);
@@ -50,7 +51,10 @@ export const useVirtualKeyboard = () => {
       if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', handleViewportChange);
         return () => {
-          window.visualViewport?.removeEventListener('resize', handleViewportChange);
+          window.visualViewport?.removeEventListener(
+            'resize',
+            handleViewportChange
+          );
         };
       } else {
         // Fallback to window resize
@@ -66,7 +70,10 @@ export const useVirtualKeyboard = () => {
   useEffect(() => {
     if (isKeyboardVisible) {
       document.body.classList.add('keyboard-open');
-      document.body.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+      document.body.style.setProperty(
+        '--keyboard-height',
+        `${keyboardHeight}px`
+      );
     } else {
       document.body.classList.remove('keyboard-open');
       document.body.style.removeProperty('--keyboard-height');

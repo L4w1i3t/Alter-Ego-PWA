@@ -40,7 +40,7 @@ const TypingAnimation: React.FC<TypingAnimationProps> = ({
   onComplete,
   showCursor = true,
   className,
-  children
+  children,
 }) => {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);

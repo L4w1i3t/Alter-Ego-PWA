@@ -15,7 +15,7 @@ export {
   ChatHistory,
   ClearMemory,
   SoftwareDetails,
-  FactoryReset
+  FactoryReset,
 };
 
 export default Settings;

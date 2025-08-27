@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadSettings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
 import TypingAnimation from '../Common/TypingAnimation';
+import { openImageInNewTab } from '../../utils/imageUtils';
 
 const MainContentContainer = styled.main`
   display: flex;
@@ -10,7 +11,7 @@ const MainContentContainer = styled.main`
   padding: 2vh 2vw;
   gap: 2vw;
   overflow: auto;
-  
+
   @media (max-width: 768px) {
     /* Use CSS Grid for better mobile layout control */
     display: grid;
@@ -24,10 +25,10 @@ const MainContentContainer = styled.main`
     box-sizing: border-box;
     overflow-x: hidden;
     /* Ensure grid items don't overflow */
-    grid-template-areas: 
-      "response"
-      "emotions" 
-      "avatar";
+    grid-template-areas:
+      'response'
+      'emotions'
+      'avatar';
   }
 `;
 
@@ -37,7 +38,7 @@ const ResponseArea = styled.div`
   flex: 2;
   gap: 2vh;
   min-width: 40vw;
-  
+
   @media (max-width: 768px) {
     grid-area: response;
     display: flex;
@@ -52,15 +53,18 @@ const ResponseBox = styled.div<{ $showEmotions: boolean }>`
   border: 1px solid #0f0;
   border-radius: 0.2em;
   padding: 2vh 1vw;
-  height: ${props => props.$showEmotions ? '45vh' : '65vh'};
+  height: ${props => (props.$showEmotions ? '45vh' : '65vh')};
   overflow-y: auto;
   flex: none;
   word-wrap: break-word;
-  
+
   @media (max-width: 768px) {
-    height: ${props => props.$showEmotions ? '150px' : '200px'}; /* Use fixed heights instead of vh */
+    height: ${props =>
+      props.$showEmotions
+        ? '150px'
+        : '200px'}; /* Use fixed heights instead of vh */
     min-height: 120px;
-    max-height: ${props => props.$showEmotions ? '150px' : '200px'};
+    max-height: ${props => (props.$showEmotions ? '150px' : '200px')};
     padding: 0.75rem;
     font-size: 0.9rem;
     line-height: 1.4;
@@ -84,17 +88,42 @@ const AIMessage = styled.div`
   color: #0f0;
 `;
 
+const ImageContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin: 0.5em 0;
+`;
+
+const MessageImage = styled.img`
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 0.2em;
+  border: 1px solid #0f0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  @media (max-width: 768px) {
+    max-width: 100px;
+    max-height: 100px;
+  }
+`;
+
 const ThinkingMessage = styled.div`
   color: #888;
   font-style: italic;
 `;
 
 const DetectedEmotionsSection = styled.div<{ $show: boolean }>`
-  display: ${props => props.$show ? 'flex' : 'none'};
+  display: ${props => (props.$show ? 'flex' : 'none')};
   gap: 1vh;
-    @media (max-width: 768px) {
+  @media (max-width: 768px) {
     grid-area: emotions;
-    display: ${props => props.$show ? 'flex' : 'none'};
+    display: ${props => (props.$show ? 'flex' : 'none')};
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
@@ -109,7 +138,7 @@ const EmotionsSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1vh;
-  
+
   @media (max-width: 768px) {
     gap: 0.5rem;
     width: 100%;
@@ -123,7 +152,7 @@ const EmotionsBox = styled.div`
   padding: 1vh 1vw;
   height: 10vh;
   overflow-y: auto;
-  
+
   @media (max-width: 768px) {
     height: 50px; /* Fixed small height on mobile */
     min-height: 40px;
@@ -137,7 +166,7 @@ const EmotionsBox = styled.div`
 const EmotionsTitle = styled.h3`
   margin: 0;
   font-size: 1em;
-  
+
   @media (max-width: 768px) {
     font-size: 0.9em;
     text-align: center;
@@ -160,7 +189,7 @@ const AvatarArea = styled.div<{ $showEmotions: boolean }>`
   justify-content: center;
   align-items: flex-start; /* Align to top since we're showing top half */
   position: relative;
-  
+
   @media (max-width: 768px) {
     grid-area: avatar;
     display: flex !important;
@@ -191,7 +220,7 @@ const AvatarImage = styled.img`
   object-fit: cover;
   object-position: center top; /* Show top half of the image */
   filter: hue-rotate(90deg) saturate(3) brightness(1.2);
-  
+
   @media (max-width: 768px) {
     width: 80%; /* Increase width for better visibility */
     height: 200%; /* Consistent behavior on mobile */
@@ -209,7 +238,7 @@ const AvatarPlaceholder = styled.div`
   font-size: 5rem;
   color: #0f0;
   text-align: center;
-  
+
   @media (max-width: 768px) {
     font-size: 3rem; /* Smaller but still visible on mobile */
     display: flex;
@@ -223,6 +252,7 @@ const AvatarPlaceholder = styled.div`
 interface Message {
   isUser: boolean;
   text: string;
+  images?: string[]; // Array of image URLs for display
 }
 
 interface MainContentProps {
@@ -230,21 +260,21 @@ interface MainContentProps {
   activeCharacter?: string;
 }
 
-const MainContent: React.FC<MainContentProps> = ({ 
-  personaContent = "", 
-  activeCharacter = "ALTER EGO" 
+const MainContent: React.FC<MainContentProps> = ({
+  personaContent = '',
+  activeCharacter = 'ALTER EGO',
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [userEmotions, setUserEmotions] = useState<string[]>([]);
   const [responseEmotions, setResponseEmotions] = useState<string[]>([]);
-  const [currentEmotion, setCurrentEmotion] = useState<string>("neutral");
+  const [currentEmotion, setCurrentEmotion] = useState<string>('neutral');
   const [avatarLoadError, setAvatarLoadError] = useState(false);
-  
+
   // Load settings to check if emotion detection should be shown
   const settings = loadSettings();
   const showEmotionDetection = settings.showEmotionDetection ?? false;
-  
+
   // Debug mobile layout issues
   useEffect(() => {
     const checkMobileLayout = () => {
@@ -254,24 +284,24 @@ const MainContent: React.FC<MainContentProps> = ({
           screenWidth: window.innerWidth,
           screenHeight: window.innerHeight,
           showEmotionDetection: showEmotionDetection,
-          availableHeight: window.innerHeight - 150 // approximate
+          availableHeight: window.innerHeight - 150, // approximate
         });
       }
     };
-    
+
     checkMobileLayout();
     window.addEventListener('resize', checkMobileLayout);
-    
+
     return () => window.removeEventListener('resize', checkMobileLayout);
   }, [showEmotionDetection]);
-  
+
   // Initialize with welcome message only when component first mounts
   useEffect(() => {
     const welcomeMessage = `Hello, and welcome to ${activeCharacter}!`;
     setMessages([{ isUser: false, text: welcomeMessage }]);
     // This effect should only run once when the component mounts
   }, []);
-  
+
   // Update character name in messages if it changes
   useEffect(() => {
     // This only updates the display name in messages without adding a new welcome message
@@ -280,7 +310,7 @@ const MainContent: React.FC<MainContentProps> = ({
       setMessages(prevMessages => [...prevMessages]);
     }
   }, [activeCharacter]);
-  
+
   // Scroll to bottom when messages change
   useEffect(() => {
     const responseBox = document.querySelector('.response-box');
@@ -291,42 +321,93 @@ const MainContent: React.FC<MainContentProps> = ({
 
   // Load the memory limit from settings
   const { memoryBuffer } = loadSettings();
-  
+
+  // Handle image click to open in new tab
+  const handleImageClick = (imageUrl: string) => {
+    openImageInNewTab(imageUrl);
+  };
+
   // Listen for user queries and event to clear chat display
   useEffect(() => {
-    const handleUserQuery = (event: CustomEvent<{ query: string }>) => {
-      const { query } = event.detail;
-      
+    const handleUserQuery = (
+      event: CustomEvent<{ query: string; images?: File[] }>
+    ) => {
+      const { query, images } = event.detail;
+
+      // Convert images to data URLs for display
+      const imageUrls: string[] = [];
+      if (images && images.length > 0) {
+        images.forEach(image => {
+          const reader = new FileReader();
+          reader.onload = e => {
+            if (e.target?.result) {
+              imageUrls.push(e.target.result as string);
+
+              // Update message once all images are processed
+              if (imageUrls.length === images.length) {
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  // Find the last user message and add images to it
+                  for (let i = newMessages.length - 1; i >= 0; i--) {
+                    if (
+                      newMessages[i].isUser &&
+                      newMessages[i].text === query
+                    ) {
+                      newMessages[i] = { ...newMessages[i], images: imageUrls };
+                      break;
+                    }
+                  }
+                  return newMessages;
+                });
+              }
+            }
+          };
+          reader.readAsDataURL(image);
+        });
+      }
+
       // Add user message to history (keep all messages visible)
       setMessages(prev => {
-        return [...prev, { isUser: true, text: query }];
+        return [
+          ...prev,
+          {
+            isUser: true,
+            text: query,
+            ...(images && images.length > 0 && { images: [] }), // Will be updated by reader above
+          },
+        ];
       });
-      
+
       // Show thinking state
       setIsThinking(true);
-      setCurrentEmotion("THINKING");
+      setCurrentEmotion('THINKING');
     };
-    
+
     // Listen for query responses
     const handleQueryResponse = (event: CustomEvent<any>) => {
       if (!event.detail) return;
-      
-      const { response, userEmotions = [], responseEmotions = [], emotion = "neutral" } = event.detail;
-      
+
+      const {
+        response,
+        userEmotions = [],
+        responseEmotions = [],
+        emotion = 'neutral',
+      } = event.detail;
+
       // Update emotions
       setUserEmotions(userEmotions);
       setResponseEmotions(responseEmotions);
       setCurrentEmotion(emotion);
-      
+
       // Hide thinking state
       setIsThinking(false);
-      
+
       // Add AI response to history (keep all messages visible)
       setMessages(prev => {
         return [...prev, { isUser: false, text: response }];
       });
     };
-    
+
     // Listen for clear chat display event
     const handleClearChatDisplay = () => {
       // Reset messages to empty array
@@ -334,32 +415,69 @@ const MainContent: React.FC<MainContentProps> = ({
       // Reset emotions
       setUserEmotions([]);
       setResponseEmotions([]);
-      setCurrentEmotion("neutral");
+      setCurrentEmotion('neutral');
     };
-    
+
     // Add event listeners
     window.addEventListener('user-query', handleUserQuery as EventListener);
-    window.addEventListener('query-response', handleQueryResponse as EventListener);
-    window.addEventListener('clear-chat-display', handleClearChatDisplay as EventListener);
-    
+    window.addEventListener(
+      'query-response',
+      handleQueryResponse as EventListener
+    );
+    window.addEventListener(
+      'clear-chat-display',
+      handleClearChatDisplay as EventListener
+    );
+
     // Clean up
     return () => {
-      window.removeEventListener('user-query', handleUserQuery as EventListener);
-      window.removeEventListener('query-response', handleQueryResponse as EventListener);
-      window.removeEventListener('clear-chat-display', handleClearChatDisplay as EventListener);
+      window.removeEventListener(
+        'user-query',
+        handleUserQuery as EventListener
+      );
+      window.removeEventListener(
+        'query-response',
+        handleQueryResponse as EventListener
+      );
+      window.removeEventListener(
+        'clear-chat-display',
+        handleClearChatDisplay as EventListener
+      );
     };
   }, [activeCharacter]); // Removed memoryBuffer from dependencies as we're not using it here
-  
+
   return (
     <MainContentContainer>
       <ResponseArea>
-        <ResponseBox className="response-box" $showEmotions={showEmotionDetection}>          
+        <ResponseBox
+          className="response-box"
+          $showEmotions={showEmotionDetection}
+        >
           {messages.map((message, index) => (
             <MessageContainer key={index}>
               {message.isUser ? (
-                <UserMessage>YOU: {message.text}</UserMessage>              ) : (                <AIMessage>
-                  {activeCharacter}: <TypingAnimation 
-                    text={message.text} 
+                <>
+                  <UserMessage>YOU: {message.text}</UserMessage>
+                  {/* Display user images if present */}
+                  {message.images && message.images.length > 0 && (
+                    <ImageContainer>
+                      {message.images.map((imageUrl, imgIndex) => (
+                        <MessageImage
+                          key={imgIndex}
+                          src={imageUrl}
+                          alt={`User image ${imgIndex + 1}`}
+                          onClick={() => handleImageClick(imageUrl)}
+                          title="Click to view full size"
+                        />
+                      ))}
+                    </ImageContainer>
+                  )}
+                </>
+              ) : (
+                <AIMessage>
+                  {activeCharacter}:{' '}
+                  <TypingAnimation
+                    text={message.text}
                     speed={loadSettings().textSpeed || 40} // Use text speed from settings
                     showCursor={true}
                   >
@@ -373,7 +491,8 @@ const MainContent: React.FC<MainContentProps> = ({
           ))}
           {isThinking && (
             <ThinkingMessage>{activeCharacter} is thinking...</ThinkingMessage>
-          )}        </ResponseBox>
+          )}{' '}
+        </ResponseBox>
         <DetectedEmotionsSection $show={showEmotionDetection}>
           <EmotionsSection>
             <EmotionsTitle>DETECTED USER EMOTIONS:</EmotionsTitle>
@@ -392,18 +511,18 @@ const MainContent: React.FC<MainContentProps> = ({
             </EmotionsBox>
           </EmotionsSection>
         </DetectedEmotionsSection>
-      </ResponseArea>      
+      </ResponseArea>
       <AvatarArea $showEmotions={showEmotionDetection}>
         {!avatarLoadError ? (
-          <AvatarImage 
+          <AvatarImage
             src={`/assets/avatar/ALTER EGO/${currentEmotion}.png`}
-            alt={`Avatar showing ${currentEmotion}`} 
-            onError={(e) => {
-              console.error("Failed to load avatar image:", e);
+            alt={`Avatar showing ${currentEmotion}`}
+            onError={e => {
+              console.error('Failed to load avatar image:', e);
               setAvatarLoadError(true);
               // Fallback to neutral if the current emotion fails to load
-              if (currentEmotion !== "neutral") {
-                setCurrentEmotion("neutral");
+              if (currentEmotion !== 'neutral') {
+                setCurrentEmotion('neutral');
               }
             }}
           />

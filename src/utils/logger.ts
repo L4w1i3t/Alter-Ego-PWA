@@ -16,15 +16,16 @@ class Logger {
     debug: 0,
     info: 1,
     warn: 2,
-    error: 3
+    error: 3,
   };
 
   constructor() {
     this.config = {
       enableConsoleLogging: process.env.NODE_ENV === 'development',
-      enablePerformanceLogging: process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING === 'true',
+      enablePerformanceLogging:
+        process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING === 'true',
       logLevel: (process.env.REACT_APP_LOG_LEVEL as LogLevel) || 'info',
-      isDevelopment: process.env.NODE_ENV === 'development'
+      isDevelopment: process.env.NODE_ENV === 'development',
     };
   }
 
@@ -76,9 +77,14 @@ export const logger = new Logger();
 
 // Legacy console replacement for gradual migration
 export const createScopedLogger = (scope: string) => ({
-  debug: (message: string, ...args: any[]) => logger.debug(`[${scope}] ${message}`, ...args),
-  info: (message: string, ...args: any[]) => logger.info(`[${scope}] ${message}`, ...args),
-  warn: (message: string, ...args: any[]) => logger.warn(`[${scope}] ${message}`, ...args),
-  error: (message: string, error?: any, ...args: any[]) => logger.error(`[${scope}] ${message}`, error, ...args),
-  performance: (message: string, ...args: any[]) => logger.performance(`[${scope}] ${message}`, ...args)
+  debug: (message: string, ...args: any[]) =>
+    logger.debug(`[${scope}] ${message}`, ...args),
+  info: (message: string, ...args: any[]) =>
+    logger.info(`[${scope}] ${message}`, ...args),
+  warn: (message: string, ...args: any[]) =>
+    logger.warn(`[${scope}] ${message}`, ...args),
+  error: (message: string, error?: any, ...args: any[]) =>
+    logger.error(`[${scope}] ${message}`, error, ...args),
+  performance: (message: string, ...args: any[]) =>
+    logger.performance(`[${scope}] ${message}`, ...args),
 });

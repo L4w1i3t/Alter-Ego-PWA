@@ -20,7 +20,9 @@ let installPromptAvailable = false;
 
 // Simple device detection
 const isMobileDevice = (): boolean => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
 };
 
 const isIOSDevice = (): boolean => {
@@ -30,22 +32,25 @@ const isIOSDevice = (): boolean => {
 // Initialize PWA installation capability detection
 export const initializePWA = (): void => {
   // Listen for the beforeinstallprompt event
-  window.addEventListener('beforeinstallprompt', (e: BeforeInstallPromptEvent) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installPromptAvailable = true;
-    console.log('PWA install prompt available');
-    
-    // Notify components that install is available
-    window.dispatchEvent(new CustomEvent('pwa-install-available'));
-  });
+  window.addEventListener(
+    'beforeinstallprompt',
+    (e: BeforeInstallPromptEvent) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installPromptAvailable = true;
+      console.log('PWA install prompt available');
+
+      // Notify components that install is available
+      window.dispatchEvent(new CustomEvent('pwa-install-available'));
+    }
+  );
 
   // Listen for app installed event
   window.addEventListener('appinstalled', () => {
     console.log('PWA was installed');
     deferredPrompt = null;
     installPromptAvailable = false;
-    
+
     // Notify components that PWA was installed
     window.dispatchEvent(new CustomEvent('pwa-installed'));
   });
@@ -54,15 +59,18 @@ export const initializePWA = (): void => {
 // Check if PWA is already installed
 export const isPWAInstalled = (): boolean => {
   // Check if running in standalone mode
-  if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+  if (
+    window.matchMedia &&
+    window.matchMedia('(display-mode: standalone)').matches
+  ) {
     return true;
   }
-  
+
   // Check for iOS standalone mode
   if ((window.navigator as any).standalone === true) {
     return true;
   }
-  
+
   return false;
 };
 
@@ -72,18 +80,22 @@ export const canInstallPWA = (): boolean => {
 };
 
 // Attempt to install PWA
-export const installPWA = async (): Promise<{ success: boolean; error?: string }> => {
+export const installPWA = async (): Promise<{
+  success: boolean;
+  error?: string;
+}> => {
   if (!canInstallPWA()) {
-    return { 
-      success: false, 
-      error: 'Install prompt not available. Try the manual installation method below.' 
+    return {
+      success: false,
+      error:
+        'Install prompt not available. Try the manual installation method below.',
     };
   }
 
   try {
     await deferredPrompt!.prompt();
     const { outcome } = await deferredPrompt!.userChoice;
-    
+
     if (outcome === 'accepted') {
       console.log('User accepted the install prompt');
       deferredPrompt = null;
@@ -91,16 +103,18 @@ export const installPWA = async (): Promise<{ success: boolean; error?: string }
       return { success: true };
     } else {
       console.log('User dismissed the install prompt');
-      return { 
-        success: false, 
-        error: 'Installation was cancelled. You can try again later or use manual installation.' 
+      return {
+        success: false,
+        error:
+          'Installation was cancelled. You can try again later or use manual installation.',
       };
     }
   } catch (error) {
     console.error('Error during PWA installation:', error);
-    return { 
-      success: false, 
-      error: 'Installation failed. Please try the manual installation method below.' 
+    return {
+      success: false,
+      error:
+        'Installation failed. Please try the manual installation method below.',
     };
   }
 };
@@ -110,19 +124,19 @@ export const getManualInstallInstructions = (): string => {
   if (isIOSDevice()) {
     return 'iOS Safari: Tap the Share button (□↗) at the bottom, then scroll down and tap "Add to Home Screen". The app will appear on your home screen like a native app.';
   }
-  
+
   if (isMobileDevice()) {
     return 'Mobile Browser: Look for "Add to Home Screen", "Install App", or "Add to Desktop" in your browser menu (usually ⋮ or ⋯). The option might be in Settings or under the address bar.';
   }
-  
+
   return 'Desktop Browser: Look for an install icon (⬇️ or ⊞) in your address bar, or check your browser menu for "Install ALTER EGO", "Add to Desktop", or "Create Shortcut" options. The app will open in its own window.';
 };
 
 // Get current browser info for debugging
-export const getBrowserInfo = (): { 
-  userAgent: string; 
-  isMobile: boolean; 
-  isIOS: boolean; 
+export const getBrowserInfo = (): {
+  userAgent: string;
+  isMobile: boolean;
+  isIOS: boolean;
   isPWAInstalled: boolean;
   canInstall: boolean;
 } => {
@@ -131,7 +145,7 @@ export const getBrowserInfo = (): {
     isMobile: isMobileDevice(),
     isIOS: isIOSDevice(),
     isPWAInstalled: isPWAInstalled(),
-    canInstall: canInstallPWA()
+    canInstall: canInstallPWA(),
   };
 };
 
@@ -141,9 +155,9 @@ export const getPWABenefits = (): string[] => {
     'Faster loading and offline access',
     'Native app-like experience',
     'No app store needed',
-    'Automatic updates'
+    'Automatic updates',
   ];
-  
+
   if (isMobileDevice()) {
     benefits.push('Add to home screen');
     benefits.push('Full screen experience');
@@ -152,6 +166,6 @@ export const getPWABenefits = (): string[] => {
     benefits.push('Runs in its own window');
     benefits.push('System integration');
   }
-  
+
   return benefits;
 };

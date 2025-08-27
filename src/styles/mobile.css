@@ -17,14 +17,14 @@
     padding-right: var(--safe-area-inset-right);
     padding-bottom: var(--safe-area-inset-bottom);
   }
-  
+
   /* Header adjustments for safe area */
   header {
     padding-top: calc(0.8em + var(--safe-area-inset-top));
     padding-left: calc(0.8em + var(--safe-area-inset-left));
     padding-right: calc(0.8em + var(--safe-area-inset-right));
   }
-  
+
   /* Footer adjustments for safe area */
   footer {
     padding-bottom: calc(0.5em + var(--safe-area-inset-bottom));
@@ -35,30 +35,35 @@
 
 /* iOS Safari virtual keyboard fixes */
 @supports (-webkit-touch-callout: none) {
-  /* iOS specific styles */  input, textarea {
+  /* iOS specific styles */
+  input,
+  textarea {
     font-size: 16px !important;
     -webkit-appearance: none !important;
     appearance: none !important;
     -webkit-border-radius: 0 !important;
     border-radius: 4px !important;
   }
-  
+
   /* Prevent viewport zoom when focusing inputs */
-  input:focus, textarea:focus {
+  input:focus,
+  textarea:focus {
     font-size: 16px !important;
   }
 }
 
 /* iPad specific adjustments */
 @media screen and (min-device-width: 768px) and (max-device-width: 1024px) {
-  input, textarea {
+  input,
+  textarea {
     font-size: 16px !important;
     -webkit-user-select: text !important;
     user-select: text !important;
   }
-  
+
   /* Ensure touch targets are large enough */
-  button, input {
+  button,
+  input {
     min-height: 44px;
     min-width: 44px;
   }
@@ -94,7 +99,7 @@
     background: inherit;
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
-  
+
   /* Handle virtual keyboard appearance */
   .chat-input-container input {
     -webkit-user-select: text !important;

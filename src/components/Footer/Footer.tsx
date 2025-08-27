@@ -10,7 +10,7 @@ const FooterContainer = styled.footer`
   background-color: #000;
   border-top: 1px solid #0f0;
   font-size: 0.8em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.25rem;
@@ -23,7 +23,7 @@ const FooterContainer = styled.footer`
 const FooterLeft = styled.div`
   display: flex;
   align-items: center;
-  
+
   @media (max-width: 768px) {
     flex-wrap: wrap;
     justify-content: center;
@@ -48,15 +48,15 @@ const VoiceModelSelector = styled.select`
     background-color: #000;
     color: #0f0;
   }
-  
+
   option.elevenlabs-option {
     color: #0af;
   }
-  
+
   option.browser-option {
     color: #0f0;
   }
-    @media (max-width: 768px) {
+  @media (max-width: 768px) {
     padding: 0.4em;
     margin: 0.2em;
     font-size: 16px; /* Prevent zoom on iOS */
@@ -66,17 +66,17 @@ const VoiceModelSelector = styled.select`
 `;
 
 const VoiceProviderIcon = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'provider',
+  shouldForwardProp: prop => prop !== 'provider',
 })<{ provider?: string }>`
-  color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+  color: ${props => (props.provider === 'elevenlabs' ? '#0af' : '#0f0')};
   margin-right: 0.5em;
   font-size: 1.2em;
 `;
 
 const VoiceInfo = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'provider',
+  shouldForwardProp: prop => prop !== 'provider',
 })<{ provider?: string }>`
-  color: ${props => props.provider === 'elevenlabs' ? '#0af' : '#0f0'};
+  color: ${props => (props.provider === 'elevenlabs' ? '#0af' : '#0f0')};
   margin-left: 0.5em;
   font-size: 0.8em;
 `;
@@ -87,19 +87,21 @@ interface FooterProps {
   onVoiceModelChange?: (model: string) => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ 
-  activeCharacter, 
+const Footer: React.FC<FooterProps> = ({
+  activeCharacter,
   voiceModel,
-  onVoiceModelChange 
+  onVoiceModelChange,
 }) => {
-  const [availableModels, setAvailableModels] = useState<Record<string, VoiceModel>>({});
+  const [availableModels, setAvailableModels] = useState<
+    Record<string, VoiceModel>
+  >({});
   const [currentProvider, setCurrentProvider] = useState<string>('none');
-  
+
   // Function to update models from localStorage
   const loadVoiceModelData = () => {
     const models = loadVoiceModels();
     setAvailableModels(models);
-    
+
     // Update provider if needed
     if (voiceModel !== 'None') {
       if (models[voiceModel]) {
@@ -113,24 +115,30 @@ const Footer: React.FC<FooterProps> = ({
       }
     }
   };
-  
+
   useEffect(() => {
     // Initial load
     loadVoiceModelData();
-    
+
     // Listen for changes to voice models
     const handleVoiceModelsUpdated = () => {
       loadVoiceModelData();
     };
-    
-    window.addEventListener(EVENTS.VOICE_MODELS_UPDATED, handleVoiceModelsUpdated);
-    
+
+    window.addEventListener(
+      EVENTS.VOICE_MODELS_UPDATED,
+      handleVoiceModelsUpdated
+    );
+
     // Cleanup
     return () => {
-      window.removeEventListener(EVENTS.VOICE_MODELS_UPDATED, handleVoiceModelsUpdated);
+      window.removeEventListener(
+        EVENTS.VOICE_MODELS_UPDATED,
+        handleVoiceModelsUpdated
+      );
     };
-  }, []);  // Empty dependency array means this runs once on mount
-  
+  }, []); // Empty dependency array means this runs once on mount
+
   // Update provider when voiceModel changes
   useEffect(() => {
     if (voiceModel !== 'None' && availableModels[voiceModel]) {
@@ -139,17 +147,17 @@ const Footer: React.FC<FooterProps> = ({
       setCurrentProvider('none');
     }
   }, [voiceModel, availableModels]);
-  
+
   const handleVoiceModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newModelId = e.target.value;
-    
+
     // Update the provider display
     if (newModelId !== 'None' && availableModels[newModelId]) {
       setCurrentProvider(availableModels[newModelId].provider);
     } else {
       setCurrentProvider('none');
     }
-    
+
     if (onVoiceModelChange) {
       onVoiceModelChange(newModelId);
     }
@@ -172,23 +180,28 @@ const Footer: React.FC<FooterProps> = ({
         <VoiceProviderIcon provider={currentProvider}>
           {getProviderIcon(currentProvider)}
         </VoiceProviderIcon>
-        Voice: 
-        <VoiceModelSelector 
-          value={voiceModel} 
+        Voice:
+        <VoiceModelSelector
+          value={voiceModel}
           onChange={handleVoiceModelChange}
         >
-          <option className="none-option" value="None">None</option>
+          <option className="none-option" value="None">
+            None
+          </option>
           {Object.values(availableModels).map(model => (
-            <option 
-              key={model.id} 
-              value={model.id} 
-              className={model.provider === 'elevenlabs' ? 'elevenlabs-option' : 'browser-option'}
+            <option
+              key={model.id}
+              value={model.id}
+              className={
+                model.provider === 'elevenlabs'
+                  ? 'elevenlabs-option'
+                  : 'browser-option'
+              }
             >
               {model.name}
             </option>
           ))}
         </VoiceModelSelector>
-        
         {currentProvider !== 'none' && (
           <VoiceInfo provider={currentProvider}>
             ({currentProvider === 'elevenlabs' ? 'Premium' : 'Browser'})

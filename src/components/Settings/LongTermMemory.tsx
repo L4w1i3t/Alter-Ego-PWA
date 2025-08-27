@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useApi } from '../../context/ApiContext';
-import { showSuccess, showError, showWarning, showInfo } from '../Common/NotificationManager';
+import {
+  showSuccess,
+  showError,
+  showWarning,
+  showInfo,
+} from '../Common/NotificationManager';
 
 const Container = styled.div`
   display: flex;
@@ -10,7 +15,7 @@ const Container = styled.div`
   color: #0f0;
   width: 100%;
   min-height: 60vh;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     min-height: 70vh;
@@ -21,7 +26,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     font-size: 1.4em;
     margin-bottom: 1.5em;
@@ -32,7 +37,7 @@ const Title = styled.h2`
 const SearchSection = styled.div`
   width: 100%;
   margin-bottom: 2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2.5em;
   }
@@ -41,7 +46,7 @@ const SearchSection = styled.div`
 const TimeSearchSection = styled.div`
   width: 100%;
   margin-bottom: 2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2.5em;
   }
@@ -51,7 +56,7 @@ const InputGroup = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -62,7 +67,7 @@ const InputGroup = styled.div`
 const Label = styled.label`
   margin-right: 1em;
   min-width: 80px;
-  
+
   @media (max-width: 768px) {
     margin-right: 0;
     margin-bottom: 0.8em;
@@ -77,7 +82,7 @@ const Input = styled.input`
   border: 1px solid #0f0;
   padding: 0.5em;
   flex: 1;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     font-size: 1em;
@@ -94,12 +99,12 @@ const Button = styled.button`
   padding: 0.5em 1em;
   cursor: pointer;
   margin-left: 0.5em;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1em;
@@ -116,7 +121,7 @@ const ResultsSection = styled.div`
   margin-top: 1em;
   max-height: 300px;
   overflow-y: auto;
-  
+
   @media (max-width: 768px) {
     padding: 1.2em;
     max-height: 50vh;
@@ -128,7 +133,7 @@ const Message = styled.div`
   margin-bottom: 1em;
   padding: 0.5em;
   border-bottom: 1px solid #0f03;
-  
+
   @media (max-width: 768px) {
     padding: 0.8em;
     margin-bottom: 1.2em;
@@ -138,7 +143,7 @@ const Message = styled.div`
 const UserMessage = styled.div`
   color: #0af;
   margin-bottom: 0.5em;
-  
+
   @media (max-width: 768px) {
     font-size: 1em;
     line-height: 1.5;
@@ -147,7 +152,7 @@ const UserMessage = styled.div`
 
 const AIMessage = styled.div`
   color: #0f0;
-  
+
   @media (max-width: 768px) {
     font-size: 1em;
     line-height: 1.5;
@@ -164,7 +169,7 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   width: 100%;
   margin-top: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1em;
@@ -180,22 +185,29 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [searchResults, setSearchResults] = useState<{ role: 'user' | 'assistant' | 'system', content: string }[]>([]);
+  const [searchResults, setSearchResults] = useState<
+    { role: 'user' | 'assistant' | 'system'; content: string }[]
+  >([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  const { searchLongTermMemory, retrieveTimeBasedMemories, retrieveLastNMemories, currentPersona } = useApi();
-    const handleSearchQuery = async () => {
+
+  const {
+    searchLongTermMemory,
+    retrieveTimeBasedMemories,
+    retrieveLastNMemories,
+    currentPersona,
+  } = useApi();
+  const handleSearchQuery = async () => {
     if (!searchQuery.trim()) {
       showWarning('Please enter a search query');
       return;
     }
-    
+
     setIsSearching(true);
-    
+
     try {
       const results = await searchLongTermMemory(searchQuery);
       setSearchResults(results);
-      
+
       if (results.length === 0) {
         showWarning('No results found');
       } else {
@@ -209,33 +221,33 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
       setIsSearching(false);
     }
   };
-    const handleTimeSearch = async () => {
+  const handleTimeSearch = async () => {
     if (!startDate || !endDate) {
       showWarning('Please select both start and end dates');
       return;
     }
-    
+
     setIsSearching(true);
-    
+
     try {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
+
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
         showError('Invalid date format');
         setIsSearching(false);
         return;
       }
-      
+
       if (start > end) {
         showError('Start date must be before end date');
         setIsSearching(false);
         return;
       }
-      
+
       const results = await retrieveTimeBasedMemories(start, end);
       setSearchResults(results);
-      
+
       if (results.length === 0) {
         showWarning('No results found in the specified time range');
       } else {
@@ -249,13 +261,13 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
       setIsSearching(false);
     }
   };
-    const handleRetrieveRecent = async () => {
+  const handleRetrieveRecent = async () => {
     setIsSearching(true);
-    
+
     try {
       const results = await retrieveLastNMemories(20); // Retrieve last 20 messages
       setSearchResults(results);
-      
+
       if (results.length === 0) {
         showWarning('No recent memories found');
       } else {
@@ -269,11 +281,11 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
       setIsSearching(false);
     }
   };
-  
+
   return (
     <Container>
       <Title>Long-Term Memory - {currentPersona}</Title>
-      
+
       <SearchSection>
         <InputGroup>
           <Label htmlFor="searchQuery">Search:</Label>
@@ -281,18 +293,15 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
             id="searchQuery"
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             placeholder="Enter search terms..."
           />
-          <Button 
-            onClick={handleSearchQuery}
-            disabled={isSearching}
-          >
+          <Button onClick={handleSearchQuery} disabled={isSearching}>
             Search
           </Button>
         </InputGroup>
       </SearchSection>
-      
+
       <TimeSearchSection>
         <InputGroup>
           <Label htmlFor="startDate">From:</Label>
@@ -300,7 +309,7 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
             id="startDate"
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={e => setStartDate(e.target.value)}
           />
         </InputGroup>
         <InputGroup>
@@ -309,21 +318,21 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
             id="endDate"
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={e => setEndDate(e.target.value)}
           />
-          <Button 
-            onClick={handleTimeSearch}
-            disabled={isSearching}
-          >
+          <Button onClick={handleTimeSearch} disabled={isSearching}>
             Find
           </Button>
         </InputGroup>
       </TimeSearchSection>
-      
+
       <ButtonContainer>
         <Button onClick={onBack}>Back</Button>
-        <Button onClick={handleRetrieveRecent} disabled={isSearching}>Recent Memories</Button>      </ButtonContainer>
-      
+        <Button onClick={handleRetrieveRecent} disabled={isSearching}>
+          Recent Memories
+        </Button>{' '}
+      </ButtonContainer>
+
       {searchResults.length > 0 ? (
         <ResultsSection>
           {searchResults.map((message, index) => (
@@ -331,7 +340,9 @@ const LongTermMemory: React.FC<LongTermMemoryProps> = ({ onBack }) => {
               {message.role === 'user' ? (
                 <UserMessage>You: {message.content}</UserMessage>
               ) : message.role === 'assistant' ? (
-                <AIMessage>{currentPersona}: {message.content}</AIMessage>
+                <AIMessage>
+                  {currentPersona}: {message.content}
+                </AIMessage>
               ) : (
                 <AIMessage>System: {message.content}</AIMessage>
               )}

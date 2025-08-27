@@ -10,10 +10,14 @@ import { DesktopInstall } from './DesktopInstall';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
 import MemorySettings from './MemoryManager';
 import MemoryAndHistory from './MemoryAndHistory';
+import ImageGallery from './ImageGallery';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
 import OpenSourceSettings from './OpenSourceSettings';
-import { handleOpenSourceSelection, getOpenSourceStatus } from '../../utils/openSourceWip';
+import {
+  handleOpenSourceSelection,
+  getOpenSourceStatus,
+} from '../../utils/openSourceWip';
 
 const SettingsOverlay = styled.div`
   position: fixed;
@@ -21,7 +25,7 @@ const SettingsOverlay = styled.div`
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -56,7 +60,7 @@ const SettingsCategory = styled.div`
   border-radius: 0.3em;
   transition: all 0.2s ease;
   cursor: pointer;
-  
+
   &:hover {
     background-color: #0f01;
     border-color: #0f0;
@@ -95,7 +99,7 @@ const SettingsList = styled.ul`
 const SettingsItem = styled.li`
   margin: 0.5em 0;
   cursor: pointer;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -103,7 +107,7 @@ const SettingsItem = styled.li`
 
 const DangerSettingsItem = styled(SettingsItem)`
   color: #f00;
-  
+
   &:hover {
     color: #f55;
   }
@@ -127,7 +131,7 @@ const CloseButton = styled.button`
   font-weight: bold;
   padding: 0.2em 0.5em;
   z-index: 1000;
-  
+
   /* Ensure the button has a proper click area */
   &::before {
     content: '';
@@ -137,12 +141,12 @@ const CloseButton = styled.button`
     right: -5px;
     bottom: -5px;
   }
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (min-width: 769px) {
     width: 2.5em;
     height: 2.5em;
@@ -154,7 +158,7 @@ const CloseButton = styled.button`
     border-width: 2px;
     border-radius: 0.3em;
     font-weight: bold;
-    
+
     /* Larger click area for desktop */
     &::before {
       top: -8px;
@@ -163,7 +167,7 @@ const CloseButton = styled.button`
       bottom: -8px;
     }
   }
-  
+
   @media (max-width: 768px) {
     top: 1rem;
     right: 1rem;
@@ -173,7 +177,7 @@ const CloseButton = styled.button`
     min-height: 2.5em;
     min-width: 2.5em;
     touch-action: manipulation;
-    
+
     /* Larger touch area for mobile */
     &::before {
       top: -10px;
@@ -188,13 +192,13 @@ const ModelSelection = styled.div`
   margin-top: 1.5em;
   padding-top: 1em;
   border-top: 1px solid #0f03;
-  
+
   @media (min-width: 769px) {
     margin-top: 2em;
     padding-top: 1.5em;
     border-top: 2px solid #0f03;
   }
-  
+
   @media (max-width: 768px) {
     margin-top: 2em;
     padding-top: 1.5em;
@@ -212,12 +216,12 @@ const ModelOptions = styled.div`
   justify-content: space-between;
   gap: 0.5em;
   align-items: center;
-  
+
   @media (min-width: 769px) {
     gap: 1em;
     flex-wrap: wrap;
   }
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1.5em;
@@ -239,12 +243,12 @@ const WipInfoButton = styled.button`
   justify-content: center;
   margin-left: 0.3em;
   flex-shrink: 0;
-  
+
   &:hover {
     background: #ff8800;
     color: #000;
   }
-  
+
   @media (min-width: 769px) {
     width: 32px;
     height: 32px;
@@ -253,7 +257,7 @@ const WipInfoButton = styled.button`
     border-width: 2px;
     font-weight: bold;
   }
-  
+
   @media (max-width: 768px) {
     width: 2.5em;
     height: 2.5em;
@@ -266,7 +270,7 @@ const WipInfoButton = styled.button`
 
 // Fix the ModelButton styled component using shouldForwardProp
 const ModelButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'isWip'].includes(prop),
+  shouldForwardProp: prop => !['isActive', 'isWip'].includes(prop),
 })<{ isActive?: boolean; isWip?: boolean }>`
   padding: 0.5em 1em;
   margin: 0 0.5em;
@@ -278,12 +282,12 @@ const ModelButton = styled.button.withConfig({
     if (props.isWip) return props.isActive ? '#000' : '#ff8800';
     return props.isActive ? '#000' : '#0f0';
   }};
-  border: 1px solid ${props => props.isWip ? '#ff8800' : '#0f0'};
+  border: 1px solid ${props => (props.isWip ? '#ff8800' : '#0f0')};
   cursor: pointer;
   position: relative;
   border-radius: 0.3em;
   flex-shrink: 0;
-  
+
   &:hover {
     background: ${props => {
       if (props.isWip) return '#ff8800';
@@ -291,8 +295,10 @@ const ModelButton = styled.button.withConfig({
     }};
     color: #000;
   }
-  
-  ${props => props.isWip && `
+
+  ${props =>
+    props.isWip &&
+    `
     &::after {
       content: 'WIP';
       position: absolute;
@@ -306,7 +312,7 @@ const ModelButton = styled.button.withConfig({
       font-weight: bold;
     }
   `}
-  
+
   @media (min-width: 769px) {
     padding: 0.8em 1.6em;
     margin: 0 0.4em;
@@ -314,8 +320,10 @@ const ModelButton = styled.button.withConfig({
     min-width: 120px;
     border-width: 2px;
     font-weight: 500;
-    
-    ${props => props.isWip && `
+
+    ${props =>
+      props.isWip &&
+      `
       &::after {
         top: -10px;
         right: -10px;
@@ -324,7 +332,7 @@ const ModelButton = styled.button.withConfig({
       }
     `}
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     margin: 0;
@@ -334,8 +342,10 @@ const ModelButton = styled.button.withConfig({
     min-height: 3em;
     flex: 1;
     touch-action: manipulation;
-    
-    ${props => props.isWip && `
+
+    ${props =>
+      props.isWip &&
+      `
       &::after {
         top: -12px;
         right: -12px;
@@ -360,11 +370,17 @@ interface SettingsProps {
   initialView?: string;
 }
 
-const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView }) => {
-  const [currentView, setCurrentView] = useState<string | null>(initialView || null);
+const Settings: React.FC<SettingsProps> = ({
+  onClose,
+  onModelChange,
+  initialView,
+}) => {
+  const [currentView, setCurrentView] = useState<string | null>(
+    initialView || null
+  );
   const [selectedModel, setSelectedModel] = useState<string>('Open Source');
   const [status, setStatus] = useState<string | null>(null);
-  
+
   // Load the currently selected model
   useEffect(() => {
     const settings = loadSettings();
@@ -374,7 +390,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
   }, []);
   // Scroll to top when view changes (fixes mobile scroll position issue)
   useEffect(() => {
-    const settingsPanel = document.querySelector('[data-settings-panel]') as HTMLElement;
+    const settingsPanel = document.querySelector(
+      '[data-settings-panel]'
+    ) as HTMLElement;
     if (settingsPanel && currentView) {
       settingsPanel.scrollTop = 0;
     }
@@ -382,22 +400,24 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
 
   // Scroll to top when Settings panel first opens
   useEffect(() => {
-    const settingsPanel = document.querySelector('[data-settings-panel]') as HTMLElement;
+    const settingsPanel = document.querySelector(
+      '[data-settings-panel]'
+    ) as HTMLElement;
     if (settingsPanel) {
       settingsPanel.scrollTop = 0;
     }
   }, []);
-  
+
   const handleMenuClick = (item: string) => {
     setCurrentView(item);
   };
-  
+
   const handleBack = () => {
     setCurrentView(null);
   };
-    const handleModelSelect = (model: string) => {
+  const handleModelSelect = (model: string) => {
     if (model === selectedModel) return;
-    
+
     // Handle Open Source selection with WIP check
     if (model === 'Open Source') {
       const wipStatus = getOpenSourceStatus();
@@ -406,30 +426,30 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
         return;
       }
     }
-    
+
     setSelectedModel(model);
-    
+
     // Save the new model selection
     const settings = loadSettings();
     saveSettings({
       ...settings,
-      selectedModel: model
+      selectedModel: model,
     });
-    
+
     setStatus('Model changed to ' + model + '. Reloading...');
-    
+
     // Trigger the model change in the parent
     if (onModelChange) {
       onModelChange(model);
     }
-    
+
     // Reload the app after a short delay
     // This reload won't show the warming up screen because we've saved the model selection
     setTimeout(() => {
       window.location.reload();
     }, 1500);
   };
-  
+
   // Render the appropriate component based on the current view
   const renderContent = () => {
     switch (currentView) {
@@ -441,15 +461,19 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
         return <PersonaManager onBack={handleBack} />;
       case 'Memory & History':
         return <MemoryAndHistory onBack={handleBack} />;
+      case 'Image Gallery':
+        return <ImageGallery onBack={handleBack} />;
       case 'Clear Memory':
-        return <ClearMemory onBack={handleBack} />;      case 'Memory Settings':
+        return <ClearMemory onBack={handleBack} />;
+      case 'Memory Settings':
         return <MemorySettings onBack={handleBack} />;
       case 'Open Source Setup':
         return <OpenSourceSettings onBack={handleBack} />;
       case 'Miscellaneous':
         return <MiscellaneousSettings onBack={handleBack} />;
       case 'Desktop Install':
-        return <DesktopInstall onBack={handleBack} />;case 'Software Details':
+        return <DesktopInstall onBack={handleBack} />;
+      case 'Software Details':
         return <SoftwareDetails onBack={handleBack} />;
       case 'Factory Reset':
         return <FactoryReset onBack={handleBack} />;
@@ -459,86 +483,111 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
         return (
           <>
             <SettingsTitle>Settings</SettingsTitle>
-            
             <SettingsGrid>
-              <SettingsCategory onClick={() => handleMenuClick('Manage API Keys')}>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Manage API Keys')}
+              >
                 <CategoryIcon>🔑</CategoryIcon>
                 <CategoryTitle>API Keys</CategoryTitle>
                 <CategoryDescription>
                   Configure OpenAI and ElevenLabs API keys
                 </CategoryDescription>
               </SettingsCategory>
-              
-              <SettingsCategory onClick={() => handleMenuClick('Manage Voice Models')}>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Manage Voice Models')}
+              >
                 <CategoryIcon>🔊</CategoryIcon>
                 <CategoryTitle>Voice Models</CategoryTitle>
                 <CategoryDescription>
                   Add and configure voice synthesis models
                 </CategoryDescription>
               </SettingsCategory>
-              
-              <SettingsCategory onClick={() => handleMenuClick('Manage Personas')}>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Manage Personas')}
+              >
                 <CategoryIcon>👤</CategoryIcon>
                 <CategoryTitle>Personas</CategoryTitle>
                 <CategoryDescription>
                   Create and edit AI character personas
                 </CategoryDescription>
               </SettingsCategory>
-              
-              <SettingsCategory onClick={() => handleMenuClick('Memory & History')}>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Memory & History')}
+              >
                 <CategoryIcon>📚</CategoryIcon>
                 <CategoryTitle>Memory & History</CategoryTitle>
                 <CategoryDescription>
                   Browse and search conversation history
                 </CategoryDescription>
               </SettingsCategory>
-              
+              <SettingsCategory
+                onClick={() => handleMenuClick('Image Gallery')}
+              >
+                <CategoryIcon>🖼️</CategoryIcon>
+                <CategoryTitle>Image Gallery</CategoryTitle>
+                <CategoryDescription>
+                  View and manage cached conversation images
+                </CategoryDescription>
+              </SettingsCategory>
               <SettingsCategory onClick={() => handleMenuClick('Clear Memory')}>
                 <CategoryIcon>🧹</CategoryIcon>
                 <CategoryTitle>Clear Memory</CategoryTitle>
                 <CategoryDescription>
                   Reset conversation context and memory
                 </CategoryDescription>
-              </SettingsCategory>              <SettingsCategory onClick={() => handleMenuClick('Memory Settings')}>
+              </SettingsCategory>{' '}
+              <SettingsCategory
+                onClick={() => handleMenuClick('Memory Settings')}
+              >
                 <CategoryIcon>🧠</CategoryIcon>
                 <CategoryTitle>Memory Settings</CategoryTitle>
                 <CategoryDescription>
                   Configure conversation memory size
                 </CategoryDescription>
-              </SettingsCategory>              <SettingsCategory 
-                onClick={process.env.NODE_ENV === 'production' ? undefined : () => handleMenuClick('Open Source Setup')}
-                style={{ 
-                  cursor: process.env.NODE_ENV === 'production' ? 'not-allowed' : 'pointer',
-                  opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1 
+              </SettingsCategory>{' '}
+              <SettingsCategory
+                onClick={
+                  process.env.NODE_ENV === 'production'
+                    ? undefined
+                    : () => handleMenuClick('Open Source Setup')
+                }
+                style={{
+                  cursor:
+                    process.env.NODE_ENV === 'production'
+                      ? 'not-allowed'
+                      : 'pointer',
+                  opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1,
                 }}
               >
                 <CategoryIcon>🔧</CategoryIcon>
                 <CategoryTitle>Open Source Setup</CategoryTitle>
                 <CategoryDescription>
-                  {process.env.NODE_ENV === 'production' 
-                    ? 'Backend not ready in production' 
-                    : 'Configure local AI models and backend'
-                  }
+                  {process.env.NODE_ENV === 'production'
+                    ? 'Backend not ready in production'
+                    : 'Configure local AI models and backend'}
                 </CategoryDescription>
               </SettingsCategory>
-
-              <SettingsCategory onClick={() => handleMenuClick('Miscellaneous')}>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Miscellaneous')}
+              >
                 <CategoryIcon>⚙️</CategoryIcon>
                 <CategoryTitle>Miscellaneous</CategoryTitle>
                 <CategoryDescription>
                   Customize text speed and other preferences
                 </CategoryDescription>
               </SettingsCategory>
-
-              <SettingsCategory onClick={() => handleMenuClick('Desktop Install')}>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Desktop Install')}
+              >
                 <CategoryIcon>📱</CategoryIcon>
                 <CategoryTitle>Desktop Install</CategoryTitle>
                 <CategoryDescription>
                   Install ALTER EGO as a desktop application
                 </CategoryDescription>
               </SettingsCategory>
-              
-              <SettingsCategory onClick={() => handleMenuClick('Software Details')}>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Software Details')}
+              >
                 <CategoryIcon>ℹ️</CategoryIcon>
                 <CategoryTitle>Software Details</CategoryTitle>
                 <CategoryDescription>
@@ -546,10 +595,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
                 </CategoryDescription>
               </SettingsCategory>
             </SettingsGrid>
-            
             <Divider />
-            
-            <SettingsCategory 
+            <SettingsCategory
               onClick={() => handleMenuClick('Factory Reset')}
               style={{ borderColor: '#f00', color: '#f00' }}
             >
@@ -558,23 +605,33 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
               <CategoryDescription style={{ color: '#f007' }}>
                 Delete all data and restore default settings
               </CategoryDescription>
-            </SettingsCategory>            <ModelSelection>
+            </SettingsCategory>{' '}
+            <ModelSelection>
               <ModelTitle>AI Provider:</ModelTitle>
-              <ModelOptions>                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <ModelButton 
+              <ModelOptions>
+                {' '}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <ModelButton
                     isActive={selectedModel === 'Open Source'}
                     isWip={getOpenSourceStatus().isWip}
-                    onClick={process.env.NODE_ENV === 'production' ? undefined : () => handleModelSelect('Open Source')}
-                    style={{ 
-                      cursor: process.env.NODE_ENV === 'production' ? 'not-allowed' : 'pointer',
-                      opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1 
+                    onClick={
+                      process.env.NODE_ENV === 'production'
+                        ? undefined
+                        : () => handleModelSelect('Open Source')
+                    }
+                    style={{
+                      cursor:
+                        process.env.NODE_ENV === 'production'
+                          ? 'not-allowed'
+                          : 'pointer',
+                      opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1,
                     }}
                   >
                     Open Source
                   </ModelButton>
                   {getOpenSourceStatus().isWip && (
-                    <WipInfoButton 
-                      onClick={(e) => {
+                    <WipInfoButton
+                      onClick={e => {
                         e.stopPropagation();
                         setCurrentView('OpenSourceWipInfo');
                       }}
@@ -584,7 +641,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
                     </WipInfoButton>
                   )}
                 </div>
-                <ModelButton 
+                <ModelButton
                   isActive={selectedModel === 'openai'}
                   onClick={() => handleModelSelect('openai')}
                 >
@@ -592,13 +649,12 @@ const Settings: React.FC<SettingsProps> = ({ onClose, onModelChange, initialView
                 </ModelButton>
               </ModelOptions>
             </ModelSelection>
-            
             {status && <StatusMessage>{status}</StatusMessage>}
           </>
         );
     }
   };
-    return (
+  return (
     <SettingsOverlay>
       <SettingsPanel data-settings-panel>
         <CloseButton onClick={onClose}>X</CloseButton>

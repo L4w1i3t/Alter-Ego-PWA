@@ -12,7 +12,7 @@ const WarningOverlay = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  
+
   @media (max-width: 768px) {
     align-items: center;
     padding: 1rem;
@@ -26,7 +26,7 @@ const WarningContent = styled.div`
   border-radius: 5px;
   max-width: 500px;
   text-align: center;
-  
+
   @media (max-width: 768px) {
     width: 100%;
     max-width: 100%;
@@ -40,7 +40,7 @@ const WarmupTitle = styled.h1`
   color: white;
   font-size: 1.5em;
   margin-bottom: 15px;
-  
+
   @media (max-width: 768px) {
     font-size: 1.8em;
     margin-bottom: 1.5rem;
@@ -55,7 +55,7 @@ const ProgressContainer = styled.div`
   border-radius: 10px;
   margin: 15px 0;
   overflow: hidden;
-  
+
   @media (max-width: 768px) {
     height: 1.5rem;
     margin: 1.5rem 0;
@@ -69,7 +69,7 @@ const ProgressBar = styled.div`
   border-radius: 10px;
   transition: width 0.5s ease-in-out;
   width: 10%;
-  
+
   @media (max-width: 768px) {
     border-radius: 0.75rem;
     transition: width 0.3s ease-in-out;
@@ -78,9 +78,9 @@ const ProgressBar = styled.div`
 
 const StatusText = styled.h2`
   color: white;
-  font-size: 1.0em;
+  font-size: 1em;
   margin: 10px 0;
-  
+
   @media (max-width: 768px) {
     font-size: 1.2em;
     margin: 1.5rem 0;
@@ -92,7 +92,7 @@ const InfoText = styled.h3`
   color: white;
   font-size: 0.9em;
   margin-top: 15px;
-  
+
   @media (max-width: 768px) {
     font-size: 1.1em;
     margin-top: 2rem;
@@ -104,7 +104,7 @@ const InfoText = styled.h3`
 const ErrorContainer = styled.div`
   display: none;
   margin-top: 20px;
-  
+
   @media (max-width: 768px) {
     margin-top: 2rem;
     padding: 1rem;
@@ -113,7 +113,7 @@ const ErrorContainer = styled.div`
 
 const ErrorTitle = styled.h2`
   color: #ff4444;
-  
+
   @media (max-width: 768px) {
     font-size: 1.4em;
     margin-bottom: 1rem;
@@ -128,7 +128,7 @@ const ErrorMessage = styled.div`
   margin-top: 10px;
   text-align: left;
   color: white;
-  
+
   @media (max-width: 768px) {
     padding: 1.5rem;
     border-width: 2px;
@@ -147,12 +147,12 @@ const RestartButton = styled.button`
   padding: 8px 15px;
   cursor: pointer;
   border-radius: 4px;
-  
+
   &:hover {
     background-color: #ff4444;
     color: black;
   }
-  
+
   @media (max-width: 768px) {
     margin-top: 2rem;
     padding: 1rem 2rem;
@@ -168,14 +168,14 @@ const RestartButton = styled.button`
 interface WarmingUpProps {}
 
 const WarmingUp: React.FC<WarmingUpProps> = () => {
-  const [status, setStatus] = useState("Starting up...");
+  const [status, setStatus] = useState('Starting up...');
   const [showError, setShowError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleRestart = () => {
     window.location.reload();
   };
-  
+
   return (
     <WarningOverlay>
       <WarningContent>
@@ -187,7 +187,7 @@ const WarmingUp: React.FC<WarmingUpProps> = () => {
         <InfoText>
           If you're running for the first time, this may take a couple minutes.
         </InfoText>
-        
+
         {showError && (
           <ErrorContainer style={{ display: 'block' }}>
             <ErrorTitle>Error during warmup:</ErrorTitle>

@@ -9,7 +9,7 @@ const Container = styled.div`
   align-items: center;
   color: #0f0;
   width: 100%;
-  
+
   @media (max-width: 768px) {
     min-height: 60vh;
     justify-content: center;
@@ -20,7 +20,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.3em;
@@ -34,7 +34,7 @@ const SettingRow = styled.div`
   align-items: center;
   width: 100%;
   margin-bottom: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
@@ -45,7 +45,7 @@ const SettingRow = styled.div`
 
 const Label = styled.label`
   flex: 1;
-  
+
   @media (max-width: 768px) {
     font-size: 1.1em;
     font-weight: bold;
@@ -57,7 +57,7 @@ const Select = styled.select`
   color: #0f0;
   border: 1px solid #0f0;
   padding: 0.5em;
-  
+
   @media (max-width: 768px) {
     width: 100%;
     padding: 1em;
@@ -72,7 +72,7 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   width: 100%;
   margin-top: 2em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     margin-top: 2.5em;
@@ -87,12 +87,12 @@ const Button = styled.button`
   border: 1px solid #0f0;
   padding: 0.5em 1em;
   cursor: pointer;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1.1em;
@@ -107,7 +107,7 @@ const InfoText = styled.p`
   color: #0f08;
   text-align: center;
   font-style: italic;
-  
+
   @media (max-width: 768px) {
     margin: 1.5em 0;
     font-size: 1em;
@@ -128,33 +128,32 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ onBack }) => {
     try {
       saveSettings({
         ...settings,
-        memoryBuffer
+        memoryBuffer,
       });
-      showSuccess("Memory settings saved successfully.");
-      setTimeout(() => {
-        onBack();
-      }, 1500);
+      onBack(); // Navigate back first
+      showSuccess('Memory settings saved successfully.'); // Then show notification
     } catch (error) {
-      showError("Error saving memory settings.");
-      console.error("Failed to save memory settings:", error);
+      showError('Error saving memory settings.');
+      console.error('Failed to save memory settings:', error);
     }
   };
 
   return (
     <Container>
       <Title>Memory Settings</Title>
-      
+
       <InfoText>
-        These settings control how many conversation exchanges ALTER EGO remembers in short-term memory.
-        Lower values may reduce response quality but improve performance and minimize token costs.
+        These settings control how many conversation exchanges ALTER EGO
+        remembers in short-term memory. Lower values may reduce response quality
+        but improve performance and minimize token costs.
       </InfoText>
-      
+
       <SettingRow>
         <Label htmlFor="memoryBuffer">Remember last:</Label>
-        <Select 
-          id="memoryBuffer" 
-          value={memoryBuffer} 
-          onChange={(e) => setMemoryBuffer(Number(e.target.value))}
+        <Select
+          id="memoryBuffer"
+          value={memoryBuffer}
+          onChange={e => setMemoryBuffer(Number(e.target.value))}
         >
           <option value="1">1 exchange (worst quality, least tokens)</option>
           <option value="2">2 exchanges</option>
@@ -163,12 +162,12 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ onBack }) => {
           <option value="10">10 exchanges (best quality, most tokens)</option>
         </Select>
       </SettingRow>
-      
+
       <InfoText>
         Note: Each exchange includes both your message and ALTER EGO's response.
         Changes will apply to new messages only.
       </InfoText>
-        <ButtonContainer>
+      <ButtonContainer>
         <Button onClick={onBack}>Cancel</Button>
         <Button onClick={handleSave}>Save Settings</Button>
       </ButtonContainer>

@@ -5,7 +5,7 @@ import { showSuccess, showError } from '../Common/NotificationManager';
 
 const Container = styled.div`
   color: #0f0;
-  
+
   @media (max-width: 768px) {
     padding: 0 0.5em;
   }
@@ -14,7 +14,7 @@ const Container = styled.div`
 const Title = styled.h2`
   margin-bottom: 1em;
   font-size: 1.2em;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.3em;
@@ -30,7 +30,7 @@ const WarningText = styled.div`
   background-color: #200000;
   border-radius: 0.3em;
   line-height: 1.5;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 2em;
     padding: 1.5em;
@@ -44,7 +44,7 @@ const WarningText = styled.div`
 const DetailsText = styled.p`
   margin-bottom: 1.2em;
   line-height: 1.5;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.05em;
@@ -57,7 +57,7 @@ const ButtonContainer = styled.div`
   justify-content: space-between;
   margin-top: 2em;
   gap: 1em;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     margin-top: 2.5em;
@@ -71,12 +71,12 @@ const Button = styled.button`
   color: #0f0;
   border: 1px solid #0f0;
   cursor: pointer;
-  
+
   &:hover {
     background: #0f0;
     color: #000;
   }
-  
+
   @media (max-width: 768px) {
     padding: 1em 1.5em;
     font-size: 1.1em;
@@ -88,7 +88,7 @@ const Button = styled.button`
 const ResetButton = styled(Button)`
   color: #f00;
   border-color: #f00;
-  
+
   &:hover {
     background: #f00;
     color: #000;
@@ -101,7 +101,7 @@ const ConfirmationPrompt = styled.div`
   border: 1px solid #f00;
   border-radius: 0.3em;
   background-color: #200000;
-  
+
   @media (max-width: 768px) {
     margin-top: 2.5em;
     padding: 1.5em;
@@ -113,7 +113,7 @@ const ConfirmationText = styled.p`
   margin-bottom: 1em;
   color: #f00;
   font-weight: bold;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5em;
     font-size: 1.1em;
@@ -129,7 +129,7 @@ const ConfirmationInput = styled.input`
   border: 1px solid #f00;
   border-radius: 0.2em;
   margin-bottom: 1.5em;
-  
+
   @media (max-width: 768px) {
     padding: 1em;
     font-size: 1.1em;
@@ -144,7 +144,7 @@ const StatusMessage = styled.p`
   text-align: center;
   color: #0f0;
   font-weight: bold;
-  
+
   @media (max-width: 768px) {
     margin-top: 1.5em;
     font-size: 1.1em;
@@ -154,11 +154,11 @@ const StatusMessage = styled.p`
 const ResetList = styled.ul`
   margin: 1em 0 1.5em 1.5em;
   line-height: 1.6;
-  
+
   @media (max-width: 768px) {
     margin: 1.5em 0 2em 1em;
     font-size: 1.05em;
-    
+
     li {
       margin-bottom: 0.5em;
     }
@@ -173,29 +173,29 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [status, setStatus] = useState<string>('');
-  
+
   const handleInitiateReset = () => {
     setShowConfirmation(true);
   };
-  
+
   const handleConfirmationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConfirmationText(e.target.value);
   };
-  
+
   const handleReset = () => {
     if (confirmationText.toLowerCase() !== 'reset') {
       showError('Please type "RESET" to confirm');
       return;
     }
-    
+
     try {
       // Set a flag to indicate reset is in progress
       localStorage.setItem('alterEgo_resetInProgress', 'false');
-      
+
       factoryReset();
       setStatus('Factory reset completed successfully. Reloading app...');
       showSuccess('Factory reset completed successfully. Reloading app...');
-      
+
       // Reload the app after a brief delay
       setTimeout(() => {
         window.location.reload();
@@ -207,18 +207,17 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
       console.error('Factory reset error:', error);
     }
   };
-  
+
   return (
     <Container>
       <Title>Factory Reset</Title>
-      
+
       <WarningText>
-        WARNING: This will delete all user data and reset the application to factory defaults.
+        WARNING: This will delete all user data and reset the application to
+        factory defaults.
       </WarningText>
-        <DetailsText>
-        The following data will be permanently erased:
-      </DetailsText>
-      
+      <DetailsText>The following data will be permanently erased:</DetailsText>
+
       <ResetList>
         <li>All custom personas (except the default ALTER EGO)</li>
         <li>All voice models</li>
@@ -226,11 +225,11 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
         <li>All conversation history</li>
         <li>All application settings</li>
       </ResetList>
-      
+
       <DetailsText>
         After the reset, the application will reload with the default settings.
       </DetailsText>
-      
+
       {!showConfirmation ? (
         <ButtonContainer>
           <Button onClick={onBack}>Back</Button>
@@ -241,7 +240,7 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
           <ConfirmationText>
             To confirm factory reset, type "RESET" below:
           </ConfirmationText>
-          <ConfirmationInput 
+          <ConfirmationInput
             type="text"
             value={confirmationText}
             onChange={handleConfirmationChange}
@@ -253,7 +252,7 @@ const FactoryReset: React.FC<FactoryResetProps> = ({ onBack }) => {
           </ButtonContainer>
         </ConfirmationPrompt>
       )}
-      
+
       {status && <StatusMessage>{status}</StatusMessage>}
     </Container>
   );
