@@ -43,6 +43,7 @@ import {
 } from '../utils/imageUtils';
 // Import image analysis service
 import { queueImageForAnalysis } from '../services/imageAnalysisQueue';
+import { tokenTracker } from '../utils/tokenTracker';
 
 // Define message type
 interface Message {
@@ -462,6 +463,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     setIsLoading(true);
     setError(null);
 
+    // Start token tracking for this query
+    const sessionId = `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    tokenTracker.startQuery(sessionId);
+
     try {
       let imageUrls: string[] = [];
       let imageIds: string[] = [];
@@ -602,7 +607,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         systemPrompt,
         messagesForAI,
         config,
-        imageUrls // Pass images to AI service
+        imageUrls, // Pass images to AI service
+        sessionId // Pass session ID for token tracking
       );
 
       // Update conversation history with the AI's response
@@ -616,6 +622,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       const userEmotions = analyzeUserEmotions(query);
       const responseEmotions = analyzeResponseEmotions(response);
 
+      // Complete token tracking and show summary
+      tokenTracker.completeQuery(sessionId);
+
       setIsLoading(false);
       return {
         response,
@@ -626,6 +635,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
+      
+      // Complete token tracking even on error
+      tokenTracker.completeQuery(sessionId);
+      
       setIsLoading(false);
       return {
         response: `Error: ${errorMessage}`,

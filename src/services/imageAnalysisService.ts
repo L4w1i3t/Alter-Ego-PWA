@@ -14,7 +14,8 @@ interface ImageAnalysisResult {
  */
 export const analyzeImageWithAI = async (
   imageUrl: string,
-  persona: string = 'ALTER EGO'
+  persona: string = 'ALTER EGO',
+  sessionId?: string
 ): Promise<ImageAnalysisResult> => {
   try {
     // Simple, token-efficient prompt for image analysis
@@ -31,7 +32,8 @@ Include: objects, people, setting, colors, mood, text visible. Keep under 150 wo
       [imageUrl],
       'gpt-4o-mini',
       0.3,
-      500 // Reduced max tokens
+      500, // Reduced max tokens
+      sessionId
     );
 
     // Try to parse the JSON response

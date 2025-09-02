@@ -73,7 +73,8 @@ export const sendMessageToAI = async (
   systemPrompt: string = 'You are ALTER EGO, an intelligent AI personality.',
   history: MessageHistory[] = [],
   config?: Partial<AIConfig>,
-  images?: string[] // Array of image URLs for vision
+  images?: string[], // Array of image URLs for vision
+  sessionId?: string // For token tracking
 ): Promise<string> => {
   try {
     // Check if Open Source model is selected
@@ -196,7 +197,8 @@ export const sendMessageToAI = async (
           })),
         finalConfig.model,
         finalConfig.temperature,
-        finalConfig.maxTokens
+        finalConfig.maxTokens,
+        sessionId
       );
 
       return response;
@@ -223,7 +225,8 @@ export const sendMessageToAI = async (
         ) as { role: 'user' | 'assistant'; content: string }[], // Filter to only user and assistant messages
         finalConfig.model,
         finalConfig.temperature,
-        finalConfig.maxTokens
+        finalConfig.maxTokens,
+        sessionId
       );
 
       return response;

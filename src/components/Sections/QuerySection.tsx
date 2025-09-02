@@ -5,7 +5,7 @@ import { validateImageFile } from '../../utils/imageUtils';
 
 const QuerySectionContainer = styled.section`
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Change from center to flex-start to handle height changes */
   padding: 1vh 2vw;
   gap: 1vw;
 
@@ -19,10 +19,34 @@ const QuerySectionContainer = styled.section`
 
 const QueryInputWrapper = styled.div`
   flex: 1;
+  display: flex;
+  flex-direction: column;
 
   @media (max-width: 768px) {
     min-width: 100%;
     order: 1;
+  }
+`;
+
+const InputRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+  }
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  gap: 1vw;
+  align-items: center;
+  
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+    width: 100%;
+    order: 2;
   }
 `;
 
@@ -33,6 +57,7 @@ const QueryInput = styled.input`
   background: #000;
   color: #0f0;
   border-radius: 0.2em;
+  flex: 1; /* Take up remaining space in the input row */
 
   &::placeholder {
     color: #0f0;
@@ -54,6 +79,7 @@ const SendQueryButton = styled.button`
   border: 1px solid #0f0;
   padding: 0.5em 1em;
   border-radius: 0.2em;
+  white-space: nowrap; /* Prevent text wrapping */
 
   &:hover {
     background: #0f0;
@@ -75,8 +101,7 @@ const SendQueryButton = styled.button`
     padding: 1rem 1.5rem;
     font-size: 16px;
     min-height: 44px;
-    min-width: 100%;
-    order: 2;
+    flex: 1; /* Take equal space with image button */
     touch-action: manipulation;
   }
 `;
@@ -91,6 +116,7 @@ const ImageUploadButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 2.5em; /* Ensure consistent width */
 
   &:hover {
     background: #0f0;
@@ -102,7 +128,7 @@ const ImageUploadButton = styled.button`
     padding: 1rem;
     font-size: 16px;
     min-height: 44px;
-    order: 3;
+    flex: 1; /* Take equal space with send button */
     touch-action: manipulation;
   }
 `;
@@ -133,22 +159,49 @@ const PreviewImage = styled.img`
 
 const RemoveImageButton = styled.button`
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 16px;
-  height: 16px;
+  top: -9px;
+  right: -9px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: none;
   background-color: #ff0000;
-  color: white;
-  font-size: 10px;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-
+  transition: background-color 0.2s;
+  
   &:hover {
     background-color: #cc0000;
+  }
+  
+  /* Create X using CSS pseudo-elements */
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background-color: white;
+    border-radius: 1px;
+  }
+  
+  &::before {
+    transform: rotate(45deg);
+  }
+  
+  &::after {
+    transform: rotate(-45deg);
+  }
+  
+  /* Focus styles for accessibility */
+  &:focus {
+    outline: 2px solid #0f0;
+    outline-offset: 1px;
   }
 `;
 
@@ -256,14 +309,33 @@ const QuerySection: React.FC<QuerySectionProps> = ({
   return (
     <QuerySectionContainer>
       <QueryInputWrapper>
-        <QueryInput
-          type="text"
-          placeholder="Insert Query Here..."
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={handleKeyPress}
-          disabled={isLoading}
-        />
+        <InputRow>
+          <QueryInput
+            type="text"
+            placeholder="Insert Query Here..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={handleKeyPress}
+            disabled={isLoading}
+          />
+          <ButtonContainer>
+            <ImageUploadButton
+              onClick={handleImageButtonClick}
+              disabled={isLoading}
+              title="Attach images"
+            >
+              📷
+            </ImageUploadButton>
+
+            <SendQueryButton
+              onClick={handleSendQuery}
+              disabled={isLoading || (!query.trim() && selectedImages.length === 0)}
+            >
+              {isLoading ? 'Processing...' : 'Send Query'}
+            </SendQueryButton>
+          </ButtonContainer>
+        </InputRow>
+        
         {/* Image Previews */}
         {imagePreviews.length > 0 && (
           <ImagePreviewContainer>
@@ -273,9 +345,7 @@ const QuerySection: React.FC<QuerySectionProps> = ({
                 <RemoveImageButton
                   onClick={() => handleRemoveImage(index)}
                   title="Remove image"
-                >
-                  ×
-                </RemoveImageButton>
+                />
               </ImagePreview>
             ))}
           </ImagePreviewContainer>
@@ -290,21 +360,6 @@ const QuerySection: React.FC<QuerySectionProps> = ({
         multiple
         onChange={handleImageSelect}
       />
-
-      <ImageUploadButton
-        onClick={handleImageButtonClick}
-        disabled={isLoading}
-        title="Attach images"
-      >
-        📷
-      </ImageUploadButton>
-
-      <SendQueryButton
-        onClick={handleSendQuery}
-        disabled={isLoading || (!query.trim() && selectedImages.length === 0)}
-      >
-        {isLoading ? 'Processing...' : 'Send Query'}
-      </SendQueryButton>
     </QuerySectionContainer>
   );
 };

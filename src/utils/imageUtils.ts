@@ -139,9 +139,9 @@ export const saveImageToCache = async (
 ): Promise<CachedImage> => {
   const id = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // Process image and create thumbnail
-  const [dataUrl, thumbnail] = await Promise.all([
-    processImage(file, { maxWidth: 1024, maxHeight: 1024 }),
+  // Store original image and create thumbnail
+  const [originalDataUrl, thumbnail] = await Promise.all([
+    fileToDataUrl(file), // Store original uncompressed image
     createThumbnail(file, 150),
   ]);
 
@@ -149,7 +149,7 @@ export const saveImageToCache = async (
   const cachedImage: CachedImage = {
     id,
     originalFile: file,
-    dataUrl,
+    dataUrl: originalDataUrl,
     thumbnail,
     uploadedAt: new Date(),
     persona,
@@ -180,7 +180,7 @@ export const saveImageToCache = async (
   localStorage.setItem(cacheKey, JSON.stringify(metadataToStore));
 
   // Store the actual image data separately
-  localStorage.setItem(`alterEgo_image_${id}`, dataUrl);
+  localStorage.setItem(`alterEgo_image_${id}`, originalDataUrl);
   localStorage.setItem(`alterEgo_thumb_${id}`, thumbnail);
 
   return cachedImage;
