@@ -246,12 +246,13 @@ export const generateChatCompletion = async (
     max_tokens: maxTokens,
   };
 
-  // Log the complete payload being sent to OpenAI
-  console.log('=== COMPLETE OPENAI API PAYLOAD ===');
+  // Log the complete payload being sent to OpenAI (sanitized)
+  console.log('=== OPENAI API REQUEST ===');
   console.log('Model:', model);
   console.log('Temperature:', temperature);
   console.log('Max Tokens:', maxTokens);
   console.log('Total Messages:', messages.length);
+  console.log('API Key:', OPENAI_API_KEY ? `${OPENAI_API_KEY.substring(0, 8)}...${OPENAI_API_KEY.slice(-4)}` : 'Not set');
   console.log('Messages Structure:');
   messages.forEach((msg, index) => {
     console.log(`Message ${index} (${msg.role}):`, {
@@ -259,7 +260,7 @@ export const generateChatCompletion = async (
       contentLength: msg.content.length,
       contentPreview:
         msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''),
-      fullContent: msg.content,
+      // Remove fullContent to avoid logging sensitive data
     });
   });
   console.log('=== END OPENAI PAYLOAD ===');

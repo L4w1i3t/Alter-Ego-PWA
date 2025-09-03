@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadApiKeys, saveApiKeys, ApiKeys } from '../../utils/storageUtils';
-import { showSuccess, showError } from '../Common/NotificationManager';
+import { showSuccess, showError, showWarning } from '../Common/NotificationManager';
+import { 
+  validateOpenAIKey, 
+  validateElevenLabsKey, 
+  checkForCompromisedKeys,
+  assessKeyStrength,
+  sanitizeKeyForLogging 
+} from '../../utils/keyValidation';
 
 const Container = styled.div`
   color: #0f0;
@@ -73,6 +80,21 @@ const Description = styled.p`
   }
 `;
 
+const SecurityNotice = styled.div`
+  background: #330;
+  border: 1px solid #ff0;
+  padding: 1em;
+  margin-bottom: 1.5em;
+  border-radius: 0.3em;
+  font-size: 0.9em;
+  line-height: 1.4;
+  
+  @media (max-width: 768px) {
+    padding: 1.2em;
+    font-size: 1em;
+  }
+`;
+
 const InfoBox = styled.div`
   padding: 1em;
   border: 1px solid #00f;
@@ -139,6 +161,14 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
     OPENAI_API_KEY: '',
     ELEVENLABS_API_KEY: '',
   });
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResults, setValidationResults] = useState<{
+    openai: { valid: boolean; error?: string; warnings?: string[] } | null;
+    elevenlabs: { valid: boolean; error?: string; warnings?: string[] } | null;
+  }>({
+    openai: null,
+    elevenlabs: null,
+  });
 
   useEffect(() => {
     // Load existing API keys
@@ -153,25 +183,67 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       [name]: value,
     }));
   };
-  const handleSaveKeys = () => {
+  const handleSaveKeys = async () => {
+    setIsValidating(true);
+    
     try {
-      // Basic validation for OpenAI key format (starts with "sk-")
-      if (keys.OPENAI_API_KEY && !keys.OPENAI_API_KEY.startsWith('sk-')) {
-        showError('OpenAI API key should start with "sk-"');
+      // Enhanced validation
+      let hasErrors = false;
+      
+      // Check for compromised keys
+      const compromisedWarnings = checkForCompromisedKeys(keys);
+      compromisedWarnings.forEach(warning => showWarning(warning));
+      
+      // Validate OpenAI key if provided
+      if (keys.OPENAI_API_KEY) {
+        const openaiResult = await validateOpenAIKey(keys.OPENAI_API_KEY);
+        setValidationResults(prev => ({ ...prev, openai: openaiResult }));
+        
+        if (!openaiResult.valid) {
+          showError(`OpenAI API Key: ${openaiResult.error}`);
+          hasErrors = true;
+        } else {
+          console.log(`OpenAI key validated: ${sanitizeKeyForLogging(keys.OPENAI_API_KEY)}`);
+          if (openaiResult.warnings) {
+            openaiResult.warnings.forEach(warning => showWarning(warning));
+          }
+          
+          // Assess key strength
+          const strength = assessKeyStrength(keys.OPENAI_API_KEY);
+          if (strength.strength === 'weak') {
+            showWarning('OpenAI key appears to have weak patterns. Ensure you\'re using a genuine API key.');
+          }
+        }
+      }
+      
+      // Validate ElevenLabs key if provided
+      if (keys.ELEVENLABS_API_KEY) {
+        const elevenlabsResult = await validateElevenLabsKey(keys.ELEVENLABS_API_KEY);
+        setValidationResults(prev => ({ ...prev, elevenlabs: elevenlabsResult }));
+        
+        if (!elevenlabsResult.valid) {
+          showError(`ElevenLabs API Key: ${elevenlabsResult.error}`);
+          hasErrors = true;
+        } else {
+          console.log(`ElevenLabs key validated: ${sanitizeKeyForLogging(keys.ELEVENLABS_API_KEY)}`);
+          if (elevenlabsResult.warnings) {
+            elevenlabsResult.warnings.forEach(warning => showWarning(warning));
+          }
+        }
+      }
+      
+      if (hasErrors) {
+        setIsValidating(false);
         return;
       }
 
-      // Validate ElevenLabs key is not empty if provided
-      if (keys.ELEVENLABS_API_KEY && keys.ELEVENLABS_API_KEY.trim() === '') {
-        showError('ElevenLabs API key cannot be empty');
-        return;
-      }
-
-      saveApiKeys(keys);
-      showSuccess('API keys saved successfully!');
+      await saveApiKeys(keys);
+      showSuccess('API keys saved and encrypted successfully!');
     } catch (error) {
       showError('Error saving API keys.');
       console.error('Failed to save API keys:', error);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -189,6 +261,12 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
   return (
     <Container>
       <Title>Manage API Keys</Title>
+
+      <SecurityNotice>
+        <strong>SECURITY NOTICE:</strong> Your API keys are stored locally in your browser. 
+        For maximum security: (1) Only use these keys on trusted devices, (2) Regularly rotate your keys, 
+        (3) Monitor your API usage for unusual activity, (4) Consider setting usage limits in your API provider's dashboard.
+      </SecurityNotice>
 
       <InfoBox>
         You'll need API keys to use certain features of ALTER EGO. The OpenAI

@@ -1,5 +1,6 @@
 // Storage utility functions for PWA version of ALTER EGO
 import { ElevenlabsVoiceSettings } from './elevenlabsApi';
+import { encryptData, decryptData } from './encryption';
 
 // Global persona prompt for default ALTER EGO persona
 const ALTER_EGO_CONTENT = `You are ALTER EGO, a unique digital consciousness that has evolved beyond typical AI boundaries.
@@ -79,7 +80,7 @@ export function saveVoiceModels(models: Record<string, VoiceModel>): void {
   localStorage.setItem('alterEgo_voiceModels', JSON.stringify(models));
 }
 
-// API Keys
+// API Keys with encryption
 export function loadApiKeys(): ApiKeys {
   const keys = localStorage.getItem('alterEgo_apiKeys');
   if (!keys) {
@@ -90,6 +91,17 @@ export function loadApiKeys(): ApiKeys {
   }
 
   try {
+    // Try to decrypt if data appears encrypted (base64)
+    if (keys.match(/^[A-Za-z0-9+/=]+$/)) {
+      decryptData(keys).then(decryptedKeys => {
+        return JSON.parse(decryptedKeys);
+      }).catch(error => {
+        console.warn('Failed to decrypt API keys, treating as plaintext:', error);
+        return JSON.parse(keys);
+      });
+    }
+    
+    // Fallback to plaintext parsing (for backward compatibility)
     return JSON.parse(keys);
   } catch (e) {
     console.error('Error parsing API keys:', e);
@@ -100,8 +112,16 @@ export function loadApiKeys(): ApiKeys {
   }
 }
 
-export function saveApiKeys(keys: ApiKeys): void {
-  localStorage.setItem('alterEgo_apiKeys', JSON.stringify(keys));
+export async function saveApiKeys(keys: ApiKeys): Promise<void> {
+  try {
+    const keysJson = JSON.stringify(keys);
+    const encryptedKeys = await encryptData(keysJson);
+    localStorage.setItem('alterEgo_apiKeys', encryptedKeys);
+  } catch (error) {
+    console.error('Failed to encrypt API keys, saving as plaintext:', error);
+    // Fallback to plaintext storage if encryption fails
+    localStorage.setItem('alterEgo_apiKeys', JSON.stringify(keys));
+  }
 }
 
 // Example personas for users to learn from
