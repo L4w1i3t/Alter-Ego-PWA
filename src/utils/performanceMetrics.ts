@@ -5,6 +5,7 @@
 
 // Import OpenAI token usage stats
 import { getTokenUsageStats } from './openaiApi';
+import { tokenTracker } from './tokenTracker';
 
 // Declare custom window properties for metrics sharing
 declare global {
@@ -93,6 +94,13 @@ const aiResponseTimes: number[] = [];
 let rafFpsFrameCount = 0;
 let rafFpsLastTime = performance.now();
 let currentFPS = 0;
+let fpsRafId: number | null = null; // allow cancellation on re-init
+
+// Periodic collector interval id (browser/Node compatible)
+let periodicIntervalId: ReturnType<typeof setInterval> | null = null;
+
+// Keep a single long-lived CLS observer
+let clsObserverRef: PerformanceObserver | null = null;
 
 // Track FPS using requestAnimationFrame for more accurate measurement
 const trackFPS = (): void => {
@@ -125,11 +133,17 @@ const trackFPS = (): void => {
       }
     }
 
-    requestAnimationFrame(updateFPS);
+    if (isMetricsEnabled) {
+      fpsRafId = requestAnimationFrame(updateFPS);
+    }
   };
 
   // Start the FPS tracking loop
-  requestAnimationFrame(updateFPS);
+  if (fpsRafId !== null) {
+    cancelAnimationFrame(fpsRafId);
+    fpsRafId = null;
+  }
+  fpsRafId = requestAnimationFrame(updateFPS);
 };
 
 /**
@@ -207,14 +221,21 @@ const setupHotkeyListener = (): void => {
         // Start a fresh session after the report is generated
         initPerformanceMonitoring();
 
-        // Show user feedback
-        showHotkeyFeedback();
-      });
+      // Show user feedback
+      showHotkeyFeedback();
+    });
+    }
+
+    // Ctrl+Alt+M: Clear metrics + token logs and restart session
+    if ((event.ctrlKey || event.metaKey) && event.altKey && event.key === 'm') {
+      console.log('Clearing performance metrics and token usage logs...');
+      event.preventDefault();
+      clearPerformanceData();
     }
   });
 
   console.log(
-    'Performance metrics hotkey registered: Ctrl+Alt+P (Cmd+Option+P on Mac)'
+    'Performance metrics hotkeys: Ctrl+Alt+P = report, Ctrl+Alt+M = clear'
   );
 };
 
@@ -265,6 +286,10 @@ export const captureMetric = (
     value,
     details,
   });
+  // Cap metrics array to avoid unbounded growth in long sessions
+  if (currentReport.metrics.length > 5000) {
+    currentReport.metrics.splice(0, currentReport.metrics.length - 5000);
+  }
 };
 
 /**
@@ -281,8 +306,8 @@ const captureWebVitals = (): void => {
   const navEntries = performance.getEntriesByType('navigation');
   if (navEntries.length > 0) {
     const navEntry = navEntries[0] as PerformanceNavigationTiming;
-    currentReport.webVitals.ttfb =
-      navEntry.responseStart - navEntry.requestStart;
+    if (!currentReport.webVitals) currentReport.webVitals = {};
+    currentReport.webVitals.ttfb = navEntry.responseStart - navEntry.requestStart;
   }
 
   // For FCP, we get the entry from the paint observer (already captured)
@@ -292,6 +317,7 @@ const captureWebVitals = (): void => {
       .getEntries()
       .filter(entry => entry.name === 'first-contentful-paint');
     if (fcpEntries.length > 0 && currentReport) {
+      if (!currentReport.webVitals) currentReport.webVitals = {};
       currentReport.webVitals.fcp = fcpEntries[0].startTime;
       fcpObserved = true;
     }
@@ -310,6 +336,7 @@ const captureWebVitals = (): void => {
     // We only want the latest LCP entry
     const lcpEntry = entries.getEntries().pop();
     if (lcpEntry && currentReport) {
+      if (!currentReport.webVitals) currentReport.webVitals = {};
       currentReport.webVitals.lcp = lcpEntry.startTime;
       lcpObserved = true;
     }
@@ -322,27 +349,31 @@ const captureWebVitals = (): void => {
     console.warn('LCP observation not supported', e);
   }
 
-  // For CLS, we use a layout-shift observer
+  // For CLS, we use a single long-lived layout-shift observer to avoid duplicates
   let cumulativeLayoutShift = 0;
-  const clsObserver = new PerformanceObserver(entries => {
-    for (const entry of entries.getEntries()) {
-      // Skip entries with 0 value (not relevant)
-      if (!(entry as any).value) continue;
+  if (!clsObserverRef) {
+    const clsObserver = new PerformanceObserver(entries => {
+      for (const entry of entries.getEntries()) {
+        // Skip entries with 0 value (not relevant)
+        if (!(entry as any).value) continue;
 
-      // Add up the layout shift values
-      cumulativeLayoutShift += (entry as any).value;
+        // Add up the layout shift values
+        cumulativeLayoutShift += (entry as any).value;
+      }
+
+      if (currentReport) {
+        if (!currentReport.webVitals) currentReport.webVitals = {};
+        currentReport.webVitals.cls = cumulativeLayoutShift;
+      }
+    });
+
+    try {
+      // Observe layout shift events
+      clsObserver.observe({ type: 'layout-shift', buffered: true });
+      clsObserverRef = clsObserver;
+    } catch (e) {
+      console.warn('Layout shift observation not supported', e);
     }
-
-    if (currentReport) {
-      currentReport.webVitals.cls = cumulativeLayoutShift;
-    }
-  });
-
-  try {
-    // Observe layout shift events
-    clsObserver.observe({ type: 'layout-shift', buffered: true });
-  } catch (e) {
-    console.warn('Layout shift observation not supported', e);
   }
 
   // Clean up observers after 5 seconds (enough time to collect initial metrics)
@@ -366,6 +397,7 @@ const captureWebVitals = (): void => {
         entry => entry.name === 'first-contentful-paint'
       );
       if (fcpEntries.length > 0 && currentReport) {
+        if (!currentReport.webVitals) currentReport.webVitals = {};
         currentReport.webVitals.fcp = fcpEntries[0].startTime;
       }
     }
@@ -577,7 +609,11 @@ const startPeriodicCollection = (): void => {
   if (!isMetricsEnabled) return;
 
   // Collect metrics every 10 seconds
-  const intervalId = setInterval(() => {
+  if (periodicIntervalId !== null) {
+    clearInterval(periodicIntervalId);
+    periodicIntervalId = null;
+  }
+  periodicIntervalId = setInterval(() => {
     try {
       captureMemoryInfo();
       // FPS is now captured through requestAnimationFrame
@@ -591,7 +627,10 @@ const startPeriodicCollection = (): void => {
 
   // Add window unload listener to ensure we clean up the interval
   window.addEventListener('beforeunload', () => {
-    clearInterval(intervalId);
+    if (periodicIntervalId !== null) {
+      clearInterval(periodicIntervalId);
+      periodicIntervalId = null;
+    }
   });
 };
 
@@ -926,4 +965,86 @@ export const triggerPerformanceReport = async (): Promise<boolean> => {
  */
 export const isPerformanceMonitoringEnabled = (): boolean => {
   return isMetricsEnabled;
+};
+
+/**
+ * Clear performance monitoring data and token usage logs.
+ * Useful in development to "bust" metrics without a full reload.
+ */
+export const clearPerformanceData = (): void => {
+  try {
+    // Clear Web Performance buffers
+    if ('clearMarks' in performance) performance.clearMarks();
+    if ('clearMeasures' in performance) performance.clearMeasures();
+    if ('clearResourceTimings' in performance)
+      performance.clearResourceTimings();
+  } catch (e) {
+    console.warn('Failed to clear performance buffers:', e);
+  }
+
+  // Reset in-memory trackers
+  aiResponseTimes.length = 0;
+  rafFpsFrameCount = 0;
+  currentFPS = 0;
+  if (window.ALTER_EGO_METRICS) {
+    window.ALTER_EGO_METRICS.currentFPS = 0;
+  }
+  // Stop FPS loop
+  if (fpsRafId !== null) {
+    cancelAnimationFrame(fpsRafId);
+    fpsRafId = null;
+  }
+  // Stop periodic collector
+  if (periodicIntervalId !== null) {
+    clearInterval(periodicIntervalId);
+    periodicIntervalId = null;
+  }
+  // Disconnect CLS observer
+  if (clsObserverRef) {
+    try { clsObserverRef.disconnect(); } catch {}
+    clsObserverRef = null;
+  }
+  if (currentReport) {
+    currentReport.metrics = [];
+    currentReport.aiPerformance = undefined;
+    currentReport.memoryInfo = undefined;
+    currentReport.navigationTiming = undefined;
+    currentReport.resourceSummary = undefined;
+    currentReport.resourceTiming = undefined;
+    currentReport.webVitals = undefined;
+  }
+
+  // Clear token logs persisted in localStorage
+  try {
+    localStorage.removeItem('alterEgo_tokenUsage');
+    localStorage.removeItem('alterEgo_tokenSummaries');
+  } catch (e) {
+    console.warn('Failed to clear token usage logs:', e);
+  }
+
+  // Reset live token tracker map
+  try {
+    tokenTracker.reset();
+  } catch {}
+
+  // Restart a clean monitoring session if enabled
+  if (isMetricsEnabled) {
+    initPerformanceMonitoring();
+  }
+
+  // Visual feedback
+  try {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed; bottom: 20px; right: 20px; z-index: 99999;
+      background: #222; color: #0f0; border: 1px solid #0f0;
+      padding: 10px 14px; border-radius: 4px; font-family: monospace;
+    `;
+    toast.textContent = 'Performance metrics cleared';
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 1500);
+  } catch {}
 };

@@ -19,6 +19,7 @@ import {
   getPersona,
   loadVoiceModels,
   loadApiKeys,
+  migrateApiKeysIfNeeded,
 } from '../utils/storageUtils';
 import { textToSpeech, playAudio } from '../utils/elevenlabsApi';
 import { getTokenUsageStats } from '../utils/openaiApi';
@@ -32,6 +33,7 @@ import {
   setMetricsEnabled,
   triggerPerformanceReport,
   isPerformanceMonitoringEnabled,
+  clearPerformanceData,
 } from '../utils/performanceMetrics';
 
 // Dev mode UI components for performance metrics
@@ -307,6 +309,9 @@ const LiveMetrics: React.FC = () => {
 
   // Update metrics using shared tracking with performance monitor
   useEffect(() => {
+    // Migrate legacy encrypted API keys to plaintext JSON for reliable reads
+    migrateApiKeysIfNeeded();
+
     let rafId: number;
     let memoryIntervalId: number;
 
@@ -676,6 +681,11 @@ const App: React.FC = () => {
     console.log('Performance report manually generated');
   };
 
+  const clearMetrics = () => {
+    clearPerformanceData();
+    console.log('Performance metrics cleared');
+  };
+
   // Add database export functionality
   const exportDbContent = async () => {
     try {
@@ -800,10 +810,15 @@ const App: React.FC = () => {
               </DevButton>
             </ButtonRow>
             <ButtonRow>
+              <DevButton onClick={clearMetrics}>Clear Metrics</DevButton>
+            </ButtonRow>
+            <ButtonRow>
               <DevButton onClick={exportDbContent}>Export Dexie DB</DevButton>
             </ButtonRow>{' '}
             <HotkeyInfo>
               Hotkey: Ctrl+Alt+P
+              <br />
+              Clear metrics: Ctrl+Alt+M
               <br />
               Toggle panel: Ctrl+Shift+D
               <br />

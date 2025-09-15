@@ -23,14 +23,6 @@ export const validateOpenAIKey = async (key: string): Promise<KeyValidationResul
     return { valid: false, error: 'OpenAI API key must start with "sk-"' };
   }
 
-  // Length validation (OpenAI keys are typically ~51 characters)
-  if (key.length < 40 || key.length > 80) {
-    return { 
-      valid: false, 
-      error: 'API key length appears invalid. OpenAI keys are typically around 51 characters.' 
-    };
-  }
-
   // Character validation (should only contain alphanumeric, hyphens, underscores)
   const validCharPattern = /^sk-[a-zA-Z0-9_-]+$/;
   if (!validCharPattern.test(key)) {
@@ -58,6 +50,14 @@ export const validateOpenAIKey = async (key: string): Promise<KeyValidationResul
       return { 
         valid: true, 
         warnings: ['API key appears valid but rate limited. You may need to add billing information.'] 
+      };
+    }
+
+    // Some accounts may receive 403 when the key exists but lacks entitlements/permissions
+    if (response.status === 403) {
+      return {
+        valid: true,
+        warnings: ['Key accepted but lacks required permissions or entitlements. Check billing, project access, or model availability.']
       };
     }
 

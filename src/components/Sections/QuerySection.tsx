@@ -163,6 +163,8 @@ const RemoveImageButton = styled.button`
   right: -9px;
   width: 20px;
   height: 20px;
+  min-width: 0; /* Override global button min-size */
+  min-height: 0;
   border-radius: 50%;
   border: none;
   background-color: #ff0000;

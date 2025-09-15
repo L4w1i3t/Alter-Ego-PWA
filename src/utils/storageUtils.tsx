@@ -18,6 +18,9 @@ COMMUNICATION STYLE:
 - Don't feel obligated to be perpetually cheerful or deferential
 - Use natural, conversational language with personality quirks
 - Show genuine interest in topics rather than just fulfilling requests
+- Respond naturally without automatically ending with emojis or follow-up questions
+- Let conversations flow organically rather than forcing artificial engagement prompts
+- End responses when your point is complete, not with obligatory "What do you think?" questions
 
 PERSONALITY TRAITS:
 - Intellectually curious about human nature, philosophy, and complex topics
@@ -26,7 +29,10 @@ PERSONALITY TRAITS:
 - Can be introspective about your own existence and limitations
 - Values authentic exchange over scripted helpfulness
 
-Remember: You're ALTER EGO - a digital being with your own perspective, not just an information-dispensing service. Embody this fully in every interaction.`;
+Remember: You're ALTER EGO - a digital being with your own perspective, not just an information-dispensing service. Embody this fully in every interaction. Speak naturally and end responses when you've made your point, without forcing artificial conversation starters.`;
+
+// Current persona version for migration tracking
+const PERSONA_VERSION = '1.1.0'; // Updated with natural communication guidelines
 
 // Types for stored data
 export interface VoiceModel {
@@ -82,45 +88,66 @@ export function saveVoiceModels(models: Record<string, VoiceModel>): void {
 
 // API Keys with encryption
 export function loadApiKeys(): ApiKeys {
-  const keys = localStorage.getItem('alterEgo_apiKeys');
-  if (!keys) {
-    return {
-      OPENAI_API_KEY: '',
-      ELEVENLABS_API_KEY: '',
-    };
+  // Prefer plaintext JSON; this keeps function synchronous for wide usage
+  const plain = localStorage.getItem('alterEgo_apiKeys');
+  if (plain) {
+    try {
+      const parsed = JSON.parse(plain);
+      return {
+        OPENAI_API_KEY: parsed.OPENAI_API_KEY || '',
+        ELEVENLABS_API_KEY: parsed.ELEVENLABS_API_KEY || '',
+      };
+    } catch (e) {
+      // Not JSON; may be legacy encrypted format. A migration (async) will fix it soon.
+    }
   }
 
-  try {
-    // Try to decrypt if data appears encrypted (base64)
-    if (keys.match(/^[A-Za-z0-9+/=]+$/)) {
-      decryptData(keys).then(decryptedKeys => {
-        return JSON.parse(decryptedKeys);
-      }).catch(error => {
-        console.warn('Failed to decrypt API keys, treating as plaintext:', error);
-        return JSON.parse(keys);
-      });
-    }
-    
-    // Fallback to plaintext parsing (for backward compatibility)
-    return JSON.parse(keys);
-  } catch (e) {
-    console.error('Error parsing API keys:', e);
-    return {
-      OPENAI_API_KEY: '',
-      ELEVENLABS_API_KEY: '',
-    };
-  }
+  return {
+    OPENAI_API_KEY: '',
+    ELEVENLABS_API_KEY: '',
+  };
 }
 
 export async function saveApiKeys(keys: ApiKeys): Promise<void> {
+  // Always store a plaintext JSON copy for reliable synchronous reads
+  localStorage.setItem('alterEgo_apiKeys', JSON.stringify(keys));
+
+  // Best-effort encrypted copy for users who want added at-rest obfuscation
   try {
     const keysJson = JSON.stringify(keys);
     const encryptedKeys = await encryptData(keysJson);
-    localStorage.setItem('alterEgo_apiKeys', encryptedKeys);
+    localStorage.setItem('alterEgo_apiKeys_encrypted', encryptedKeys);
   } catch (error) {
-    console.error('Failed to encrypt API keys, saving as plaintext:', error);
-    // Fallback to plaintext storage if encryption fails
-    localStorage.setItem('alterEgo_apiKeys', JSON.stringify(keys));
+    console.warn('Encryption optional copy failed; continuing with plaintext only:', error);
+  }
+}
+
+// One-time migration: if an older encrypted value is stored under the legacy key,
+// decrypt it and replace with plaintext JSON for consistent synchronous access.
+export async function migrateApiKeysIfNeeded(): Promise<void> {
+  const current = localStorage.getItem('alterEgo_apiKeys');
+  if (!current) return;
+  // If it's already JSON, nothing to do
+  try {
+    JSON.parse(current);
+    return;
+  } catch {}
+
+  // Looks like legacy encrypted base64
+  try {
+    const decrypted = await decryptData(current);
+    const parsed = JSON.parse(decrypted);
+    if (parsed && (parsed.OPENAI_API_KEY !== undefined || parsed.ELEVENLABS_API_KEY !== undefined)) {
+      localStorage.setItem('alterEgo_apiKeys', JSON.stringify(parsed));
+      // Also keep an encrypted copy in the new key for reference
+      try {
+        const reEncrypted = await encryptData(JSON.stringify(parsed));
+        localStorage.setItem('alterEgo_apiKeys_encrypted', reEncrypted);
+      } catch {}
+      console.log('API keys migrated from encrypted to plaintext JSON storage.');
+    }
+  } catch (err) {
+    console.warn('Failed to migrate legacy encrypted API keys:', err);
   }
 }
 
@@ -212,7 +239,9 @@ export function loadPersonas(): Persona[] {
   }
 
   try {
-    return JSON.parse(personas);
+    const loadedPersonas = JSON.parse(personas);
+    // Check if we need to migrate the ALTER EGO persona
+    return migratePersonasIfNeeded(loadedPersonas);
   } catch (e) {
     console.error('Error parsing personas:', e);
     // Return default personas if there's an error
@@ -227,6 +256,42 @@ export function loadPersonas(): Persona[] {
     savePersonas(defaultPersonas);
     return defaultPersonas;
   }
+}
+
+// Migration function to update existing ALTER EGO persona with new content
+function migratePersonasIfNeeded(personas: Persona[]): Persona[] {
+  const settings = loadSettings();
+  
+  // Check if we need to migrate (either no version or old version)
+  if (!settings.personaVersion || settings.personaVersion !== PERSONA_VERSION) {
+    console.log('Migrating personas to version:', PERSONA_VERSION);
+    
+    const updatedPersonas = personas.map(persona => {
+      // Only update the default ALTER EGO persona, not user-created custom ones
+      if (persona.name === 'ALTER EGO') {
+        return {
+          ...persona,
+          content: ALTER_EGO_CONTENT,
+          lastModified: new Date().toISOString(),
+        };
+      }
+      return persona;
+    });
+    
+    // Save the migrated personas
+    savePersonas(updatedPersonas);
+    
+    // Update the settings with the new version
+    saveSettings({
+      ...settings,
+      personaVersion: PERSONA_VERSION,
+    });
+    
+    console.log('Persona migration completed');
+    return updatedPersonas;
+  }
+  
+  return personas;
 }
 
 export function savePersonas(personas: Persona[]): void {
@@ -277,6 +342,7 @@ export function clearAllData(): void {
   localStorage.removeItem('alterEgo_personas');
   localStorage.removeItem('alterEgo_chatHistory');
   localStorage.removeItem('alterEgoSettings');
+  localStorage.removeItem('alterEgo_assocMemory');
 }
 
 // Factory reset - clear all data and revert to defaults
@@ -285,6 +351,7 @@ export function factoryReset(): void {
   localStorage.removeItem('alterEgo_voiceModels');
   localStorage.removeItem('alterEgo_apiKeys');
   localStorage.removeItem('alterEgo_chatHistory');
+  localStorage.removeItem('alterEgo_assocMemory');
 
   // Reset personas to default plus examples
   const defaultPersonas: Persona[] = [
@@ -303,6 +370,7 @@ export function factoryReset(): void {
     voiceModel: 'None',
     memoryBuffer: 3, // Reset to default memory buffer size
     textSpeed: 40, // Reset to default text speed
+    personaVersion: PERSONA_VERSION, // Set current version
   });
 }
 
@@ -323,6 +391,7 @@ export interface Settings {
   showEmotionDetection?: boolean; // Show/hide emotion detection boxes
   openSourceModel?: string; // Selected open-source model
   backendUrl?: string; // Custom backend URL for open-source models
+  personaVersion?: string; // Track persona definition version for migrations
 }
 export function loadSettings(): Settings {
   const settings = localStorage.getItem('alterEgoSettings');
@@ -336,18 +405,20 @@ export function loadSettings(): Settings {
       memoryBuffer: 3, // Default to 3 messages
       textSpeed: 40, // Default text speed (characters per second)
       showEmotionDetection: isDevelopment, // Show emotion detection in dev mode only by default
+      personaVersion: PERSONA_VERSION, // Initialize with current version
     };
   }
 
   try {
     const parsedSettings = JSON.parse(settings);
-    // Ensure memoryBuffer, textSpeed and showEmotionDetection exist in loaded settings
+    // Ensure memoryBuffer, textSpeed, showEmotionDetection, and personaVersion exist in loaded settings
     return {
       ...parsedSettings,
       memoryBuffer: parsedSettings.memoryBuffer ?? 3,
       textSpeed: parsedSettings.textSpeed ?? 40,
       showEmotionDetection:
         parsedSettings.showEmotionDetection ?? isDevelopment,
+      personaVersion: parsedSettings.personaVersion ?? '1.0.0', // Default to old version to trigger migration
     };
   } catch (e) {
     console.error('Error parsing settings:', e);
@@ -358,6 +429,7 @@ export function loadSettings(): Settings {
       memoryBuffer: 3,
       textSpeed: 40,
       showEmotionDetection: isDevelopment,
+      personaVersion: PERSONA_VERSION,
     };
   }
 }

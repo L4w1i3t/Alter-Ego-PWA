@@ -10,7 +10,6 @@ import { DesktopInstall } from './DesktopInstall';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
 import MemorySettings from './MemoryManager';
 import MemoryAndHistory from './MemoryAndHistory';
-import ImageGallery from './ImageGallery';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
 import OpenSourceSettings from './OpenSourceSettings';
@@ -461,8 +460,7 @@ const Settings: React.FC<SettingsProps> = ({
         return <PersonaManager onBack={handleBack} />;
       case 'Memory & History':
         return <MemoryAndHistory onBack={handleBack} />;
-      case 'Image Gallery':
-        return <ImageGallery onBack={handleBack} />;
+      // Removed Image Gallery view
       case 'Clear Memory':
         return <ClearMemory onBack={handleBack} />;
       case 'Memory Settings':
@@ -520,15 +518,7 @@ const Settings: React.FC<SettingsProps> = ({
                   Browse and search conversation history
                 </CategoryDescription>
               </SettingsCategory>
-              <SettingsCategory
-                onClick={() => handleMenuClick('Image Gallery')}
-              >
-                <CategoryIcon>🖼️</CategoryIcon>
-                <CategoryTitle>Image Gallery</CategoryTitle>
-                <CategoryDescription>
-                  View and manage cached conversation images
-                </CategoryDescription>
-              </SettingsCategory>
+              {/** Image Gallery menu removed **/}
               <SettingsCategory onClick={() => handleMenuClick('Clear Memory')}>
                 <CategoryIcon>🧹</CategoryIcon>
                 <CategoryTitle>Clear Memory</CategoryTitle>

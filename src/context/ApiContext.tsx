@@ -44,6 +44,12 @@ import {
 // Import image analysis service
 import { queueImageForAnalysis } from '../services/imageAnalysisQueue';
 import { tokenTracker } from '../utils/tokenTracker';
+import {
+  parseAssociationsFromText,
+  addAssociations,
+  buildFactsLine,
+} from '../memory/associativeMemory';
+import { buildShortTermContext } from '../utils/contextBuilder';
 
 // Define message type
 interface Message {
@@ -113,6 +119,20 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [currentPersona, setCurrentPersona] = useState<string>('ALTER EGO');
   const [activeSessionId, setActiveSessionId] = useState<string>('');
 
+  // Create an LTM-safe representation of a message, enriching with image refs (not shown in chat UI)
+  const toLtmText = (msg: Message): string => {
+    let base = msg.content || '';
+    const ids = (msg as any).imageIds as string[] | undefined;
+    const imgs = (msg as any).images as string[] | undefined;
+    if ((ids && ids.length) || (imgs && imgs.length)) {
+      const parts: string[] = [];
+      if (ids && ids.length) parts.push(`ids=${ids.join(',')}`);
+      if (imgs && imgs.length) parts.push(`count=${imgs.length}`);
+      base += `\n[attached_images ${parts.join(' ')}]`;
+    }
+    return base.trim();
+  };
+
   // Load the conversation history for the current persona
   useEffect(() => {
     loadPersonaHistory(currentPersona);
@@ -146,7 +166,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         if (!existingLTM) {
           // Convert messages to the format expected by LTMDatabase
           const ltmMessages = messages.map(msg => ({
-            text: msg.content,
+            text: toLtmText(msg),
             isUser: msg.role === 'user',
             timestamp: new Date(),
           }));
@@ -317,7 +337,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     try {
       // Convert messages to the format expected by LTMDatabase
       const ltmMessages = messages.map(msg => ({
-        text: msg.content,
+        text: toLtmText(msg),
         isUser: msg.role === 'user',
         timestamp: new Date(),
         id: msg.id,
@@ -390,6 +410,15 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     // Also clear from long-term memory database
     try {
       await deletePersonaMemory(targetPersona);
+      // Clear associative facts for this persona
+      try {
+        const { clearPersonaAssociations } = await import(
+          '../memory/associativeMemory'
+        );
+        clearPersonaAssociations(targetPersona);
+      } catch (err) {
+        console.warn('Failed to clear associative memory for persona:', err);
+      }
     } catch (err) {
       console.error('Error clearing from long-term memory:', err);
     }
@@ -535,13 +564,26 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         userMessage,
       ]; // Apply memory buffer limitation ONLY for the AI context
       const { memoryBuffer } = loadSettings();
-      // Take only the last N exchanges based on memory buffer setting, but exclude the current user message
-      // since it will be added separately by the AI service
-      const limitedContextForAI = conversationHistory.slice(-memoryBuffer * 2);
+      // Build a smart short‑term context (balanced, truncated, budget‑aware)
+      const { pruned: limitedContextForAI, summary: shortSummary } =
+        buildShortTermContext(conversationHistory, {
+          memoryPairs: memoryBuffer,
+          charBudget: 2000,
+        });
 
       console.log(
         `Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`
       );
+
+      // Extract and store simple associations (semantic facts) from current user query
+      try {
+        const pairs = parseAssociationsFromText(query);
+        if (pairs.length) {
+          addAssociations(currentPersona, pairs);
+        }
+      } catch (e) {
+        console.warn('Association parse failed:', e);
+      }
 
       // Get IDs of messages already in short-term memory to avoid duplicates
       const shortTermMemoryIds = getShortTermMemoryIds();
@@ -575,6 +617,11 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           content: msg.content,
         })),
 
+        // Optional short summary of recent focus (merged to system prompt downstream)
+        ...(shortSummary
+          ? [{ role: 'system' as const, content: shortSummary }]
+          : []),
+
         // Then add the current conversation context (excluding current user message)
         ...limitedContextForAI.map(msg => ({
           role: msg.role,
@@ -601,10 +648,28 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         console.log('=== END MESSAGE DEBUG ===');
       }
 
+      // Build an enhanced system prompt with associative facts (compact)
+      let effectiveSystemPrompt = systemPrompt;
+      try {
+        const factsLine = buildFactsLine(currentPersona);
+        if (factsLine) {
+          effectiveSystemPrompt = `${systemPrompt}\n\n${factsLine}`;
+        }
+      } catch {}
+
+      // Reinforce associations if the current query uses any right-side tokens
+      try {
+        const { getRightsUsedInText, touchAssociations } = await import(
+          '../memory/associativeMemory'
+        );
+        const used = getRightsUsedInText(currentPersona, query);
+        if (used.length) touchAssociations(currentPersona, used);
+      } catch {}
+
       // Call the AI service with the combined context (including images)
       const response = await sendMessageToAI(
         query,
-        systemPrompt,
+        effectiveSystemPrompt,
         messagesForAI,
         config,
         imageUrls, // Pass images to AI service

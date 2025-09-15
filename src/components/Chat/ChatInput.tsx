@@ -7,8 +7,7 @@ import {
   endTimer,
 } from '../../utils/performanceMetrics';
 import { useVirtualKeyboard } from '../../hooks/useVirtualKeyboard';
-import { validateImageFile, CachedImage } from '../../utils/imageUtils';
-import ImageSelector from '../Common/ImageSelector';
+import { validateImageFile } from '../../utils/imageUtils';
 
 const InputContainer = styled.div`
   display: flex;
@@ -31,7 +30,7 @@ const InputContainer = styled.div`
 const InputRow = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
-  align-items: flex-end;
+  align-items: center;
 `;
 
 const ImagePreviewContainer = styled.div`
@@ -61,18 +60,40 @@ const RemoveImageButton = styled.button`
   right: -6px;
   width: 20px;
   height: 20px;
-  border-radius: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
   border: none;
-  background-color: ${theme.colors.error};
-  color: white;
-  font-size: 12px;
+  background: ${theme.colors.error};
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  line-height: 1;
 
   &:hover {
     background-color: #cc3333;
+  }
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background-color: white;
+    border-radius: 1px;
+  }
+
+  &::before {
+    transform: rotate(45deg);
+  }
+
+  &::after {
+    transform: rotate(-45deg);
   }
 `;
 
@@ -171,13 +192,7 @@ const ImageButton = styled(SendButton)`
   }
 `;
 
-const CachedImageButton = styled(SendButton)`
-  background-color: rgba(0, 255, 0, 0.1);
-
-  &:hover {
-    background-color: rgba(0, 255, 0, 0.2);
-  }
-`;
+// Cached image picker removed
 
 interface ChatInputProps {
   onSendMessage: (message: string, images?: File[]) => void;
@@ -195,7 +210,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [message, setMessage] = useState('');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [showImageSelector, setShowImageSelector] = useState(false);
+  // Cached image selector removed
   const { isKeyboardVisible } = useVirtualKeyboard();
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -269,6 +284,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     fileInputRef.current?.click();
   };
 
+  /* Cached image selection removed
   const handleCachedImageSelect = (cachedImages: CachedImage[]) => {
     // Convert cached images to File objects
     const newFiles: File[] = [];
@@ -312,6 +328,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setSelectedImages(prev => [...prev, ...newFiles]);
     setImagePreviews(prev => [...prev, ...newPreviews]);
   };
+  */
 
   const handleSend = () => {
     if (message.trim() || selectedImages.length > 0) {
@@ -377,9 +394,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 <RemoveImageButton
                   onClick={() => handleRemoveImage(index)}
                   title="Remove image"
-                >
-                  ×
-                </RemoveImageButton>
+                  aria-label="Remove image"
+                />
               </ImagePreview>
             ))}
           </ImagePreviewContainer>
@@ -431,14 +447,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             </span>
           </ImageButton>
 
-          <CachedImageButton
-            onClick={() => setShowImageSelector(true)}
-            title="Select from cached images"
-          >
-            <span role="img" aria-label="image gallery">
-              �️
-            </span>
-          </CachedImageButton>
+          {/** Cached image selection removed **/}
 
           <SendButton
             onClick={handleSend}
@@ -452,14 +461,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         </InputRow>
       </InputContainer>
 
-      {/* Image Selector Modal */}
-      <ImageSelector
-        isOpen={showImageSelector}
-        onClose={() => setShowImageSelector(false)}
-        onSelect={handleCachedImageSelect}
-        currentPersona={currentPersona}
-        allowMultiple={true}
-      />
+      {/* Cached Image Selector removed */}
     </>
   );
 };

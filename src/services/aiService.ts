@@ -170,6 +170,15 @@ export const sendMessageToAI = async (
     // Check if we have images and need to use vision
     const hasImages = images && images.length > 0;
 
+    // Merge any system-role context from history (e.g., retrieved memories) into the system prompt
+    const systemMemoryBlock = history
+      .filter(m => m.role === 'system' && m.content)
+      .map(m => m.content)
+      .join('\n');
+    const mergedSystemPrompt = systemMemoryBlock
+      ? `${systemPrompt}\n\n${systemMemoryBlock}`
+      : systemPrompt;
+
     if (hasImages) {
       // Ensure we're using a vision-capable model
       if (!modelSupportsVision(finalConfig.model)) {
@@ -185,7 +194,7 @@ export const sendMessageToAI = async (
 
       // Use vision-capable chat completion
       const response = await generateVisionChatCompletion(
-        systemPrompt,
+        mergedSystemPrompt,
         message,
         images,
         history
@@ -218,7 +227,7 @@ export const sendMessageToAI = async (
       // Call the OpenAI API with configuration and persona
       // The history is already limited by the caller
       const response = await generateChatCompletion(
-        systemPrompt,
+        mergedSystemPrompt,
         message,
         history.filter(
           msg => msg.role === 'user' || msg.role === 'assistant'

@@ -648,7 +648,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
                     <strong>Description:</strong>
                     {image.aiGenerated && <AIBadge>AI Generated</AIBadge>}
                     <ScrollableDescription>
-                      {image.description}
+                      {typeof image.description === 'string'
+                        ? image.description
+                        : image.description
+                          ? JSON.stringify(image.description)
+                          : ''}
                     </ScrollableDescription>
                   </div>
                 )}

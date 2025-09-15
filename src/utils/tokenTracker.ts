@@ -30,6 +30,13 @@ class TokenTracker {
   }
 
   /**
+   * Reset all in-memory tracking state
+   */
+  reset(): void {
+    this.activeQueries.clear();
+  }
+
+  /**
    * Add token usage for a specific type
    */
   addTokens(
