@@ -209,8 +209,6 @@ module.exports = {
         PUBLIC_URL: publicPath.slice(0, -1), // Remove trailing slash
         // Opt-in flag to enable immersive mode (soft devtools blocking) in production
         REACT_APP_IMMERSIVE_MODE: process.env.REACT_APP_IMMERSIVE_MODE || 'false',
-        // Use Vercel proxy endpoints when true (recommended for production)
-        REACT_APP_USE_PROXY: process.env.REACT_APP_USE_PROXY || 'false',
       })
     }),
     new PerformanceMetricsPlugin(),
