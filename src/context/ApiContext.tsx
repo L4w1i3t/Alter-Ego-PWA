@@ -55,10 +55,109 @@ import { buildShortTermContext } from '../utils/contextBuilder';
 interface Message {
   role: 'user' | 'assistant' | 'system'; // Added 'system' role for RAG context
   content: string;
+  timestamp?: string;
   id?: number;
   images?: string[]; // Array of image URLs/data URLs
   imageIds?: string[]; // Array of cached image IDs for reference
 }
+
+const DEFAULT_MEMORY_BUFFER = 3;
+const normalizeMemoryBuffer = (value?: number): number => {
+  if (typeof value !== 'number') return DEFAULT_MEMORY_BUFFER;
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_MEMORY_BUFFER;
+  return Math.floor(value);
+};
+
+const usedMessageIds = new Set<number>();
+let nextMessageId = 1;
+
+const registerExistingMessageId = (id?: number): void => {
+  if (typeof id !== 'number' || !Number.isFinite(id)) return;
+  usedMessageIds.add(id);
+  if (id >= nextMessageId) {
+    nextMessageId = id + 1;
+  }
+};
+
+const mintMessageId = (): number => {
+  while (usedMessageIds.has(nextMessageId)) {
+    nextMessageId += 1;
+  }
+  const id = nextMessageId;
+  usedMessageIds.add(id);
+  nextMessageId += 1;
+  return id;
+};
+
+const normalizeTimestamp = (
+  value?: string
+): { iso: string; mutated: boolean } => {
+  if (value) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      const iso = parsed.toISOString();
+      return { iso, mutated: iso !== value };
+    }
+  }
+  return { iso: new Date().toISOString(), mutated: true };
+};
+
+const normalizeMessageMetadata = (
+  message: Message
+): { normalized: Message; mutated: boolean } => {
+  const { iso, mutated: timestampMutated } = normalizeTimestamp(
+    message.timestamp
+  );
+  let mutated = timestampMutated;
+  let id = message.id;
+  if (typeof id === 'number' && Number.isFinite(id)) {
+    registerExistingMessageId(id);
+  } else {
+    id = mintMessageId();
+    mutated = true;
+  }
+  return {
+    normalized: {
+      ...message,
+      id,
+      timestamp: iso,
+    },
+    mutated,
+  };
+};
+
+const normalizeMessageList = (
+  messages: Message[]
+): { normalized: Message[]; mutated: boolean } => {
+  let mutated = false;
+  const normalized = messages.map(msg => {
+    const { normalized: normalizedMsg, mutated: msgMutated } =
+      normalizeMessageMetadata(msg);
+    if (msgMutated) mutated = true;
+    return normalizedMsg;
+  });
+  return { normalized, mutated };
+};
+
+const toLtmDate = (timestamp?: string): Date => {
+  if (!timestamp) return new Date();
+  const parsed = new Date(timestamp);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+const MAX_LTM_MESSAGES = 400;
+
+const toHistoryRecord = (messages: Message[]) =>
+  messages.map(msg => ({
+    role: msg.role,
+    content: msg.content,
+    timestamp: msg.timestamp ?? new Date().toISOString(),
+    ...(typeof msg.id === 'number' && Number.isFinite(msg.id)
+      ? { id: msg.id }
+      : {}),
+    ...(msg.images && msg.images.length ? { images: msg.images } : {}),
+    ...(msg.imageIds && msg.imageIds.length ? { imageIds: msg.imageIds } : {}),
+  }));
 
 // Define context types
 interface ApiContextType {
@@ -142,38 +241,72 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const loadPersonaHistory = async (personaName: string) => {
     const allHistory = loadChatHistory();
 
-    // Find an existing session for this persona or create a new one
-    let personaSession = allHistory.find(
+    const personaSession = allHistory.find(
       entry => entry.persona === personaName
     );
 
     if (personaSession) {
-      // Use existing session
       setActiveSessionId(personaSession.id);
 
-      // Convert stored format to the format used in the component
-      const messages: Message[] = personaSession.messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      const sessionMessages: Message[] = personaSession.messages.map(msg => {
+        const anyMsg = msg as any;
+        const base: Message = {
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          ...(typeof msg.id === 'number' && Number.isFinite(msg.id)
+            ? { id: msg.id }
+            : {}),
+        };
 
-      // Apply memory buffer limit to loaded conversations
-      setConversationHistory(limitConversationHistory(messages));
+        if (Array.isArray(anyMsg.images) && anyMsg.images.length) {
+          base.images = anyMsg.images as string[];
+        }
 
-      // Also store in long term memory if not already there
+        if (Array.isArray(anyMsg.imageIds) && anyMsg.imageIds.length) {
+          base.imageIds = anyMsg.imageIds as string[];
+        }
+
+        return base;
+      });
+
+      const { normalized: normalizedMessages, mutated } =
+        normalizeMessageList(sessionMessages);
+
+      setConversationHistory(limitConversationHistory(normalizedMessages));
+
+      if (mutated) {
+        const updatedHistory = allHistory.map(entry =>
+          entry.id === personaSession.id
+            ? {
+                ...entry,
+                messages: toHistoryRecord(normalizedMessages),
+              }
+            : entry
+        );
+        saveChatHistory(updatedHistory);
+      }
+
       try {
         const existingLTM = await getPersonaMemory(personaName);
         if (!existingLTM) {
-          // Convert messages to the format expected by LTMDatabase
-          const ltmMessages = messages.map(msg => ({
-            text: toLtmText(msg),
-            isUser: msg.role === 'user',
-            timestamp: new Date(),
-          }));
+          const ltmMessages = normalizedMessages
+            .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+            .map(msg => ({
+              text: toLtmText(msg),
+              isUser: msg.role === 'user',
+              timestamp: toLtmDate(msg.timestamp),
+              ...(typeof msg.id === 'number' ? { id: msg.id } : {}),
+            }))
+            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-          // Store in long-term memory
+          const limitedMessages =
+            ltmMessages.length > MAX_LTM_MESSAGES
+              ? ltmMessages.slice(ltmMessages.length - MAX_LTM_MESSAGES)
+              : ltmMessages;
+
           await savePersonaMemory(personaName, {
-            messages: ltmMessages,
+            messages: limitedMessages,
             users: [],
             aiConfig: {},
             voiceConfig: { enabled: false, language: 'en-US' },
@@ -183,12 +316,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         console.error('Error storing in long-term memory:', err);
       }
     } else {
-      // Create a new session for this persona
       const newSessionId = uuidv4();
       setActiveSessionId(newSessionId);
       setConversationHistory([]);
 
-      // Save the new session
       const newSession: ChatHistoryEntry = {
         id: newSessionId,
         persona: personaName,
@@ -205,11 +336,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     try {
       const searchResults = await searchMessages(query, currentPersona);
       // Convert to the Message format
-      return searchResults.map(msg => ({
-        role: msg.isUser ? ('user' as const) : ('assistant' as const),
-        content: msg.text,
-        id: msg.id,
-      }));
+      return searchResults.map(msg => {
+        const timestamp = msg.timestamp
+          ? msg.timestamp instanceof Date
+            ? msg.timestamp.toISOString()
+            : new Date(msg.timestamp).toISOString()
+          : new Date().toISOString();
+        if (typeof msg.id === 'number') {
+          registerExistingMessageId(msg.id);
+        }
+        return {
+          role: msg.isUser ? ('user' as const) : ('assistant' as const),
+          content: msg.text,
+          id: msg.id,
+          timestamp,
+        };
+      });
     } catch (err) {
       console.error('Error searching long-term memory:', err);
       return [];
@@ -228,11 +370,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         currentPersona
       );
       // Convert to the Message format
-      return messages.map(msg => ({
-        role: msg.isUser ? ('user' as const) : ('assistant' as const),
-        content: msg.text,
-        id: msg.id,
-      }));
+      return messages.map(msg => {
+        const timestamp = msg.timestamp
+          ? msg.timestamp instanceof Date
+            ? msg.timestamp.toISOString()
+            : new Date(msg.timestamp).toISOString()
+          : new Date().toISOString();
+        if (typeof msg.id === 'number') {
+          registerExistingMessageId(msg.id);
+        }
+        return {
+          role: msg.isUser ? ('user' as const) : ('assistant' as const),
+          content: msg.text,
+          id: msg.id,
+          timestamp,
+        };
+      });
     } catch (err) {
       console.error('Error retrieving time-based memories:', err);
       return [];
@@ -244,11 +397,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     try {
       const messages = await getLastNMessages(count, currentPersona);
       // Convert to the Message format
-      return messages.map(msg => ({
-        role: msg.isUser ? ('user' as const) : ('assistant' as const),
-        content: msg.text,
-        id: msg.id,
-      }));
+      return messages.map(msg => {
+        const timestamp = msg.timestamp
+          ? msg.timestamp instanceof Date
+            ? msg.timestamp.toISOString()
+            : new Date(msg.timestamp).toISOString()
+          : new Date().toISOString();
+        if (typeof msg.id === 'number') {
+          registerExistingMessageId(msg.id);
+        }
+        return {
+          role: msg.isUser ? ('user' as const) : ('assistant' as const),
+          content: msg.text,
+          id: msg.id,
+          timestamp,
+        };
+      });
     } catch (err) {
       console.error('Error retrieving last N memories:', err);
       return [];
@@ -270,11 +434,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       );
 
       // Convert to Message format
-      return searchResults.map(msg => ({
-        role: msg.isUser ? ('user' as const) : ('assistant' as const),
-        content: msg.text,
-        id: msg.id,
-      }));
+      return searchResults.map(msg => {
+        const timestamp = msg.timestamp
+          ? msg.timestamp instanceof Date
+            ? msg.timestamp.toISOString()
+            : new Date(msg.timestamp).toISOString()
+          : new Date().toISOString();
+        if (typeof msg.id === 'number') {
+          registerExistingMessageId(msg.id);
+        }
+        return {
+          role: msg.isUser ? ('user' as const) : ('assistant' as const),
+          content: msg.text,
+          id: msg.id,
+          timestamp,
+        };
+      });
     } catch (err) {
       console.error('Error in semantic search of long-term memory:', err);
       return [];
@@ -288,7 +463,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     // Only apply memory buffer limit when preparing context for AI requests
     if (forAiContext) {
       const { memoryBuffer } = loadSettings();
-      return messages.slice(-memoryBuffer * 2); // Keep only the last N exchanges for AI context
+      const normalizedBuffer = normalizeMemoryBuffer(memoryBuffer);
+      return messages.slice(-normalizedBuffer * 2); // Keep only the last N exchanges for AI context
     }
 
     // For display purposes, return all messages
@@ -296,63 +472,65 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   };
 
   // Function to save the current conversation state
-  const saveCurrentConversation = async (messages: Message[]) => {
-    if (!activeSessionId) return;
+  const saveCurrentConversation = async (
+    messages: Message[]
+  ): Promise<Message[]> => {
+    const { normalized } = normalizeMessageList(messages);
 
+    if (!activeSessionId) {
+      return normalized;
+    }
+
+    const normalizedHistory = toHistoryRecord(normalized);
     const allHistory = loadChatHistory();
+    let sessionFound = false;
 
-    // Save all messages, not just the limited ones
     const updatedHistory = allHistory.map(entry => {
       if (entry.id === activeSessionId) {
+        sessionFound = true;
         return {
           ...entry,
-          messages: messages.map(msg => ({
-            role: msg.role,
-            content: msg.content,
-            timestamp: new Date().toISOString(),
-          })),
-          timestamp: new Date().toISOString(), // Update the timestamp
+          messages: normalizedHistory,
+          timestamp: new Date().toISOString(),
         };
       }
       return entry;
     });
 
-    // If the session wasn't found, add it
-    if (!updatedHistory.find(entry => entry.id === activeSessionId)) {
+    if (!sessionFound) {
       updatedHistory.push({
         id: activeSessionId,
         persona: currentPersona,
         timestamp: new Date().toISOString(),
-        messages: messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date().toISOString(),
-        })),
+        messages: normalizedHistory,
       });
     }
 
     saveChatHistory(updatedHistory);
 
-    // Also save to long-term memory
     try {
-      // Convert messages to the format expected by LTMDatabase
-      const ltmMessages = messages.map(msg => ({
-        text: toLtmText(msg),
-        isUser: msg.role === 'user',
-        timestamp: new Date(),
-        id: msg.id,
-      }));
+      const ltmMessages = normalized
+        .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+        .map(msg => ({
+          text: toLtmText(msg),
+          isUser: msg.role === 'user',
+          timestamp: toLtmDate(msg.timestamp),
+          id: msg.id,
+        }))
+        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-      // Get existing LTM for this persona or create new
+      const limited =
+        ltmMessages.length > MAX_LTM_MESSAGES
+          ? ltmMessages.slice(ltmMessages.length - MAX_LTM_MESSAGES)
+          : ltmMessages;
+
       const existingLTM = await getPersonaMemory(currentPersona);
       if (existingLTM) {
-        // Update existing memory
-        existingLTM.messages = ltmMessages;
+        existingLTM.messages = limited;
         await savePersonaMemory(currentPersona, existingLTM);
       } else {
-        // Create new memory
         await savePersonaMemory(currentPersona, {
-          messages: ltmMessages,
+          messages: limited,
           users: [],
           aiConfig: {},
           voiceConfig: { enabled: false, language: 'en-US' },
@@ -361,6 +539,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     } catch (err) {
       console.error('Error saving to long-term memory:', err);
     }
+
+    return normalized;
   };
 
   // Function to clear conversation history for a specific persona or the current one
@@ -443,19 +623,21 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     const header: Message = {
       role: 'system',
       content: `The following are relevant past conversations with ${currentPersona} retrieved from long-term memory:`,
+      timestamp: new Date().toISOString(),
     };
 
     // Format each memory as a clear exchange
-    const formattedMemories: Message[] = memories.map((msg, index) => {
-      // For better clarity, add context about who said what
+    const formattedMemories: Message[] = memories.map(msg => {
       const prefix =
         msg.role === 'user'
           ? '(From past conversation) User asked: '
           : '(From past conversation) ALTER EGO replied: ';
+      const { iso } = normalizeTimestamp(msg.timestamp);
 
       return {
         role: 'system' as const,
         content: `${prefix}${msg.content}`,
+        timestamp: iso,
       };
     });
 
@@ -463,14 +645,17 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     const footer: Message = {
       role: 'system',
       content: 'End of past memories. Return to current conversation:',
+      timestamp: new Date().toISOString(),
     };
 
     return [header, ...formattedMemories, footer];
   };
 
   // Function to get IDs of messages in short-term memory buffer
-  const getShortTermMemoryIds = (): number[] => {
+  const getShortTermMemoryIds = (recentCount: number): number[] => {
+    if (!recentCount || recentCount <= 0) return [];
     return conversationHistory
+      .slice(-recentCount)
       .filter(msg => msg.id !== undefined)
       .map(msg => msg.id as number);
   };
@@ -552,18 +737,23 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       }
 
       // Add the new user message to history (with images if any)
-      const userMessage: Message = {
+      const userMessageBase: Message = {
         role: 'user' as const,
         content: query,
+        timestamp: new Date().toISOString(),
         ...(imageUrls.length > 0 && { images: imageUrls }),
-        ...(imageIds.length > 0 && { imageIds: imageIds }),
+        ...(imageIds.length > 0 && { imageIds }),
       };
+
+      const {
+        normalized: normalizedUserMessage,
+      } = normalizeMessageMetadata(userMessageBase);
 
       const updatedFullHistory: Message[] = [
         ...conversationHistory,
-        userMessage,
+        normalizedUserMessage,
       ]; // Apply memory buffer limitation ONLY for the AI context
-      const { memoryBuffer } = loadSettings();
+      const memoryBuffer = normalizeMemoryBuffer(loadSettings().memoryBuffer);
       // Build a smart short‑term context (balanced, truncated, budget‑aware)
       const { pruned: limitedContextForAI, summary: shortSummary } =
         buildShortTermContext(conversationHistory, {
@@ -575,6 +765,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         `Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`
       );
 
+      let associationContext: MessageHistory[] = [];
+
       // Extract and store simple associations (semantic facts) from current user query
       try {
         const pairs = parseAssociationsFromText(query);
@@ -585,8 +777,35 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         console.warn('Association parse failed:', e);
       }
 
+      try {
+        const { getRightsUsedInText, touchAssociations, getAssociations } =
+          await import('../memory/associativeMemory');
+        const used = getRightsUsedInText(currentPersona, query);
+        if (used.length) {
+          touchAssociations(currentPersona, used);
+        }
+        const allAssociations = getAssociations(currentPersona);
+        const prioritized = used.length
+          ? used
+          : allAssociations.slice(0, Math.min(4, allAssociations.length));
+        if (prioritized.length) {
+          const summary = prioritized
+            .map(({ left, right }) => `${left}=${right}`)
+            .join('; ');
+          associationContext.push({
+            role: 'system' as const,
+            content: `Associative memory recall (${currentPersona}): ${summary}`,
+          });
+        }
+      } catch (assocErr) {
+        console.warn('Failed to build associative context:', assocErr);
+      }
+
       // Get IDs of messages already in short-term memory to avoid duplicates
-      const shortTermMemoryIds = getShortTermMemoryIds();
+      const shortTermMemoryIds = getShortTermMemoryIds(memoryBuffer * 2);
+      if (typeof normalizedUserMessage.id === 'number') {
+        shortTermMemoryIds.push(normalizedUserMessage.id);
+      }
 
       // Try to retrieve relevant context from long-term memory using semantic search
       let relevantMemories: Message[] = [];
@@ -611,6 +830,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         console.error('Error retrieving from long-term memory:', err);
       } // Construct the full message history for the AI (excluding system prompt and current user message)
       const messagesForAI: MessageHistory[] = [
+        // Associative context comes first so the model sees persona-specific facts
+        ...associationContext,
+
         // Add any relevant memories from long-term storage (already formatted for RAG)
         ...relevantMemories.map(msg => ({
           role: msg.role,
@@ -677,12 +899,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       );
 
       // Update conversation history with the AI's response
+      const assistantMessageBase: Message = {
+        role: 'assistant' as const,
+        content: response,
+        timestamp: new Date().toISOString(),
+      };
+      const {
+        normalized: normalizedAssistantMessage,
+      } = normalizeMessageMetadata(assistantMessageBase);
+
       const finalHistory: Message[] = [
         ...updatedFullHistory,
-        { role: 'assistant' as const, content: response },
-      ]; // Save the complete conversation history
-      setConversationHistory(finalHistory);
-      await saveCurrentConversation(finalHistory); // Classify emotions using the new emotion service
+        normalizedAssistantMessage,
+      ];
+      const persistedHistory = await saveCurrentConversation(finalHistory);
+      setConversationHistory(persistedHistory);
+      // Classify emotions using the new emotion service
       const primaryEmotion = classifyConversationEmotion(query, response);
       const userEmotions = analyzeUserEmotions(query);
       const responseEmotions = analyzeResponseEmotions(response);

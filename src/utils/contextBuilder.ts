@@ -15,6 +15,8 @@ const DEFAULTS = {
   minPairs: 1,
 };
 
+const DEFAULT_MEMORY_PAIRS = 3;
+
 const isTrivial = (s: string): boolean => {
   const t = s.trim().toLowerCase();
   if (!t) return true;
@@ -36,9 +38,12 @@ export function buildShortTermContext(
   history: ChatMsg[],
   opts: BuildOpts
 ): { pruned: ChatMsg[]; summary?: string } {
-  const memoryPairs = Math.max(1, opts.memoryPairs);
   const charBudget = opts.charBudget ?? DEFAULTS.charBudget;
   const minPairs = opts.minPairs ?? DEFAULTS.minPairs;
+  const requestedPairs = Number.isFinite(opts.memoryPairs)
+    ? Math.floor(opts.memoryPairs)
+    : DEFAULT_MEMORY_PAIRS;
+  const memoryPairs = Math.max(minPairs, Math.max(1, requestedPairs));
 
   // Walk backwards, collect messages while roughly respecting pairs and budget
   const out: ChatMsg[] = [];
@@ -55,15 +60,17 @@ export function buildShortTermContext(
     const clipped = clip(m.content, maxLen);
     const images = (m as any).images as string[] | undefined;
     const cost = approxTokens(clipped) * 4;
-    if (budgetLeft - cost < 0 && pairs >= minPairs) break;
+    if (budgetLeft - cost < 0 && pairs >= memoryPairs) break;
 
     out.push({ role: m.role, content: clipped, ...(images && { images }) });
     budgetLeft -= cost;
 
     // Count pairs when we see a user message following an assistant (or vice versa)
     // (since we are iterating backwards, just count on user messages)
-    if (m.role === 'user') pairs++;
-    if (pairs >= memoryPairs && budgetLeft < charBudget * 0.25) break;
+    if (m.role === 'user') {
+      pairs++;
+      if (pairs >= memoryPairs) break;
+    }
   }
 
   out.reverse();

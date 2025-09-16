@@ -72,6 +72,32 @@ const shouldRetryStatus = (status: number): boolean => {
   );
 };
 
+const logStringInChunks = (
+  label: string,
+  value: string,
+  chunkSize = 1000
+): void => {
+  if (!value) {
+    console.log(`${label}: (empty)`);
+    return;
+  }
+
+  const totalChunks = Math.ceil(value.length / chunkSize);
+  const header =
+    totalChunks > 1
+      ? `${label} (${value.length} chars across ${totalChunks} chunks)`
+      : `${label} (${value.length} chars)`;
+  console.log(header);
+
+  for (let i = 0; i < totalChunks; i++) {
+    const chunk = value.slice(i * chunkSize, (i + 1) * chunkSize);
+    if (totalChunks > 1) {
+      console.log(`  chunk ${i + 1}/${totalChunks}:`);
+    }
+    console.log(chunk);
+  }
+};
+
 interface OpenAIRequestConfig {
   endpoint: string;
   headers: Record<string, string>;
@@ -372,28 +398,13 @@ export const generateChatCompletion = async (
   const fullSystemPrompt = buildSystemPrompt(systemPrompt);
 
   // Log the complete system prompt for debugging
-  console.log('=== COMPLETE SYSTEM PROMPT BEING SENT TO OPENAI ===');
+  console.log('=== SYSTEM PROMPT SUMMARY ===');
   console.log(
-    'Full System Prompt Length:',
-    fullSystemPrompt.length,
-    'characters'
+    `Total length: ${fullSystemPrompt.length} chars | Security rules: ${SECURITY_RULES.length} chars | Persona context: ${systemPrompt.length} chars`
   );
-  console.log('Full System Prompt Content (preview):');
-  console.log(
-    fullSystemPrompt.substring(0, 400) +
-      (fullSystemPrompt.length > 400 ? '…' : '')
-  );
-  console.log('=== END SYSTEM PROMPT ===');
-
-  // Log breakdown of components
-  console.log('=== SYSTEM PROMPT BREAKDOWN ===');
-  console.log('Security Rules Length:', SECURITY_RULES.length, 'characters');
-  console.log('Persona Context Length:', systemPrompt.length, 'characters');
-  console.log('Persona Context Content (preview):');
-  console.log(
-    systemPrompt.substring(0, 400) + (systemPrompt.length > 400 ? '…' : '')
-  );
-  console.log('=== END BREAKDOWN ===');
+  logStringInChunks('System Prompt (final order)', fullSystemPrompt);
+  logStringInChunks('Persona Context (raw)', systemPrompt);
+  console.log('=== END SYSTEM PROMPT SUMMARY ===');
 
   // Verify if the default system prompt is included
   if (!verifySystemPrompt(fullSystemPrompt)) {

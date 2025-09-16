@@ -64,6 +64,9 @@ export interface ChatHistoryEntry {
     role: 'user' | 'assistant' | 'system';
     content: string;
     timestamp: string;
+    id?: number;
+    images?: string[];
+    imageIds?: string[];
   }[];
 }
 

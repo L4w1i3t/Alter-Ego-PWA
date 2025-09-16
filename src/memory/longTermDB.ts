@@ -25,6 +25,31 @@ export const aiConfigTable = db.table<AIConfig>('aiConfig');
 export const voiceConfigTable = db.table<VoiceConfig>('voiceConfig');
 export const ltmDatabase = db.table<LTMDatabase>('ltmDatabase');
 
+const toDate = (value: unknown): Date | undefined => {
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return undefined;
+};
+
+const normalizeMessageTimestamp = (message: Message): Date =>
+  toDate((message as any).timestamp) ?? new Date(0);
+
+const getMessageKey = (message: Message, index: number): string => {
+  if (typeof message.id === 'number' && Number.isFinite(message.id)) {
+    return `id:${message.id}`;
+  }
+  const ts = toDate((message as any).timestamp);
+  if (ts) {
+    return `ts:${ts.getTime()}:${index}`;
+  }
+  return `idx:${index}`;
+};
+
+const RECENCY_WINDOW_DAYS = 30;
+
 // Message operations
 // Function to add a message to the database
 export async function addMessage(message: Message): Promise<number> {
@@ -215,50 +240,103 @@ export async function semanticSearchMessages(
   maxResults: number = 5
 ): Promise<Message[]> {
   try {
-    // Get all messages for this persona
     const ltm = await getPersonaMemory(personaName);
     if (!ltm || !ltm.messages || ltm.messages.length === 0) {
       return [];
     }
 
-    // Extract all messages that aren't in the excludeIds list
     const allMessages = ltm.messages.filter(
       msg => !msg.id || !excludeIds.includes(msg.id)
     );
 
-    // If no messages after filtering, return empty array
     if (allMessages.length === 0) return [];
 
-    // Compute semantic similarity scores for each message
-    // Since we don't have a real embedding model here, we'll use a hybrid approach:
-    // 1. Use simple keyword matching with weights for important terms
-    // 2. Consider conversation context by preferring consecutive exchanges
-    // 3. Add recency bias to favor more recent messages
-
-    // Extract important keywords from the query
-    const keywords = extractKeywords(query);
-
-    // Score each message based on semantic similarity approximation
-    const scoredMessages = allMessages.map(message => {
-      const score = calculateSemanticSimilarity(message.text, keywords, query);
-      return { message, score };
+    const sortedMessages = allMessages.slice().sort((a, b) => {
+      const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return dateA - dateB;
     });
 
-    // Sort by score (descending)
-    scoredMessages.sort((a, b) => b.score - a.score);
+    const keywords = extractKeywords(query);
 
-    // Take top N results
-    const topResults = scoredMessages.slice(0, maxResults);
+    const scored = sortedMessages.map((message, index) => ({
+      message,
+      index,
+      score: calculateSemanticSimilarity(
+        message.text,
+        keywords,
+        query,
+        message.timestamp
+      ),
+    }));
 
-    // Return only messages with meaningful similarity (above threshold)
-    return topResults
-      .filter(result => result.score > 0.2) // Only include results with reasonable relevance
-      .map(result => result.message);
+    const relevant = scored
+      .filter(item => item.score > 0.2)
+      .sort((a, b) => b.score - a.score);
+
+    if (relevant.length === 0) {
+      return [];
+    }
+
+    const maxPrimary = Math.max(1, maxResults);
+    const selected: { message: Message; index: number }[] = [];
+    const usedIndices = new Set<number>();
+
+    const addIndex = (idx: number) => {
+      if (idx < 0 || idx >= sortedMessages.length) return;
+      if (usedIndices.has(idx)) return;
+      usedIndices.add(idx);
+      selected.push({ message: sortedMessages[idx], index: idx });
+    };
+
+    const addNeighborPair = (idx: number) => {
+      const primary = sortedMessages[idx];
+      const baseTime = primary.timestamp
+        ? new Date(primary.timestamp).getTime()
+        : 0;
+      const NEIGHBOR_WINDOW_MINUTES = 10;
+      const neighbors = [idx - 1, idx + 1];
+      neighbors.forEach(neighborIdx => {
+        if (neighborIdx < 0 || neighborIdx >= sortedMessages.length) return;
+        if (usedIndices.has(neighborIdx)) return;
+        const neighbor = sortedMessages[neighborIdx];
+        if (neighbor.isUser === primary.isUser) return;
+        const neighborTime = neighbor.timestamp
+          ? new Date(neighbor.timestamp).getTime()
+          : 0;
+        const gapMinutes = Math.abs(baseTime - neighborTime) / (1000 * 60);
+        if (gapMinutes > NEIGHBOR_WINDOW_MINUTES) return;
+        addIndex(neighborIdx);
+      });
+    };
+
+    for (const candidate of relevant.slice(0, maxPrimary)) {
+      addIndex(candidate.index);
+      addNeighborPair(candidate.index);
+      if (selected.length >= maxPrimary * 2) {
+        break;
+      }
+    }
+
+    const ordered = selected
+      .sort((a, b) => {
+        const timeA = a.message.timestamp
+          ? new Date(a.message.timestamp).getTime()
+          : 0;
+        const timeB = b.message.timestamp
+          ? new Date(b.message.timestamp).getTime()
+          : 0;
+        return timeA - timeB;
+      })
+      .map(item => ({ ...item.message }));
+
+    return ordered;
   } catch (error) {
     console.error('Error in semantic search:', error);
     return [];
   }
 }
+
 
 // Helper function to extract keywords from a query
 function extractKeywords(query: string): string[] {
@@ -299,25 +377,20 @@ function extractKeywords(query: string): string[] {
 function calculateSemanticSimilarity(
   text: string,
   keywords: string[],
-  originalQuery: string
+  originalQuery: string,
+  timestamp?: Date | string
 ): number {
   const lowerText = text.toLowerCase();
 
-  // Base score: keyword matches
   let score = 0;
 
-  // 1. Exact phrase match (highest weight)
   if (lowerText.includes(originalQuery.toLowerCase())) {
-    score += 0.8; // Big boost for exact phrase match
+    score += 0.8;
   }
 
-  // 2. Keyword matches
   for (const keyword of keywords) {
     if (lowerText.includes(keyword)) {
-      // Award points for each keyword match
       score += 0.1;
-
-      // Award more points for keywords appearing earlier in the text (likely more important)
       const position = lowerText.indexOf(keyword);
       if (position !== -1) {
         const positionScore = Math.max(0, 1 - position / lowerText.length);
@@ -326,19 +399,31 @@ function calculateSemanticSimilarity(
     }
   }
 
-  // 3. Calculate keyword density (what percentage of keywords are matched)
   const matchedKeywords = keywords.filter(kw => lowerText.includes(kw));
   const keywordDensity =
     keywords.length > 0 ? matchedKeywords.length / keywords.length : 0;
   score += keywordDensity * 0.2;
 
-  // 4. Consider text length - slightly prefer shorter, more focused responses
-  const lengthFactor = Math.min(1, 100 / text.length); // Higher score for shorter texts (up to a point)
+  const lengthFactor = Math.min(1, 100 / Math.max(text.length, 1));
   score += lengthFactor * 0.05;
 
-  // Cap the score at 1.0
+  score += computeRecencyBoost(timestamp);
+
   return Math.min(1.0, score);
 }
+
+function computeRecencyBoost(timestamp?: Date | string): number {
+  if (!timestamp) return 0;
+  const time = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  if (Number.isNaN(time.getTime())) return 0;
+  const ageMs = Date.now() - time.getTime();
+  if (ageMs < 0) return 0;
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  if (ageDays >= RECENCY_WINDOW_DAYS) return 0;
+  const recencyRatio = (RECENCY_WINDOW_DAYS - ageDays) / RECENCY_WINDOW_DAYS;
+  return recencyRatio * 0.15;
+}
+
 
 // Persona-specific memory operations
 export async function savePersonaMemory(

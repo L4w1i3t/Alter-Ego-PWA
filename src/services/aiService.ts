@@ -213,11 +213,10 @@ export const sendMessageToAI = async (
       return response;
     } else {
       // Regular text-only completion
-      // Log the full system prompt including persona and model
-      const fullSystemPrompt = `${systemPrompt} ${finalConfig.model}`;
-      console.log(`Full system prompt: ${fullSystemPrompt}`);
-      // Log JUST the persona being used (for debugging)
-      console.log(`Using persona: ${systemPrompt.substring(0, 50)}...`);
+      // Log a concise prompt summary for debugging
+      console.log(
+        `System prompt ready -> model: ${finalConfig.model}, length: ${mergedSystemPrompt.length} chars`
+      );
 
       // Log the number of messages in history for debugging
       console.log(

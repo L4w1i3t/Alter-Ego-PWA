@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 start_time = time.time()
 total_lines = 0
 file_line_counts = defaultdict(int)
-ignored_dirs = {'node_modules', 'venv', '__pycache__', '.git', 'build', 'dist'}
-ignored_file_patterns = ['*.min.js', '*.pyc', '*.exe', '*.dll', '*.so', '*.bin']
+ignored_dirs = {'node_modules', 'venv', '__pycache__', '.git', 'build', 'dist', '.idea', '.vscode', '.webpack_cache'}
+ignored_file_patterns = ['*.min.js', '*.pyc', '*.exe', '*.dll', '*.so', '*.bin', '*.class', '*.jar', '*.zip', '*.tar.gz', '*.png', '*.jpg', '*.webp', '*.jpeg', '*.gif', '*.svg', '*.ico', '*.pdf', '*.docx', '*.xlsx', '.env', '*.lock']
 
 def is_ignored_file(filename):
     return any(fnmatch.fnmatch(filename, pattern) for pattern in ignored_file_patterns)

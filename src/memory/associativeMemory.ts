@@ -174,7 +174,7 @@ export function buildFactsLine(
   for (const a of ordered) {
     if (!isAssociationToken(a.left) || !isAssociationToken(a.right)) continue;
     if (seen.has(a.right)) continue;
-    const frag = `${a.right}${a.left}`;
+    const frag = `${a.left}=${a.right}`;
     const addLen = (parts.length ? 2 : 0) + frag.length; // account for '; '
     if (total + addLen > charBudget) break;
     parts.push(frag);
