@@ -52,11 +52,21 @@ export default async function handler(req: any, res: any) {
     });
 
     const text = await upstream.text();
-    // Forward content type and status
-    res.status(upstream.status);
-    res.setHeader('Content-Type', 'application/json');
-    setCORS();
-    return res.send(text);
+    const upstreamStatus = upstream.status;
+
+    try {
+      const payload = JSON.parse(text);
+      setCORS();
+      return res.status(upstreamStatus).json(payload);
+    } catch {
+      setCORS();
+      const fallbackStatus = upstreamStatus >= 400 ? upstreamStatus : 502;
+      return res.status(fallbackStatus).json({
+        error: 'OpenAI returned a non-JSON response',
+        detail: text.slice(0, 1000),
+        status: upstreamStatus,
+      });
+    }
   } catch (e: any) {
     return res.status(500).json({ error: e?.message || 'Proxy error' });
   }

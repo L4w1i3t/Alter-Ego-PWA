@@ -333,14 +333,35 @@ export const generateChatCompletion = async (
       body: JSON.stringify(payload),
     });
 
+    const rawBody = await response.text();
+    const truncatedBody = rawBody.slice(0, 1000).trim();
+    let parsedBody: any = null;
+
+    if (rawBody) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = null;
+      }
+    }
+
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorMessage =
+        parsedBody?.error?.message ||
+        parsedBody?.error ||
+        truncatedBody ||
+        response.statusText;
+      throw new Error(`OpenAI API error (${response.status}): ${errorMessage}`);
+    }
+
+    if (!parsedBody) {
+      const detail = truncatedBody || 'empty response';
       throw new Error(
-        `OpenAI API error: ${errorData.error?.message || response.statusText}`
+        `Unexpected response format from OpenAI (${response.status}): ${detail}`
       );
     }
 
-    const data: OpenAIResponse = await response.json();
+    const data = parsedBody as OpenAIResponse;
 
     // Calculate response time
     const endTime = performance.now();
@@ -577,14 +598,35 @@ export const generateVisionChatCompletion = async (
       body: JSON.stringify(payload),
     });
 
+    const rawBody = await response.text();
+    const truncatedBody = rawBody.slice(0, 1000).trim();
+    let parsedBody: any = null;
+
+    if (rawBody) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = null;
+      }
+    }
+
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorMessage =
+        parsedBody?.error?.message ||
+        parsedBody?.error ||
+        truncatedBody ||
+        response.statusText;
+      throw new Error(`OpenAI API error (${response.status}): ${errorMessage}`);
+    }
+
+    if (!parsedBody) {
+      const detail = truncatedBody || 'empty response';
       throw new Error(
-        `OpenAI API error: ${errorData.error?.message || response.statusText}`
+        `Unexpected response format from OpenAI (${response.status}): ${detail}`
       );
     }
 
-    const data: OpenAIResponse = await response.json();
+    const data = parsedBody as OpenAIResponse;
 
     // Calculate response time
     const endTime = performance.now();
@@ -751,14 +793,35 @@ export const generateLightweightVision = async (
       body: JSON.stringify(payload),
     });
 
+    const rawBody = await response.text();
+    const truncatedBody = rawBody.slice(0, 1000).trim();
+    let parsedBody: any = null;
+
+    if (rawBody) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = null;
+      }
+    }
+
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorMessage =
+        parsedBody?.error?.message ||
+        parsedBody?.error ||
+        truncatedBody ||
+        response.statusText;
+      throw new Error(`OpenAI API error (${response.status}): ${errorMessage}`);
+    }
+
+    if (!parsedBody) {
+      const detail = truncatedBody || 'empty response';
       throw new Error(
-        `OpenAI API error: ${errorData.error?.message || response.statusText}`
+        `Unexpected response format from OpenAI (${response.status}): ${detail}`
       );
     }
 
-    const data: OpenAIResponse = await response.json();
+    const data = parsedBody as OpenAIResponse;
     const endTime = performance.now();
     const responseTime = endTime - startTime;
 
