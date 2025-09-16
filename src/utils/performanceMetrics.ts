@@ -221,9 +221,9 @@ const setupHotkeyListener = (): void => {
         // Start a fresh session after the report is generated
         initPerformanceMonitoring();
 
-      // Show user feedback
-      showHotkeyFeedback();
-    });
+        // Show user feedback
+        showHotkeyFeedback();
+      });
     }
 
     // Ctrl+Alt+M: Clear metrics + token logs and restart session
@@ -307,7 +307,8 @@ const captureWebVitals = (): void => {
   if (navEntries.length > 0) {
     const navEntry = navEntries[0] as PerformanceNavigationTiming;
     if (!currentReport.webVitals) currentReport.webVitals = {};
-    currentReport.webVitals.ttfb = navEntry.responseStart - navEntry.requestStart;
+    currentReport.webVitals.ttfb =
+      navEntry.responseStart - navEntry.requestStart;
   }
 
   // For FCP, we get the entry from the paint observer (already captured)
@@ -1001,7 +1002,9 @@ export const clearPerformanceData = (): void => {
   }
   // Disconnect CLS observer
   if (clsObserverRef) {
-    try { clsObserverRef.disconnect(); } catch {}
+    try {
+      clsObserverRef.disconnect();
+    } catch {}
     clsObserverRef = null;
   }
   if (currentReport) {

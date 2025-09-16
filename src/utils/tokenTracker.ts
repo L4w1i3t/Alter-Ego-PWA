@@ -85,30 +85,38 @@ class TokenTracker {
     }
 
     // Log clean summary
-    console.log('🔥 ===== QUERY TOKEN SUMMARY =====');
-    console.log(`⏱️ Total Time: ${totalTime}ms`);
-    console.log(`💰 TOTAL TOKENS: ${totalTokens}`);
-    console.log(`   📝 Prompt: ${totalPrompt} | 💬 Completion: ${totalCompletion}`);
+    console.log(' ===== QUERY TOKEN SUMMARY =====');
+    console.log(` Total Time: ${totalTime}ms`);
+    console.log(` TOTAL TOKENS: ${totalTokens}`);
+    console.log(`    Prompt: ${totalPrompt} |  Completion: ${totalCompletion}`);
     console.log('');
 
     // Breakdown by component
     if (query.conversation) {
       const hasImages = query.imageAnalysis ? ' (with images)' : '';
-      console.log(`🖼️ Conversation${hasImages}: ${query.conversation.total} tokens`);
-      console.log(`   (${query.conversation.prompt} prompt + ${query.conversation.completion} completion)`);
+      console.log(
+        ` Conversation${hasImages}: ${query.conversation.total} tokens`
+      );
+      console.log(
+        `   (${query.conversation.prompt} prompt + ${query.conversation.completion} completion)`
+      );
     }
 
     if (query.imageAnalysis) {
-      console.log(`🔍 Image Analysis: ${query.imageAnalysis.total} tokens`);
-      console.log(`   (${query.imageAnalysis.prompt} prompt + ${query.imageAnalysis.completion} completion)`);
+      console.log(` Image Analysis: ${query.imageAnalysis.total} tokens`);
+      console.log(
+        `   (${query.imageAnalysis.prompt} prompt + ${query.imageAnalysis.completion} completion)`
+      );
     }
 
     if (query.textGeneration) {
-      console.log(`💬 Text Generation: ${query.textGeneration.total} tokens`);
-      console.log(`   (${query.textGeneration.prompt} prompt + ${query.textGeneration.completion} completion)`);
+      console.log(` Text Generation: ${query.textGeneration.total} tokens`);
+      console.log(
+        `   (${query.textGeneration.prompt} prompt + ${query.textGeneration.completion} completion)`
+      );
     }
 
-    console.log('🔥 ================================');
+    console.log(' ================================');
 
     // Store for analytics
     this.logToStorage(query, totalTokens, totalPrompt, totalCompletion);
@@ -164,15 +172,21 @@ class TokenTracker {
     queriesCount: number;
   } {
     try {
-      const entries = JSON.parse(localStorage.getItem('alterEgo_tokenSummaries') || '[]');
+      const entries = JSON.parse(
+        localStorage.getItem('alterEgo_tokenSummaries') || '[]'
+      );
       const today = new Date().toDateString();
-      const todayEntries = entries.filter((entry: any) => 
-        new Date(entry.timestamp).toDateString() === today
+      const todayEntries = entries.filter(
+        (entry: any) => new Date(entry.timestamp).toDateString() === today
       );
 
-      const totalTokensToday = todayEntries.reduce((sum: number, entry: any) => sum + entry.totalTokens, 0);
+      const totalTokensToday = todayEntries.reduce(
+        (sum: number, entry: any) => sum + entry.totalTokens,
+        0
+      );
       const queriesCount = todayEntries.length;
-      const averagePerQuery = queriesCount > 0 ? Math.round(totalTokensToday / queriesCount) : 0;
+      const averagePerQuery =
+        queriesCount > 0 ? Math.round(totalTokensToday / queriesCount) : 0;
 
       return {
         totalTokensToday,

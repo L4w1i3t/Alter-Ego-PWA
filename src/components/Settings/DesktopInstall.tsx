@@ -168,7 +168,7 @@ const BenefitItem = styled.li`
   gap: 0.5em;
 
   &:before {
-    content: '✓';
+    content: '';
     color: #0f0;
     font-weight: bold;
   }
@@ -321,14 +321,14 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
   return (
     <Container>
       <Title>
-        <BackButton onClick={onBack}>← Back</BackButton>
+        <BackButton onClick={onBack}> Back</BackButton>
         {getTitle()}
       </Title>
 
       {/* Installation Status */}
       {isInstalled ? (
         <StatusCard type="success">
-          <StatusTitle>✅ ALTER EGO is Installed!</StatusTitle>
+          <StatusTitle> ALTER EGO is Installed!</StatusTitle>
           <StatusText>
             The app is installed and ready to use. You can find it in your apps
             menu or home screen.
@@ -336,7 +336,7 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
         </StatusCard>
       ) : canInstall ? (
         <StatusCard type="info">
-          <StatusTitle>🚀 Ready to Install</StatusTitle>
+          <StatusTitle> Ready to Install</StatusTitle>
           <StatusText>
             Your browser supports automatic PWA installation. Click the button
             below to install ALTER EGO.
@@ -344,7 +344,7 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
         </StatusCard>
       ) : (
         <StatusCard type="warning">
-          <StatusTitle>📱 Manual Installation Available</StatusTitle>
+          <StatusTitle> Manual Installation Available</StatusTitle>
           <StatusText>
             Automatic installation isn't available, but you can still install
             ALTER EGO manually using your browser's built-in features.
@@ -389,7 +389,7 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
 
       {/* Debug Information */}
       <DebugInfo>
-        <DebugSummary>🔧 Debug Information</DebugSummary>
+        <DebugSummary> Debug Information</DebugSummary>
         <DebugContent>
           {JSON.stringify(
             {

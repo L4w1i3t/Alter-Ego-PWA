@@ -8,6 +8,11 @@ import {
 } from '../../utils/performanceMetrics';
 import { useVirtualKeyboard } from '../../hooks/useVirtualKeyboard';
 import { validateImageFile } from '../../utils/imageUtils';
+import {
+  MicrophoneIcon,
+  CameraIcon,
+  SendIcon,
+} from '../../components/Common/Icons';
 
 const InputContainer = styled.div`
   display: flex;
@@ -433,18 +438,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
             onClick={onToggleListen}
             title={isListening ? 'Stop listening' : 'Start voice input'}
           >
-            <span role="img" aria-label="microphone">
-              {isListening ? '🛑' : '🎤'}
-            </span>
+            <MicrophoneIcon size={20} aria-hidden="true" />
           </MicButton>
 
           <ImageButton
             onClick={handleImageButtonClick}
             title="Attach new images"
           >
-            <span role="img" aria-label="camera">
-              📷
-            </span>
+            <CameraIcon size={20} aria-hidden="true" />
           </ImageButton>
 
           {/** Cached image selection removed **/}
@@ -454,9 +455,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             disabled={!message.trim() && selectedImages.length === 0}
             title="Send message"
           >
-            <span role="img" aria-label="send">
-              📤
-            </span>
+            <SendIcon size={20} aria-hidden="true" />
           </SendButton>
         </InputRow>
       </InputContainer>

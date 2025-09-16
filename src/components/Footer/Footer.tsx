@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadVoiceModels, VoiceModel } from '../../utils/storageUtils';
 import { EVENTS } from '../../utils/events';
+import { HeadphonesIcon, WaveIcon } from '../Common/Icons';
 
 const FooterContainer = styled.footer`
   display: flex;
@@ -166,11 +167,11 @@ const Footer: React.FC<FooterProps> = ({
   const getProviderIcon = (provider: string) => {
     switch (provider) {
       case 'elevenlabs':
-        return '🌟';
+        return <HeadphonesIcon size={16} aria-hidden="true" />;
       case 'browser':
-        return '🔊';
+        return <WaveIcon size={16} aria-hidden="true" />;
       default:
-        return '🔇';
+        return null;
     }
   };
 

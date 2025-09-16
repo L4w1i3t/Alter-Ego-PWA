@@ -140,7 +140,7 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({
     } else {
       // Fallback if callback not provided
       alert(
-        '🚧 Open Source model is under development.\n\nFor detailed information, check the Settings panel (⚙️ icon).\n\nFor full functionality, please use OpenAI.'
+        ' Open Source model is under development.\n\nFor detailed information, check the Settings panel ( icon).\n\nFor full functionality, please use OpenAI.'
       );
     }
   };

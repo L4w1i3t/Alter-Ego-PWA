@@ -111,9 +111,10 @@ export function parseAssociationsFromText(
   const result: Array<{ left: string; right: string }> = [];
   if (!text) return result;
   const lc = text.toLowerCase();
-  const trainingMode = /(\bremember\b|\bassociate\b|\bassociations\b|\bmap\b|\bmapping\b|\bdefine\b|\bset\b|\bmeans\b)/.test(
-    lc
-  );
+  const trainingMode =
+    /(\bremember\b|\bassociate\b|\bassociations\b|\bmap\b|\bmapping\b|\bdefine\b|\bset\b|\bmeans\b)/.test(
+      lc
+    );
   const normalized = lc.replace(/\s+/g, ' ');
 
   // Split by commas and semicolons to find potential pairs
@@ -127,7 +128,12 @@ export function parseAssociationsFromText(
     if (m) {
       const left = m[1];
       const right = m[3];
-      if (left && right && isAssociationToken(left) && isAssociationToken(right))
+      if (
+        left &&
+        right &&
+        isAssociationToken(left) &&
+        isAssociationToken(right)
+      )
         result.push({ left, right });
     }
   }
@@ -168,7 +174,7 @@ export function buildFactsLine(
   for (const a of ordered) {
     if (!isAssociationToken(a.left) || !isAssociationToken(a.right)) continue;
     if (seen.has(a.right)) continue;
-    const frag = `${a.right}→${a.left}`;
+    const frag = `${a.right}${a.left}`;
     const addLen = (parts.length ? 2 : 0) + frag.length; // account for '; '
     if (total + addLen > charBudget) break;
     parts.push(frag);
@@ -188,9 +194,7 @@ export function getRightsUsedInText(
 ): Array<{ left: string; right: string }> {
   const assocs = getAssociations(persona);
   if (!assocs.length || !text) return [];
-  const rightsSet = new Set(
-    assocs.map(a => a.right.toLowerCase())
-  );
+  const rightsSet = new Set(assocs.map(a => a.right.toLowerCase()));
   const tokens = text
     .toLowerCase()
     .replace(/[^a-z0-9_,\s-]/g, ' ')
@@ -305,7 +309,8 @@ function pruneAndDecay(list: Association[]): Association[] {
   const now = Date.now();
   const kept = list
     .filter(a => {
-      if (!isAssociationToken(a.left) || !isAssociationToken(a.right)) return false;
+      if (!isAssociationToken(a.left) || !isAssociationToken(a.right))
+        return false;
       const s = salience(a);
       const tooOld = daysSince(a.createdAt) > 120 && s < 0.2;
       return s >= 0.05 && !tooOld;

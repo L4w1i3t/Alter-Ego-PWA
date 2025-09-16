@@ -1,5 +1,15 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import {
+  GearIcon,
+  StarIcon,
+  InfoIcon,
+  HeartIcon,
+  ShieldIcon,
+  WarningIcon,
+  FlagIcon,
+  ArrowLeftIcon,
+} from '../Common/Icons';
 
 const fadeIn = keyframes`
   from {
@@ -236,11 +246,6 @@ const CardTitle = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.5em;
-
-  &::before {
-    content: attr(data-icon);
-    font-size: 1.2em;
-  }
 `;
 
 const CardContent = styled.div`
@@ -259,7 +264,7 @@ const DetailsItem = styled.li`
   position: relative;
 
   &::before {
-    content: '▶';
+    content: '';
     position: absolute;
     left: 0;
     color: #0f0;
@@ -452,7 +457,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
       </HeaderSection>
       <InfoGrid>
         <InfoCard $delay={0.2}>
-          <CardTitle data-icon="🔧">Technologies</CardTitle>
+          <CardTitle>
+            <GearIcon size={18} aria-hidden="true" /> Technologies
+          </CardTitle>
           <CardContent>
             {details.technologies.map((tech, index) => (
               <TechBadge key={`tech-${index}`}>{tech}</TechBadge>
@@ -460,7 +467,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           </CardContent>
         </InfoCard>{' '}
         <InfoCard $delay={0.3}>
-          <CardTitle data-icon="⚡">Key Features</CardTitle>
+          <CardTitle>
+            <StarIcon size={18} aria-hidden="true" /> Key Features
+          </CardTitle>
           <CardContent>
             <DetailsList>
               {details.features.map((feature, index) => (
@@ -470,7 +479,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           </CardContent>
         </InfoCard>{' '}
         <InfoCard $delay={0.4}>
-          <CardTitle data-icon="📝">Project Info</CardTitle>
+          <CardTitle>
+            <InfoIcon size={18} aria-hidden="true" /> Project Info
+          </CardTitle>
           <CardContent>
             <DetailsList>
               <DetailsItem>
@@ -493,7 +504,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           </CardContent>
         </InfoCard>
         <InfoCard $delay={0.5}>
-          <CardTitle data-icon="👏">Credits & Acknowledgments</CardTitle>
+          <CardTitle>
+            <HeartIcon size={18} aria-hidden="true" /> Credits & Acknowledgments
+          </CardTitle>
           <CardContent>
             <DetailsList>
               {details.credits.map((credit, index) => (
@@ -503,7 +516,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           </CardContent>
         </InfoCard>{' '}
         <InfoCard $delay={0.6}>
-          <CardTitle data-icon="⚖️">Legal & Compliance</CardTitle>
+          <CardTitle>
+            <ShieldIcon size={18} aria-hidden="true" /> Legal & Compliance
+          </CardTitle>
           <CardContent>
             <DetailsList>
               {details.legal.map((legal, index) => (
@@ -513,7 +528,10 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           </CardContent>
         </InfoCard>
         <InfoCard $delay={0.7} style={{ gridColumn: '1 / -1' }}>
-          <CardTitle data-icon="⚠️">Known Issues & Limitations</CardTitle>
+          <CardTitle>
+            <WarningIcon size={18} aria-hidden="true" /> Known Issues &
+            Limitations
+          </CardTitle>
           <CardContent>
             <DetailsList>
               {details.knownIssues.map((issue, index) => (
@@ -528,7 +546,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           </CardContent>
         </InfoCard>{' '}
         <InfoCard $delay={0.8} style={{ gridColumn: '1 / -1' }}>
-          <CardTitle data-icon="🚧">Development Roadmap</CardTitle>
+          <CardTitle>
+            <FlagIcon size={18} aria-hidden="true" /> Development Roadmap
+          </CardTitle>
           <CardContent>
             <DetailsList>
               {details.roadmap.map((item, index) => (
@@ -544,7 +564,14 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
         </InfoCard>
       </InfoGrid>
 
-      <BackButton onClick={onBack}>← Back to Settings</BackButton>
+      <BackButton onClick={onBack}>
+        <span
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5em' }}
+        >
+          <ArrowLeftIcon size={18} aria-hidden="true" />
+          <span>Back to Settings</span>
+        </span>
+      </BackButton>
     </DetailsContainer>
   );
 };

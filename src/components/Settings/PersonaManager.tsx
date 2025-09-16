@@ -4,6 +4,7 @@ import { loadPersonas, savePersonas, Persona } from '../../utils/storageUtils';
 import { dispatchAppEvent, EVENTS } from '../../utils/events';
 import ConfirmationDialog from '../Common/ConfirmationDialog';
 import { showSuccess, showError } from '../Common/NotificationManager';
+import { UserIcon, EyeIcon, PencilIcon, TrashIcon } from '../Common/Icons';
 
 const Container = styled.div`
   color: #0f0;
@@ -680,7 +681,9 @@ Remember: Be specific and detailed. The more personality you give this character
           <PersonaGrid>
             {personas.length === 0 ? (
               <EmptyState>
-                <EmptyIcon>👤</EmptyIcon>
+                <EmptyIcon>
+                  <UserIcon size={24} aria-hidden="true" />
+                </EmptyIcon>
                 <div>No personas found</div>
                 <div>Click "Create New" to add a persona</div>
               </EmptyState>
@@ -714,7 +717,7 @@ Remember: Be specific and detailed. The more personality you give this character
                       }}
                       title="View"
                     >
-                      👁️
+                      <EyeIcon size={14} aria-hidden="true" />
                     </ViewButton>
                     <EditButton
                       onClick={e => {
@@ -723,7 +726,7 @@ Remember: Be specific and detailed. The more personality you give this character
                       }}
                       title="Edit"
                     >
-                      ✏️
+                      <PencilIcon size={14} aria-hidden="true" />
                     </EditButton>
                     {!isDefaultPersona(persona.name) && (
                       <DeleteButton
@@ -733,7 +736,7 @@ Remember: Be specific and detailed. The more personality you give this character
                         }}
                         title="Delete"
                       >
-                        ×
+                        <TrashIcon size={14} aria-hidden="true" />
                       </DeleteButton>
                     )}
                   </ActionButtons>

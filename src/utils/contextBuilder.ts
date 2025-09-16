@@ -19,7 +19,8 @@ const isTrivial = (s: string): boolean => {
   const t = s.trim().toLowerCase();
   if (!t) return true;
   if (t.startsWith('error:')) return true;
-  if (t === 'ok' || t === 'k' || t === 'thanks' || t === 'thank you') return true;
+  if (t === 'ok' || t === 'k' || t === 'thanks' || t === 'thank you')
+    return true;
   if (t.length < 2) return true;
   return false;
 };

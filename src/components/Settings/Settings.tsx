@@ -17,6 +17,17 @@ import {
   handleOpenSourceSelection,
   getOpenSourceStatus,
 } from '../../utils/openSourceWip';
+import {
+  KeyIcon,
+  HeadphonesIcon,
+  UserIcon,
+  MemoryIcon,
+  WrenchIcon,
+  DownloadIcon,
+  InfoIcon,
+  WarningIcon,
+  TrashIcon,
+} from '../Common/Icons';
 
 const SettingsOverlay = styled.div`
   position: fixed;
@@ -485,7 +496,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Manage API Keys')}
               >
-                <CategoryIcon>🔑</CategoryIcon>
+                <CategoryIcon>
+                  <KeyIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>API Keys</CategoryTitle>
                 <CategoryDescription>
                   Configure OpenAI and ElevenLabs API keys
@@ -494,7 +507,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Manage Voice Models')}
               >
-                <CategoryIcon>🔊</CategoryIcon>
+                <CategoryIcon>
+                  <HeadphonesIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Voice Models</CategoryTitle>
                 <CategoryDescription>
                   Add and configure voice synthesis models
@@ -503,7 +518,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Manage Personas')}
               >
-                <CategoryIcon>👤</CategoryIcon>
+                <CategoryIcon>
+                  <UserIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Personas</CategoryTitle>
                 <CategoryDescription>
                   Create and edit AI character personas
@@ -512,7 +529,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Memory & History')}
               >
-                <CategoryIcon>📚</CategoryIcon>
+                <CategoryIcon>
+                  <MemoryIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Memory & History</CategoryTitle>
                 <CategoryDescription>
                   Browse and search conversation history
@@ -520,7 +539,9 @@ const Settings: React.FC<SettingsProps> = ({
               </SettingsCategory>
               {/** Image Gallery menu removed **/}
               <SettingsCategory onClick={() => handleMenuClick('Clear Memory')}>
-                <CategoryIcon>🧹</CategoryIcon>
+                <CategoryIcon>
+                  <TrashIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Clear Memory</CategoryTitle>
                 <CategoryDescription>
                   Reset conversation context and memory
@@ -529,7 +550,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Memory Settings')}
               >
-                <CategoryIcon>🧠</CategoryIcon>
+                <CategoryIcon>
+                  <MemoryIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Memory Settings</CategoryTitle>
                 <CategoryDescription>
                   Configure conversation memory size
@@ -549,7 +572,9 @@ const Settings: React.FC<SettingsProps> = ({
                   opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1,
                 }}
               >
-                <CategoryIcon>🔧</CategoryIcon>
+                <CategoryIcon>
+                  <WrenchIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Open Source Setup</CategoryTitle>
                 <CategoryDescription>
                   {process.env.NODE_ENV === 'production'
@@ -560,7 +585,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Miscellaneous')}
               >
-                <CategoryIcon>⚙️</CategoryIcon>
+                <CategoryIcon>
+                  <WrenchIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Miscellaneous</CategoryTitle>
                 <CategoryDescription>
                   Customize text speed and other preferences
@@ -569,7 +596,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Desktop Install')}
               >
-                <CategoryIcon>📱</CategoryIcon>
+                <CategoryIcon>
+                  <DownloadIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Desktop Install</CategoryTitle>
                 <CategoryDescription>
                   Install ALTER EGO as a desktop application
@@ -578,7 +607,9 @@ const Settings: React.FC<SettingsProps> = ({
               <SettingsCategory
                 onClick={() => handleMenuClick('Software Details')}
               >
-                <CategoryIcon>ℹ️</CategoryIcon>
+                <CategoryIcon>
+                  <InfoIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
                 <CategoryTitle>Software Details</CategoryTitle>
                 <CategoryDescription>
                   View version info and credits
@@ -590,7 +621,9 @@ const Settings: React.FC<SettingsProps> = ({
               onClick={() => handleMenuClick('Factory Reset')}
               style={{ borderColor: '#f00', color: '#f00' }}
             >
-              <CategoryIcon>⚠️</CategoryIcon>
+              <CategoryIcon>
+                <WarningIcon size={20} aria-hidden="true" />
+              </CategoryIcon>
               <CategoryTitle>Factory Reset</CategoryTitle>
               <CategoryDescription style={{ color: '#f007' }}>
                 Delete all data and restore default settings

@@ -346,7 +346,7 @@ const OpenSourceSettings: React.FC<OpenSourceSettingsProps> = ({ onBack }) => {
         </ErrorBox>
       ) : (
         <InfoBox>
-          <strong>✅ Backend Connected!</strong>
+          <strong> Backend Connected!</strong>
           <br />
           You can now use open-source language models for conversations. These
           models run locally and don't require API keys.

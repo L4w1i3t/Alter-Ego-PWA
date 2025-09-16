@@ -8,21 +8,29 @@ import { advancedSecurity } from './utils/advancedSecurity';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
+// Immersive mode: optional opt-in for desktop-like feel (soft devtools blocking)
+const immersiveEnvFlag =
+  (process.env as any).REACT_APP_IMMERSIVE_MODE === 'true';
+const immersiveLocalFlag =
+  typeof localStorage !== 'undefined' &&
+  localStorage.getItem('alterEgo_immersiveMode') === 'true';
+const immersiveModeEnabled = immersiveEnvFlag || immersiveLocalFlag;
 
 // Initialize PWA installation capabilities
 initializePWA();
 
-// Initialize security features in production mode
-if (isProduction) {
-  // Block developer tools access
-  devToolsBlocker.initializeBlocking();
-
-  // Enable advanced security features
-  advancedSecurity.initialize();
-
-  console.log('Production security features activated');
+// Initialize optional immersive mode in production (disabled by default)
+if (isProduction && immersiveModeEnabled) {
+  // Soft, mobile-friendly warnings only; no aggressive anti-debug
+  try {
+    devToolsBlocker.initializeBlocking();
+    console.log('Immersive mode enabled: soft devtools warnings active');
+  } catch (e) {
+    console.warn('Failed to initialize immersive mode:', e);
+  }
+  // Note: advancedSecurity is intentionally NOT initialized by default, as it can harm UX.
 } else {
-  console.log('Running in development mode - security features disabled');
+  console.log('Security features disabled (no immersive mode)');
 }
 
 // Register service worker with proper error handling

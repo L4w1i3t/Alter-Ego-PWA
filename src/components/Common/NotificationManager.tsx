@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
+import {
+  CheckIcon,
+  WarningIcon,
+  InfoIcon,
+  CloseIcon,
+  PauseIcon,
+  PlayIcon,
+} from '../Common/Icons';
 
 // Animation for notification entry
 const slideIn = keyframes`
@@ -100,15 +108,15 @@ const NotificationTitle = styled.div<{
     content: ${props => {
       switch (props.$type) {
         case 'success':
-          return '"✓"';
+          return '""';
         case 'error':
-          return '"✗"';
+          return '""';
         case 'warning':
-          return '"⚠"';
+          return '""';
         case 'info':
-          return '"ⓘ"';
+          return '""';
         default:
-          return '"✓"';
+          return '""';
       }
     }};
     font-size: 1.2em;
@@ -119,11 +127,35 @@ const CloseButton = styled.button`
   background: transparent;
   border: none;
   color: inherit;
-  font-size: 1.2em;
+  font-size: 0; /* hide any text content */
   cursor: pointer;
   padding: 0;
   margin-left: 1em;
   opacity: 0.7;
+  position: relative;
+  width: 1.2em; /* ensure clickable icon area */
+  height: 1.2em;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 10%;
+    width: 2px;
+    height: 80%;
+    background: currentColor;
+    border-radius: 1px;
+    transform-origin: center;
+  }
+
+  &::before {
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  &::after {
+    transform: translateX(-50%) rotate(-45deg);
+  }
 
   &:hover {
     opacity: 1;
@@ -316,7 +348,13 @@ const Notification: React.FC<NotificationProps> = ({
   return (
     <NotificationContainer $type={type} $isExiting={isExiting}>
       <NotificationHeader>
-        <NotificationTitle $type={type}>{getTitle()}</NotificationTitle>
+        <NotificationTitle $type={type}>
+          {type === 'success' && <CheckIcon size={16} aria-hidden="true" />}
+          {type === 'warning' && <WarningIcon size={16} aria-hidden="true" />}
+          {type === 'info' && <InfoIcon size={16} aria-hidden="true" />}
+          {type === 'error' && <CloseIcon size={16} aria-hidden="true" />}
+          {getTitle()}
+        </NotificationTitle>
         <CloseButton onClick={handleClose}>×</CloseButton>
       </NotificationHeader>
 
@@ -339,7 +377,27 @@ const Notification: React.FC<NotificationProps> = ({
                 $variant="secondary"
                 onClick={isPaused ? handleResume : handlePause}
               >
-                {isPaused ? '▶' : '⏸'}
+                {isPaused ? (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      gap: 6,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <PlayIcon size={14} aria-hidden="true" /> Resume
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      gap: 6,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <PauseIcon size={14} aria-hidden="true" /> Pause
+                  </span>
+                )}
               </ActionButton>
             )}
 

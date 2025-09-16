@@ -87,7 +87,7 @@ class ImageAnalysisQueue {
         task.persona
       );
 
-      console.log(`✅ Completed analysis for image ${task.imageId}`);
+      console.log(` Completed analysis for image ${task.imageId}`);
 
       // Dispatch a custom event that components can listen to
       window.dispatchEvent(
@@ -102,7 +102,7 @@ class ImageAnalysisQueue {
       // Also dispatch an event to refresh the image gallery
       window.dispatchEvent(new CustomEvent('image-cache-updated'));
     } catch (error) {
-      console.warn(`❌ Analysis failed for image ${task.imageId}:`, error);
+      console.warn(` Analysis failed for image ${task.imageId}:`, error);
 
       // Dispatch failure event
       window.dispatchEvent(

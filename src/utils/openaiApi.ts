@@ -92,10 +92,16 @@ const PROMPT_BUDGETS = {
 };
 
 // Compact a persona definition to a character budget, preserving structure
-function compactPersona(definition: string, maxChars = PROMPT_BUDGETS.maxPersonaChars): string {
+function compactPersona(
+  definition: string,
+  maxChars = PROMPT_BUDGETS.maxPersonaChars
+): string {
   if (!definition) return '';
   // Normalize spacing
-  let text = definition.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  let text = definition
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   if (text.length <= maxChars) return text;
 
   // Prefer keeping headers and bullet points first
@@ -123,7 +129,10 @@ const buildSystemPrompt = (characterDefinition: string = ''): string => {
     return `${SECURITY_RULES}\n\nYou are a helpful AI assistant.`;
   }
 
-  const trimmedPersona = compactPersona(characterDefinition, PROMPT_BUDGETS.maxPersonaChars);
+  const trimmedPersona = compactPersona(
+    characterDefinition,
+    PROMPT_BUDGETS.maxPersonaChars
+  );
   return `${SECURITY_RULES}\n\n==== CHARACTER DEFINITION ====\n${trimmedPersona}\n==== END CHARACTER DEFINITION ====\n\n${CHARACTER_INSTRUCTIONS}`;
 };
 
@@ -137,7 +146,9 @@ const buildVisionPrompt = (characterName: string = 'AI Assistant'): string => {
 /**
  * Build a streamlined system prompt for image conversations with character context
  */
-const buildStreamlinedVisionPrompt = (characterName: string = 'AI Assistant'): string => {
+const buildStreamlinedVisionPrompt = (
+  characterName: string = 'AI Assistant'
+): string => {
   return `${SECURITY_RULES}\n\nYou are ${characterName}. Maintain your character's personality and communication style while analyzing images. Provide helpful information about what you see while staying true to your character. Be conversational and engaging.`;
 };
 
@@ -181,10 +192,9 @@ export const logTokenUsage = (
     localStorage.setItem(tokenLogKey, JSON.stringify(existingLog));
 
     // Simple logging (detailed summary handled by tokenTracker)
-    const queryLabel = queryType === 'vision' ? '🖼️' : 
-                      queryType === 'image-analysis' ? '🔍' : 
-                      '💬';
-    
+    const queryLabel =
+      queryType === 'vision' ? '' : queryType === 'image-analysis' ? '' : '';
+
     console.log(`${queryLabel} ${usage.total_tokens} tokens`);
   } catch (error) {
     console.error('Error logging token usage:', error);
@@ -232,7 +242,7 @@ export const generateChatCompletion = async (
 
   // Start measuring response time
   const startTime = performance.now();
-  
+
   // Build the complete system prompt with security and character definition
   const fullSystemPrompt = buildSystemPrompt(systemPrompt);
 
@@ -244,19 +254,20 @@ export const generateChatCompletion = async (
     'characters'
   );
   console.log('Full System Prompt Content (preview):');
-  console.log(fullSystemPrompt.substring(0, 400) + (fullSystemPrompt.length > 400 ? '…' : ''));
+  console.log(
+    fullSystemPrompt.substring(0, 400) +
+      (fullSystemPrompt.length > 400 ? '…' : '')
+  );
   console.log('=== END SYSTEM PROMPT ===');
 
   // Log breakdown of components
   console.log('=== SYSTEM PROMPT BREAKDOWN ===');
-  console.log(
-    'Security Rules Length:',
-    SECURITY_RULES.length,
-    'characters'
-  );
+  console.log('Security Rules Length:', SECURITY_RULES.length, 'characters');
   console.log('Persona Context Length:', systemPrompt.length, 'characters');
   console.log('Persona Context Content (preview):');
-  console.log(systemPrompt.substring(0, 400) + (systemPrompt.length > 400 ? '…' : ''));
+  console.log(
+    systemPrompt.substring(0, 400) + (systemPrompt.length > 400 ? '…' : '')
+  );
   console.log('=== END BREAKDOWN ===');
 
   // Verify if the default system prompt is included
@@ -291,7 +302,12 @@ export const generateChatCompletion = async (
   console.log('Temperature:', temperature);
   console.log('Max Tokens:', maxTokens);
   console.log('Total Messages:', messages.length);
-  console.log('API Key:', OPENAI_API_KEY ? `${OPENAI_API_KEY.substring(0, 8)}...${OPENAI_API_KEY.slice(-4)}` : 'Not set');
+  console.log(
+    'API Key:',
+    OPENAI_API_KEY
+      ? `${OPENAI_API_KEY.substring(0, 8)}...${OPENAI_API_KEY.slice(-4)}`
+      : 'Not set'
+  );
   console.log('Messages Structure:');
   messages.forEach((msg, index) => {
     console.log(`Message ${index} (${msg.role}):`, {
@@ -305,12 +321,15 @@ export const generateChatCompletion = async (
   console.log('=== END OPENAI PAYLOAD ===');
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const useProxy = (process.env.REACT_APP_USE_PROXY === 'true') ||
+      (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
+    const endpoint = useProxy ? '/api/openai-chat' : 'https://api.openai.com/v1/chat/completions';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
+    else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -332,7 +351,12 @@ export const generateChatCompletion = async (
 
     // Track token usage in centralized tracker
     if (data.usage && sessionId) {
-      tokenTracker.addTokens(sessionId, 'textGeneration', data.usage.prompt_tokens, data.usage.completion_tokens);
+      tokenTracker.addTokens(
+        sessionId,
+        'textGeneration',
+        data.usage.prompt_tokens,
+        data.usage.completion_tokens
+      );
     }
 
     // Legacy logging (keep existing logTokenUsage for compatibility)
@@ -400,7 +424,7 @@ export const generateVisionChatCompletion = async (
     effectiveSystemPrompt = buildVisionPrompt(characterName);
 
     console.log(
-      '🔥 Using optimized lightweight system prompt for fresh image conversation'
+      ' Using optimized lightweight system prompt for fresh image conversation'
     );
     console.log(`Original prompt: ${systemPrompt.length} characters`);
     console.log(`Optimized prompt: ${effectiveSystemPrompt.length} characters`);
@@ -413,7 +437,7 @@ export const generateVisionChatCompletion = async (
     effectiveSystemPrompt = buildStreamlinedVisionPrompt(characterName);
 
     console.log(
-      '⚡ Using streamlined system prompt for image conversation with history'
+      ' Using streamlined system prompt for image conversation with history'
     );
     console.log(`Original prompt: ${systemPrompt.length} characters`);
     console.log(
@@ -423,7 +447,7 @@ export const generateVisionChatCompletion = async (
   } else {
     // Use full system prompt for text-only conversations
     effectiveSystemPrompt = buildSystemPrompt(systemPrompt);
-    console.log('📝 Using full system prompt (text-only conversation)');
+    console.log(' Using full system prompt (text-only conversation)');
     console.log(
       `History length: ${userAssistantHistory.length}, Images: ${images.length}`
     );
@@ -541,12 +565,15 @@ export const generateVisionChatCompletion = async (
   console.log('=== END VISION PAYLOAD ===');
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const useProxy = (process.env.REACT_APP_USE_PROXY === 'true') ||
+      (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
+    const endpoint = useProxy ? '/api/openai-chat' : 'https://api.openai.com/v1/chat/completions';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
+    else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -568,7 +595,12 @@ export const generateVisionChatCompletion = async (
 
     // Track token usage in centralized tracker
     if (data.usage && sessionId) {
-      tokenTracker.addTokens(sessionId, 'conversation', data.usage.prompt_tokens, data.usage.completion_tokens);
+      tokenTracker.addTokens(
+        sessionId,
+        'conversation',
+        data.usage.prompt_tokens,
+        data.usage.completion_tokens
+      );
     }
 
     // Legacy logging (keep existing logTokenUsage for compatibility)
@@ -707,12 +739,15 @@ export const generateLightweightVision = async (
   console.log('=== END LIGHTWEIGHT VISION PAYLOAD ===');
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const useProxy = (process.env.REACT_APP_USE_PROXY === 'true') ||
+      (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
+    const endpoint = useProxy ? '/api/openai-chat' : 'https://api.openai.com/v1/chat/completions';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
+    else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -730,7 +765,12 @@ export const generateLightweightVision = async (
     trackAiResponseTime(responseTime);
 
     if (data.usage && sessionId) {
-      tokenTracker.addTokens(sessionId, 'imageAnalysis', data.usage.prompt_tokens, data.usage.completion_tokens);
+      tokenTracker.addTokens(
+        sessionId,
+        'imageAnalysis',
+        data.usage.prompt_tokens,
+        data.usage.completion_tokens
+      );
     }
 
     if (data.usage) {

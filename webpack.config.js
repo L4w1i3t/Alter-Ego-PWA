@@ -105,8 +105,10 @@ module.exports = {
   entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js',
-    publicPath: publicPath
+    filename: 'assets/js/[name].[contenthash:8].js',
+    chunkFilename: 'assets/js/[name].[contenthash:8].chunk.js',
+    publicPath: publicPath,
+    clean: true,
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
@@ -150,12 +152,37 @@ module.exports = {
       },
     ],
   },
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+      },
+    },
+    runtimeChunk: 'single',
+  },
   plugins: [
     new HtmlWebpackPlugin({
       // Use the root index.html instead of the one in public
       template: './index.html',
       filename: 'index.html',
-      inject: true
+      inject: true,
+      // Inject a production-only CSP meta for stronger security without breaking dev tooling
+      ...(isDevelopment
+        ? {}
+        : {
+            meta: {
+              'Content-Security-Policy': {
+                'http-equiv': 'Content-Security-Policy',
+                content:
+                  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.elevenlabs.io http://127.0.0.1:8000 ws:; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'",
+              },
+            },
+          }),
     }),
     new ForkTsCheckerWebpackPlugin({
       async: true,
@@ -179,8 +206,13 @@ module.exports = {
     new webpack.DefinePlugin({
       'process.env': JSON.stringify({
         NODE_ENV: process.env.NODE_ENV || 'development',
-        PUBLIC_URL: publicPath.slice(0, -1) // Remove trailing slash
-      })    }),
+        PUBLIC_URL: publicPath.slice(0, -1), // Remove trailing slash
+        // Opt-in flag to enable immersive mode (soft devtools blocking) in production
+        REACT_APP_IMMERSIVE_MODE: process.env.REACT_APP_IMMERSIVE_MODE || 'false',
+        // Use Vercel proxy endpoints when true (recommended for production)
+        REACT_APP_USE_PROXY: process.env.REACT_APP_USE_PROXY || 'false',
+      })
+    }),
     new PerformanceMetricsPlugin(),
     // Add bundle analyzer only when explicitly requested
     ...(process.env.ANALYZE_BUNDLE === 'true' ? [new BundleAnalyzerPlugin()] : [])

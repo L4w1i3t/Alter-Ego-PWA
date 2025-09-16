@@ -542,7 +542,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   return (
     <Container>
-      <BackButton onClick={onBack}>← Back to Settings</BackButton>
+      <BackButton onClick={onBack}> Back to Settings</BackButton>
 
       <Title>Image Gallery & Cache Management</Title>
 
@@ -552,7 +552,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
       {analysisStatus.isAnyAnalysisActive && (
         <QueueStatus>
-          🔄 Analyzing images in background...
+          Analyzing images in background...
           {analysisStatus.status.activeTasks > 0 &&
             ` (${analysisStatus.status.activeTasks} active)`}
           {analysisStatus.status.queueLength > 0 &&
@@ -627,13 +627,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
                 {/* Analysis Status Indicator - Only show for images without AI descriptions */}
                 {!image.aiGenerated && analysisStatus.isAnyAnalysisActive && (
-                  <AnalysisStatus status="analyzing">
-                    ⚡ Analyzing
-                  </AnalysisStatus>
+                  <AnalysisStatus status="analyzing">Analyzing</AnalysisStatus>
                 )}
 
                 {allowSelection && selectedImages.has(image.id) && (
-                  <SelectedOverlay>✓ Selected</SelectedOverlay>
+                  <SelectedOverlay> Selected</SelectedOverlay>
                 )}
               </div>
               <ImageInfo>

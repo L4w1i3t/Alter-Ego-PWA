@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useApi } from '../../context/ApiContext';
 import { validateImageFile } from '../../utils/imageUtils';
+import { ImageIcon } from '../Common/Icons';
 
 const QuerySectionContainer = styled.section`
   display: flex;
@@ -32,7 +33,7 @@ const InputRow = styled.div`
   display: flex;
   align-items: center;
   gap: 1vw;
-  
+
   @media (max-width: 768px) {
     gap: 0.5rem;
   }
@@ -42,7 +43,7 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 1vw;
   align-items: center;
-  
+
   @media (max-width: 768px) {
     gap: 0.5rem;
     width: 100%;
@@ -117,6 +118,7 @@ const ImageUploadButton = styled.button`
   align-items: center;
   justify-content: center;
   min-width: 2.5em; /* Ensure consistent width */
+  line-height: 0;
 
   &:hover {
     background: #0f0;
@@ -176,11 +178,11 @@ const RemoveImageButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  
+
   &:hover {
     background-color: #cc0000;
   }
-  
+
   /* Create X using CSS pseudo-elements */
   &::before,
   &::after {
@@ -191,15 +193,15 @@ const RemoveImageButton = styled.button`
     background-color: white;
     border-radius: 1px;
   }
-  
+
   &::before {
     transform: rotate(45deg);
   }
-  
+
   &::after {
     transform: rotate(-45deg);
   }
-  
+
   /* Focus styles for accessibility */
   &:focus {
     outline: 2px solid #0f0;
@@ -326,18 +328,20 @@ const QuerySection: React.FC<QuerySectionProps> = ({
               disabled={isLoading}
               title="Attach images"
             >
-              📷
+              <ImageIcon size={18} />
             </ImageUploadButton>
 
             <SendQueryButton
               onClick={handleSendQuery}
-              disabled={isLoading || (!query.trim() && selectedImages.length === 0)}
+              disabled={
+                isLoading || (!query.trim() && selectedImages.length === 0)
+              }
             >
               {isLoading ? 'Processing...' : 'Send Query'}
             </SendQueryButton>
           </ButtonContainer>
         </InputRow>
-        
+
         {/* Image Previews */}
         {imagePreviews.length > 0 && (
           <ImagePreviewContainer>

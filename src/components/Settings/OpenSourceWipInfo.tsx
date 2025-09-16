@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { WrenchIcon, ArrowLeftIcon } from '../Common/Icons';
 
 const WipInfoPanel = styled.div`
   background: #000;
@@ -192,7 +193,9 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
       <CloseButton onClick={onBack}>X</CloseButton>
 
       <WipTitle>
-        <WipIcon>🚧</WipIcon>
+        <WipIcon>
+          <WrenchIcon size={18} aria-hidden="true" />
+        </WipIcon>
         Open Source Model - Work in Progress
       </WipTitle>
 
@@ -203,7 +206,7 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
       </WipDescription>
 
       <WipSection>
-        <WipSectionTitle>🔧 What's being developed:</WipSectionTitle>
+        <WipSectionTitle> What's being developed:</WipSectionTitle>
         <WipList>
           <li>Local model integration and optimization</li>
           <li>Offline functionality for complete privacy</li>
@@ -214,7 +217,7 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
       </WipSection>
 
       <WipSection>
-        <WipSectionTitle>⏱️ Expected Timeline:</WipSectionTitle>
+        <WipSectionTitle> Expected Timeline:</WipSectionTitle>
         <WipDescription>
           We're targeting the next major release for initial Open Source model
           support. Follow our development progress for the latest updates.
@@ -222,7 +225,7 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
       </WipSection>
 
       <RecommendationBox>
-        <RecommendationTitle>💡 Current Recommendation:</RecommendationTitle>
+        <RecommendationTitle> Current Recommendation:</RecommendationTitle>
         <WipDescription style={{ color: '#aaffaa', margin: 0 }}>
           For the best experience right now, please use the{' '}
           <strong>OpenAI</strong> model which provides: full conversational AI
@@ -231,7 +234,14 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
         </WipDescription>
       </RecommendationBox>
 
-      <BackButton onClick={onBack}>Back to Settings</BackButton>
+      <BackButton onClick={onBack}>
+        <span
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5em' }}
+        >
+          <ArrowLeftIcon size={16} aria-hidden="true" />
+          <span>Back to Settings</span>
+        </span>
+      </BackButton>
     </WipInfoPanel>
   );
 };

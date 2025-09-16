@@ -87,7 +87,7 @@ export const sendMessageToAI = async (
         const fallbackMessage = checkOpenSourceFallback(selectedModel);
         return (
           fallbackMessage ||
-          '🚧 Open Source model is currently under development. Please use OpenAI for full functionality.'
+          ' Open Source model is currently under development. Please use OpenAI for full functionality.'
         );
       }
 
@@ -145,7 +145,7 @@ export const sendMessageToAI = async (
 
           // Fallback to OpenAI if backend fails
           console.log('Falling back to OpenAI due to backend error');
-          const fallbackMessage = `⚠️ Open-source backend unavailable (${backendError instanceof Error ? backendError.message : 'Unknown error'}). Switching to OpenAI...`;
+          const fallbackMessage = ` Open-source backend unavailable (${backendError instanceof Error ? backendError.message : 'Unknown error'}). Switching to OpenAI...`;
 
           // Continue to OpenAI logic below
           console.warn(fallbackMessage);

@@ -50,7 +50,7 @@ const testCases = [
 
 // Function to run tests
 export function runEmotionTests() {
-  console.log('🧪 Running Emotion Classification Tests...\n');
+  console.log(' Running Emotion Classification Tests...\n');
 
   // Test 1: Check all emotion labels are valid
   console.log('Test 1: Validating emotion labels');
@@ -92,10 +92,10 @@ export function runEmotionTests() {
       0
     );
     console.log(
-      `✓ User emotions total confidence: ${(userTotal * 100).toFixed(1)}%`
+      ` User emotions total confidence: ${(userTotal * 100).toFixed(1)}%`
     );
     console.log(
-      `✓ Response emotions total confidence: ${(responseTotal * 100).toFixed(1)}%`
+      ` Response emotions total confidence: ${(responseTotal * 100).toFixed(1)}%`
     );
   });
 
@@ -136,13 +136,13 @@ export function runEmotionTests() {
     );
   });
 
-  console.log('\n✅ Emotion classification tests completed!');
+  console.log('\n Emotion classification tests completed!');
 }
 
 // Export for use in console
 if (typeof window !== 'undefined') {
   (window as any).testEmotions = runEmotionTests;
   console.log(
-    '💡 Run testEmotions() in the console to test emotion classification'
+    ' Run testEmotions() in the console to test emotion classification'
   );
 }

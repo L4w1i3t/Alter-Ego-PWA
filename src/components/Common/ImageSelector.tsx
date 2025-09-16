@@ -11,6 +11,7 @@ import {
   CachedImage,
 } from '../../utils/imageUtils';
 import { findRelevantImages } from '../../services/imageAnalysisService';
+import { CheckIcon } from '../Common/Icons';
 
 const SelectorContainer = styled.div`
   background: rgba(0, 0, 0, 0.9);
@@ -313,7 +314,9 @@ const ImageSelector: React.FC<ImageSelectorProps> = ({
                     : 'No description'}
                 </ImageLabel>
                 {selectedImages.has(image.id) && (
-                  <SelectedIndicator>✓</SelectedIndicator>
+                  <SelectedIndicator>
+                    <CheckIcon size={12} aria-hidden="true" />
+                  </SelectedIndicator>
                 )}
               </SelectableImage>
             ))}

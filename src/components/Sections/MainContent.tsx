@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { loadSettings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
 import TypingAnimation from '../Common/TypingAnimation';
 import { openImageInNewTab } from '../../utils/imageUtils';
+import { UserIcon } from '../Common/Icons';
 
 const MainContentContainer = styled.main`
   display: flex;
@@ -527,7 +528,9 @@ const MainContent: React.FC<MainContentProps> = ({
             }}
           />
         ) : (
-          <AvatarPlaceholder>👤</AvatarPlaceholder>
+          <AvatarPlaceholder>
+            <UserIcon size={48} aria-hidden="true" />
+          </AvatarPlaceholder>
         )}
       </AvatarArea>
     </MainContentContainer>

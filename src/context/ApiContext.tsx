@@ -700,10 +700,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
-      
+
       // Complete token tracking even on error
       tokenTracker.completeQuery(sessionId);
-      
+
       setIsLoading(false);
       return {
         response: `Error: ${errorMessage}`,

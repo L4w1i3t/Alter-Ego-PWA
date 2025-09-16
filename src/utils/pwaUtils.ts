@@ -122,14 +122,14 @@ export const installPWA = async (): Promise<{
 // Get universal manual installation instructions
 export const getManualInstallInstructions = (): string => {
   if (isIOSDevice()) {
-    return 'iOS Safari: Tap the Share button (□↗) at the bottom, then scroll down and tap "Add to Home Screen". The app will appear on your home screen like a native app.';
+    return 'iOS Safari: Tap the Share button () at the bottom, then scroll down and tap "Add to Home Screen". The app will appear on your home screen like a native app.';
   }
 
   if (isMobileDevice()) {
     return 'Mobile Browser: Look for "Add to Home Screen", "Install App", or "Add to Desktop" in your browser menu (usually ⋮ or ⋯). The option might be in Settings or under the address bar.';
   }
 
-  return 'Desktop Browser: Look for an install icon (⬇️ or ⊞) in your address bar, or check your browser menu for "Install ALTER EGO", "Add to Desktop", or "Create Shortcut" options. The app will open in its own window.';
+  return 'Desktop Browser: Look for an install icon ( or ⊞) in your address bar, or check your browser menu for "Install ALTER EGO", "Add to Desktop", or "Create Shortcut" options. The app will open in its own window.';
 };
 
 // Get current browser info for debugging

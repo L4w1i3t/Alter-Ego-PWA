@@ -14,6 +14,13 @@ import {
   showError,
   showWarning,
 } from '../Common/NotificationManager';
+import {
+  HeadphonesIcon,
+  WaveIcon,
+  PlayIcon,
+  PencilIcon,
+  TrashIcon,
+} from '../Common/Icons';
 
 const Container = styled.div`
   color: #0f0;
@@ -214,6 +221,11 @@ const EditButton = styled(IconButton)`
 const DeleteButton = styled(IconButton)`
   color: #f00;
   border-color: #f00;
+
+  &:hover {
+    background: #f00;
+    color: #000;
+  }
 `;
 
 const EmptyState = styled.div`
@@ -982,9 +994,17 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
   // Get provider icon for cards
   const getProviderIcon = (provider: string): JSX.Element => {
     if (provider === 'elevenlabs') {
-      return <ProviderBadge provider="elevenlabs">🌟</ProviderBadge>;
+      return (
+        <ProviderBadge provider="elevenlabs">
+          <HeadphonesIcon size={16} aria-hidden="true" />
+        </ProviderBadge>
+      );
     } else {
-      return <ProviderBadge provider="browser">🔊</ProviderBadge>;
+      return (
+        <ProviderBadge provider="browser">
+          <WaveIcon size={16} aria-hidden="true" />
+        </ProviderBadge>
+      );
     }
   };
 
@@ -1013,7 +1033,9 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
           <VoiceModelGrid>
             {Object.keys(models).length === 0 ? (
               <EmptyState>
-                <EmptyIcon>🔊</EmptyIcon>
+                <EmptyIcon>
+                  <WaveIcon size={24} aria-hidden="true" />
+                </EmptyIcon>
                 <div>No voice models added yet.</div>
               </EmptyState>
             ) : (
@@ -1037,7 +1059,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                       }}
                       title="Test Voice"
                     >
-                      🔈
+                      <PlayIcon size={14} aria-hidden="true" />
                     </TestButton>
                     <EditButton
                       color="#ff0"
@@ -1047,7 +1069,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                       }}
                       title="Edit"
                     >
-                      ✏️
+                      <PencilIcon size={14} aria-hidden="true" />
                     </EditButton>
                     <DeleteButton
                       color="#f00"
@@ -1057,7 +1079,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                       }}
                       title="Delete"
                     >
-                      ×
+                      <TrashIcon size={14} aria-hidden="true" />
                     </DeleteButton>
                   </ActionButtons>
                 </VoiceModelCard>
@@ -1125,7 +1147,9 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                     provider="browser"
                     onClick={() => handleSelectProvider('browser')}
                   >
-                    <ProviderIcon>🔊</ProviderIcon>
+                    <ProviderIcon>
+                      <WaveIcon size={18} aria-hidden="true" />
+                    </ProviderIcon>
                     <ProviderTitle provider="browser">
                       Browser Speech
                     </ProviderTitle>
@@ -1140,7 +1164,9 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                     provider="elevenlabs"
                     onClick={() => handleSelectProvider('elevenlabs')}
                   >
-                    <ProviderIcon>🌟</ProviderIcon>
+                    <ProviderIcon>
+                      <HeadphonesIcon size={18} aria-hidden="true" />
+                    </ProviderIcon>
                     <ProviderTitle provider="elevenlabs">
                       ElevenLabs
                     </ProviderTitle>
@@ -1177,7 +1203,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                       </>
                     ) : (
                       <>
-                        <span>📋</span>
+                        <HeadphonesIcon size={16} aria-hidden="true" />
                         Browse Available ElevenLabs Voices
                       </>
                     )}

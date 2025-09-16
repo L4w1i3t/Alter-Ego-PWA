@@ -295,7 +295,7 @@ export class DevToolsBlocker {
     `;
 
     warning.innerHTML = `
-      <div style="margin-bottom: 8px;">⚠️ Developer Tools Detected</div>
+      <div style="margin-bottom: 8px;"> Developer Tools Detected</div>
       <div style="font-size: 12px; opacity: 0.9;">Please close dev tools for optimal experience</div>
     `;
 
@@ -322,7 +322,7 @@ export class DevToolsBlocker {
   public disableBlocking(): void {
     this.isBlocking = false;
     this.detectionPaused = true;
-    console.log('🔓 Developer tools blocking has been disabled');
+    console.log(' Developer tools blocking has been disabled');
   }
 
   /**
@@ -331,7 +331,7 @@ export class DevToolsBlocker {
   public enableBlocking(): void {
     this.isBlocking = true;
     this.detectionPaused = false;
-    console.log('🔒 Developer tools blocking has been enabled');
+    console.log(' Developer tools blocking has been enabled');
   }
 
   /**

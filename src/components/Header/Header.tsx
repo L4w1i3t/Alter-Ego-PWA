@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { HamburgerIcon, GearIcon } from '../Common/Icons';
 
 const HeaderContainer = styled.header`
   display: flex;
@@ -35,9 +36,16 @@ const LoadCharacterButton = styled.button`
   }
 `;
 
-const MenuIcon = styled.div`
+const MenuIcon = styled.button`
   font-size: 1.5em;
   cursor: pointer;
+  color: #0f0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em;
 
   &:hover {
     color: #8f8;
@@ -67,9 +75,16 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <HeaderContainer>
       <LoadCharacterButton onClick={onLoadCharacter}>
-        Load Character
+        <span
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5em' }}
+        >
+          <GearIcon size={18} aria-hidden="true" />
+          <span>Load Character</span>
+        </span>
       </LoadCharacterButton>
-      <MenuIcon onClick={onSettingsClick}>☰</MenuIcon>
+      <MenuIcon onClick={onSettingsClick} aria-label="Open menu">
+        <HamburgerIcon size={24} aria-hidden="true" />
+      </MenuIcon>
     </HeaderContainer>
   );
 };

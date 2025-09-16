@@ -4,10 +4,10 @@ import Header from './Header/Header';
 import QuerySection from './Sections/QuerySection';
 import MainContent from './Sections/MainContent';
 import Footer from './Footer/Footer';
-import Settings from './Settings/Settings';
-import ModelSelection from './Sections/ModelSelection';
-import WarmingUp from './Sections/WarmingUp';
-import CharacterSelector from './Sections/CharacterSelector';
+const Settings = lazy(() => import('./Settings/Settings'));
+const ModelSelection = lazy(() => import('./Sections/ModelSelection'));
+const WarmingUp = lazy(() => import('./Sections/WarmingUp'));
+const CharacterSelector = lazy(() => import('./Sections/CharacterSelector'));
 import NotificationManager from './Common/NotificationManager';
 import { useApi } from '../context/ApiContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
@@ -404,7 +404,7 @@ const LiveMetrics: React.FC = () => {
       )}
 
       <ExpandButton onClick={() => setExpanded(!expanded)}>
-        {expanded ? '▲ Show Less' : '▼ Show More'}
+        {expanded ? ' Show Less' : ' Show More'}
       </ExpandButton>
     </>
   );
@@ -749,13 +749,15 @@ const App: React.FC = () => {
   return (
     <AppContainer>
       <GlobalStyles />
-      {showModelSelection && (
-        <ModelSelection
-          onSelectModel={handleModelSelection}
-          onShowWipInfo={handleShowWipInfo}
-        />
-      )}
-      {showWarmingUp && <WarmingUp />}
+      <Suspense fallback={null}>
+        {showModelSelection && (
+          <ModelSelection
+            onSelectModel={handleModelSelection}
+            onShowWipInfo={handleShowWipInfo}
+          />
+        )}
+        {showWarmingUp && <WarmingUp />}
+      </Suspense>
       <Header
         onSettingsClick={() => setShowSettings(!showSettings)}
         onLoadCharacter={handleLoadCharacterClick}
@@ -773,22 +775,24 @@ const App: React.FC = () => {
         voiceModel={voiceModel}
         onVoiceModelChange={handleVoiceModelChange}
       />
-      {showSettings && (
-        <Settings
-          onClose={() => {
-            setShowSettings(false);
-            setSettingsInitialView(undefined);
-          }}
-          onModelChange={handleModelChange}
-          initialView={settingsInitialView}
-        />
-      )}
-      {showCharacterSelector && (
-        <CharacterSelector
-          onSelect={handleCharacterSelected}
-          onClose={handleCloseCharacterSelector}
-        />
-      )}{' '}
+      <Suspense fallback={null}>
+        {showSettings && (
+          <Settings
+            onClose={() => {
+              setShowSettings(false);
+              setSettingsInitialView(undefined);
+            }}
+            onModelChange={handleModelChange}
+            initialView={settingsInitialView}
+          />
+        )}
+        {showCharacterSelector && (
+          <CharacterSelector
+            onSelect={handleCharacterSelected}
+            onClose={handleCloseCharacterSelector}
+          />
+        )}
+      </Suspense>{' '}
       {isDevelopment && showDevTools && (
         <DevMetricsControl $collapsed={devToolsCollapsed}>
           <CollapseButton
@@ -799,7 +803,7 @@ const App: React.FC = () => {
                 : 'Collapse Performance Monitor'
             }
           >
-            {devToolsCollapsed ? '▲' : '▼'}
+            {devToolsCollapsed ? '' : ''}
           </CollapseButton>
 
           <DevMetricsContent $collapsed={devToolsCollapsed}>

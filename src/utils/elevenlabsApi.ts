@@ -42,7 +42,11 @@ export const textToSpeech = async (
     throw new Error('ElevenLabs API key is not set');
   }
 
-  const endpoint = `${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`;
+  const useProxy = (process.env.REACT_APP_USE_PROXY === 'true') ||
+    (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
+  const endpoint = useProxy
+    ? '/api/elevenlabs-tts'
+    : `${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`;
 
   // Create a valid voice settings object with default values for any missing properties
   const voiceSettings: ElevenlabsVoiceSettings = {
@@ -62,11 +66,15 @@ export const textToSpeech = async (
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      headers: useProxy
+        ? { 'Content-Type': 'application/json', 'x-elevenlabs-key': ELEVENLABS_API_KEY }
+        : {
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Content-Type': 'application/json',
+          },
+      body: JSON.stringify(
+        useProxy ? { voiceId, ...payload } : payload
+      ),
     });
 
     if (!response.ok) {
@@ -95,14 +103,14 @@ export const getVoices = async () => {
     throw new Error('ElevenLabs API key is not set');
   }
 
-  const endpoint = `${ELEVENLABS_API_BASE}/voices`;
+  const useProxy = (process.env.REACT_APP_USE_PROXY === 'true') ||
+    (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
+  const endpoint = useProxy ? '/api/elevenlabs-voices' : `${ELEVENLABS_API_BASE}/voices`;
 
   try {
     const response = await fetch(endpoint, {
       method: 'GET',
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
-      },
+      headers: useProxy ? { 'x-elevenlabs-key': ELEVENLABS_API_KEY } : { 'xi-api-key': ELEVENLABS_API_KEY },
     });
 
     if (!response.ok) {
@@ -130,14 +138,14 @@ export const getModels = async () => {
     throw new Error('ElevenLabs API key is not set');
   }
 
-  const endpoint = `${ELEVENLABS_API_BASE}/models`;
+  const useProxy = (process.env.REACT_APP_USE_PROXY === 'true') ||
+    (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
+  const endpoint = useProxy ? '/api/elevenlabs-models' : `${ELEVENLABS_API_BASE}/models`;
 
   try {
     const response = await fetch(endpoint, {
       method: 'GET',
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
-      },
+      headers: useProxy ? { 'x-elevenlabs-key': ELEVENLABS_API_KEY } : { 'xi-api-key': ELEVENLABS_API_KEY },
     });
 
     if (!response.ok) {

@@ -6,7 +6,6 @@ const CACHE_NAME = `app-cache-${CACHE_VERSION}`;
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/bundle.js',
   '/manifest.json',
   '/assets/favicon.ico'
 ];

@@ -22,12 +22,21 @@ function stringifyDescription(desc: DescriptionLike): string {
   try {
     if (desc == null) return '';
     if (typeof desc === 'string') return desc;
-    if (typeof desc === 'number' || typeof desc === 'boolean') return String(desc);
-    if (Array.isArray(desc)) return desc.map(v => stringifyDescription(v)).join(', ');
+    if (typeof desc === 'number' || typeof desc === 'boolean')
+      return String(desc);
+    if (Array.isArray(desc))
+      return desc.map(v => stringifyDescription(v)).join(', ');
     if (typeof desc === 'object') {
       const obj = desc as Record<string, unknown>;
       // If it looks like our AI analysis structure, format key parts nicely
-      const knownKeys = ['objects', 'people', 'setting', 'colors', 'mood', 'text_visible'];
+      const knownKeys = [
+        'objects',
+        'people',
+        'setting',
+        'colors',
+        'mood',
+        'text_visible',
+      ];
       const parts: string[] = [];
       for (const key of knownKeys) {
         if (obj[key] !== undefined) {
@@ -174,7 +183,12 @@ export const saveImageToCache = async (
 
   // Compress original image and create thumbnail to reduce localStorage usage
   const [compressedDataUrl, thumbnail] = await Promise.all([
-    processImage(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.7, format: 'jpeg' }),
+    processImage(file, {
+      maxWidth: 1280,
+      maxHeight: 1280,
+      quality: 0.7,
+      format: 'jpeg',
+    }),
     createThumbnail(file, 150),
   ]);
 
@@ -268,7 +282,9 @@ export const getImageCache = (): CachedImage[] => {
 
     // Reconstruct full objects with image data and normalize description
     return metadata.map(meta => {
-      const normalizedDescription = stringifyDescription((meta as any).description);
+      const normalizedDescription = stringifyDescription(
+        (meta as any).description
+      );
       return {
         ...meta,
         description: normalizedDescription,
@@ -306,7 +322,9 @@ export const searchCachedImages = (
     if (persona && img.persona !== persona) return false;
 
     // Search in description and tags
-    const descText = stringifyDescription((img as any).description).toLowerCase();
+    const descText = stringifyDescription(
+      (img as any).description
+    ).toLowerCase();
     const matchesDescription = descText.includes(lowerQuery);
     const matchesTags = img.tags?.some(tag =>
       tag.toLowerCase().includes(lowerQuery)
@@ -389,7 +407,10 @@ function evictOldestImage(): boolean {
       aiGenerated: img.aiGenerated,
     }));
     try {
-      localStorage.setItem('alterEgo_imageCache', JSON.stringify(metadataToStore));
+      localStorage.setItem(
+        'alterEgo_imageCache',
+        JSON.stringify(metadataToStore)
+      );
     } catch {
       // If even metadata fails (very unlikely as it's small), clear all
       localStorage.removeItem('alterEgo_imageCache');

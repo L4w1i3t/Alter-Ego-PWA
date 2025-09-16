@@ -118,7 +118,10 @@ export async function saveApiKeys(keys: ApiKeys): Promise<void> {
     const encryptedKeys = await encryptData(keysJson);
     localStorage.setItem('alterEgo_apiKeys_encrypted', encryptedKeys);
   } catch (error) {
-    console.warn('Encryption optional copy failed; continuing with plaintext only:', error);
+    console.warn(
+      'Encryption optional copy failed; continuing with plaintext only:',
+      error
+    );
   }
 }
 
@@ -137,14 +140,20 @@ export async function migrateApiKeysIfNeeded(): Promise<void> {
   try {
     const decrypted = await decryptData(current);
     const parsed = JSON.parse(decrypted);
-    if (parsed && (parsed.OPENAI_API_KEY !== undefined || parsed.ELEVENLABS_API_KEY !== undefined)) {
+    if (
+      parsed &&
+      (parsed.OPENAI_API_KEY !== undefined ||
+        parsed.ELEVENLABS_API_KEY !== undefined)
+    ) {
       localStorage.setItem('alterEgo_apiKeys', JSON.stringify(parsed));
       // Also keep an encrypted copy in the new key for reference
       try {
         const reEncrypted = await encryptData(JSON.stringify(parsed));
         localStorage.setItem('alterEgo_apiKeys_encrypted', reEncrypted);
       } catch {}
-      console.log('API keys migrated from encrypted to plaintext JSON storage.');
+      console.log(
+        'API keys migrated from encrypted to plaintext JSON storage.'
+      );
     }
   } catch (err) {
     console.warn('Failed to migrate legacy encrypted API keys:', err);
@@ -261,11 +270,11 @@ export function loadPersonas(): Persona[] {
 // Migration function to update existing ALTER EGO persona with new content
 function migratePersonasIfNeeded(personas: Persona[]): Persona[] {
   const settings = loadSettings();
-  
+
   // Check if we need to migrate (either no version or old version)
   if (!settings.personaVersion || settings.personaVersion !== PERSONA_VERSION) {
     console.log('Migrating personas to version:', PERSONA_VERSION);
-    
+
     const updatedPersonas = personas.map(persona => {
       // Only update the default ALTER EGO persona, not user-created custom ones
       if (persona.name === 'ALTER EGO') {
@@ -277,20 +286,20 @@ function migratePersonasIfNeeded(personas: Persona[]): Persona[] {
       }
       return persona;
     });
-    
+
     // Save the migrated personas
     savePersonas(updatedPersonas);
-    
+
     // Update the settings with the new version
     saveSettings({
       ...settings,
       personaVersion: PERSONA_VERSION,
     });
-    
+
     console.log('Persona migration completed');
     return updatedPersonas;
   }
-  
+
   return personas;
 }
 
