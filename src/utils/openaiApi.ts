@@ -461,8 +461,16 @@ export const generateChatCompletion = async (
       (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
     const endpoint = useProxy ? '/api/openai-chat' : 'https://api.openai.com/v1/chat/completions';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
-    else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+    const isProjectScopedKey = OPENAI_API_KEY.startsWith('sk-proj-');
+
+    if (useProxy) {
+      headers['x-openai-key'] = OPENAI_API_KEY;
+    } else {
+      headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+      if (isProjectScopedKey) {
+        headers['OpenAI-Beta'] = 'allow-project-key';
+      }
+    }
     const data = await postOpenAIRequest({
       endpoint,
       headers,
@@ -698,8 +706,16 @@ export const generateVisionChatCompletion = async (
       (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
     const endpoint = useProxy ? '/api/openai-chat' : 'https://api.openai.com/v1/chat/completions';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
-    else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+    const isProjectScopedKey = OPENAI_API_KEY.startsWith('sk-proj-');
+
+    if (useProxy) {
+      headers['x-openai-key'] = OPENAI_API_KEY;
+    } else {
+      headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+      if (isProjectScopedKey) {
+        headers['OpenAI-Beta'] = 'allow-project-key';
+      }
+    }
     const data = await postOpenAIRequest({
       endpoint,
       headers,
@@ -865,8 +881,16 @@ export const generateLightweightVision = async (
       (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
     const endpoint = useProxy ? '/api/openai-chat' : 'https://api.openai.com/v1/chat/completions';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
-    else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+    const isProjectScopedKey = OPENAI_API_KEY.startsWith('sk-proj-');
+
+    if (useProxy) {
+      headers['x-openai-key'] = OPENAI_API_KEY;
+    } else {
+      headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
+      if (isProjectScopedKey) {
+        headers['OpenAI-Beta'] = 'allow-project-key';
+      }
+    }
     const data = await postOpenAIRequest({
       endpoint,
       headers,

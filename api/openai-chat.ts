@@ -42,12 +42,22 @@ export default async function handler(req: any, res: any) {
       body.max_tokens = Math.min(Number(body.max_tokens), 2000);
     }
 
+    const isProjectScopedKey = apiKey.startsWith('sk-proj-');
+    const upstreamHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    };
+    if (isProjectScopedKey) {
+      upstreamHeaders['OpenAI-Beta'] = 'allow-project-key';
+      const projectId = process.env.OPENAI_PROJECT_ID || '';
+      if (projectId) {
+        upstreamHeaders['OpenAI-Project'] = projectId;
+      }
+    }
+
     const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: upstreamHeaders,
       body: JSON.stringify(body),
     });
 
