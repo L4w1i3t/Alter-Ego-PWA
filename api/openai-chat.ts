@@ -12,7 +12,7 @@ export default async function handler(req: any, res: any) {
       res.setHeader('Vary', 'Origin');
     }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-openai-key, Authorization');
   };
 
   setCORS();
@@ -71,3 +71,4 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: e?.message || 'Proxy error' });
   }
 }
+

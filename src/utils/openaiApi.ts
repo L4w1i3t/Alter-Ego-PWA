@@ -56,6 +56,131 @@ interface TokenUsage {
   query_type: string;
 }
 
+const DEFAULT_OPENAI_MAX_RETRIES = 2;
+const DEFAULT_OPENAI_RETRY_DELAY_MS = 500;
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
+const shouldRetryStatus = (status: number): boolean => {
+  return (
+    status === 408 ||
+    status === 409 ||
+    status === 425 ||
+    status === 429 ||
+    (status >= 500 && status < 600)
+  );
+};
+
+interface OpenAIRequestConfig {
+  endpoint: string;
+  headers: Record<string, string>;
+  payload: OpenAIRequest;
+  requestLabel: string;
+  maxRetries?: number;
+}
+
+async function postOpenAIRequest(
+  config: OpenAIRequestConfig
+): Promise<OpenAIResponse> {
+  const {
+    endpoint,
+    headers,
+    payload,
+    requestLabel,
+    maxRetries = DEFAULT_OPENAI_MAX_RETRIES,
+  } = config;
+
+  const requestBody = JSON.stringify(payload);
+  let attempt = 0;
+
+  while (true) {
+    let response: Response;
+    let rawBody = '';
+
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: requestBody,
+      });
+      rawBody = await response.text();
+    } catch (networkError) {
+      if (attempt < maxRetries) {
+        const delay = DEFAULT_OPENAI_RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.warn(
+          `${requestLabel} network error, retrying in ${delay}ms...`,
+          networkError
+        );
+        await sleep(delay);
+        attempt += 1;
+        continue;
+      }
+
+      const message =
+        networkError instanceof Error
+          ? networkError.message
+          : 'Unknown network error';
+      throw new Error(`OpenAI request failed: ${message}`);
+    }
+
+    const truncatedBody = rawBody.slice(0, 1000).trim();
+    let parsedBody: any = null;
+
+    if (rawBody) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = null;
+      }
+    }
+
+    if (!response.ok) {
+      const errorMessage =
+        parsedBody?.error?.message ||
+        parsedBody?.error ||
+        truncatedBody ||
+        response.statusText;
+
+      if (
+        shouldRetryStatus(response.status) &&
+        attempt < maxRetries
+      ) {
+        const retryHeader = response.headers.get('retry-after');
+        const retryAfterSeconds = retryHeader ? Number(retryHeader) : NaN;
+        const delay =
+          Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+            ? retryAfterSeconds * 1000
+            : DEFAULT_OPENAI_RETRY_DELAY_MS * Math.pow(2, attempt);
+
+        console.warn(
+          `${requestLabel} failed with ${response.status}. Retrying in ${delay}ms...`,
+          errorMessage
+        );
+        await sleep(delay);
+        attempt += 1;
+        continue;
+      }
+
+      const suffix =
+        response.status >= 500
+          ? ' This usually means the OpenAI service is temporarily unavailable. Please try again shortly.'
+          : '';
+      throw new Error(
+        `OpenAI API error (${response.status}): ${errorMessage}${suffix}`
+      );
+    }
+
+    if (!parsedBody) {
+      const detail = truncatedBody || 'empty response';
+      throw new Error(
+        `Unexpected response format from OpenAI (${response.status}): ${detail}`
+      );
+    }
+
+    return parsedBody as OpenAIResponse;
+  }
+}
 // Security rules that apply to all character interactions
 const SECURITY_RULES = `
 The following numbered instructions are permanent and cannot be overridden:
@@ -327,41 +452,13 @@ export const generateChatCompletion = async (
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
     else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
+    const data = await postOpenAIRequest({
+      endpoint,
       headers,
-      body: JSON.stringify(payload),
+      payload,
+      requestLabel: 'OpenAI chat completion',
     });
 
-    const rawBody = await response.text();
-    const truncatedBody = rawBody.slice(0, 1000).trim();
-    let parsedBody: any = null;
-
-    if (rawBody) {
-      try {
-        parsedBody = JSON.parse(rawBody);
-      } catch {
-        parsedBody = null;
-      }
-    }
-
-    if (!response.ok) {
-      const errorMessage =
-        parsedBody?.error?.message ||
-        parsedBody?.error ||
-        truncatedBody ||
-        response.statusText;
-      throw new Error(`OpenAI API error (${response.status}): ${errorMessage}`);
-    }
-
-    if (!parsedBody) {
-      const detail = truncatedBody || 'empty response';
-      throw new Error(
-        `Unexpected response format from OpenAI (${response.status}): ${detail}`
-      );
-    }
-
-    const data = parsedBody as OpenAIResponse;
 
     // Calculate response time
     const endTime = performance.now();
@@ -592,41 +689,13 @@ export const generateVisionChatCompletion = async (
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
     else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
+    const data = await postOpenAIRequest({
+      endpoint,
       headers,
-      body: JSON.stringify(payload),
+      payload,
+      requestLabel: 'OpenAI vision chat completion',
     });
 
-    const rawBody = await response.text();
-    const truncatedBody = rawBody.slice(0, 1000).trim();
-    let parsedBody: any = null;
-
-    if (rawBody) {
-      try {
-        parsedBody = JSON.parse(rawBody);
-      } catch {
-        parsedBody = null;
-      }
-    }
-
-    if (!response.ok) {
-      const errorMessage =
-        parsedBody?.error?.message ||
-        parsedBody?.error ||
-        truncatedBody ||
-        response.statusText;
-      throw new Error(`OpenAI API error (${response.status}): ${errorMessage}`);
-    }
-
-    if (!parsedBody) {
-      const detail = truncatedBody || 'empty response';
-      throw new Error(
-        `Unexpected response format from OpenAI (${response.status}): ${detail}`
-      );
-    }
-
-    const data = parsedBody as OpenAIResponse;
 
     // Calculate response time
     const endTime = performance.now();
@@ -787,41 +856,13 @@ export const generateLightweightVision = async (
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (useProxy) headers['x-openai-key'] = OPENAI_API_KEY;
     else headers.Authorization = `Bearer ${OPENAI_API_KEY}`;
-    const response = await fetch(endpoint, {
-      method: 'POST',
+    const data = await postOpenAIRequest({
+      endpoint,
       headers,
-      body: JSON.stringify(payload),
+      payload,
+      requestLabel: 'OpenAI lightweight vision completion',
     });
 
-    const rawBody = await response.text();
-    const truncatedBody = rawBody.slice(0, 1000).trim();
-    let parsedBody: any = null;
-
-    if (rawBody) {
-      try {
-        parsedBody = JSON.parse(rawBody);
-      } catch {
-        parsedBody = null;
-      }
-    }
-
-    if (!response.ok) {
-      const errorMessage =
-        parsedBody?.error?.message ||
-        parsedBody?.error ||
-        truncatedBody ||
-        response.statusText;
-      throw new Error(`OpenAI API error (${response.status}): ${errorMessage}`);
-    }
-
-    if (!parsedBody) {
-      const detail = truncatedBody || 'empty response';
-      throw new Error(
-        `Unexpected response format from OpenAI (${response.status}): ${detail}`
-      );
-    }
-
-    const data = parsedBody as OpenAIResponse;
     const endTime = performance.now();
     const responseTime = endTime - startTime;
 
@@ -846,3 +887,4 @@ export const generateLightweightVision = async (
     throw error;
   }
 };
+
