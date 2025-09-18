@@ -398,6 +398,7 @@ export interface Settings {
   showTimestamps?: boolean; // Show/hide message timestamps
   compactMode?: boolean; // Dense UI layout
   animationsEnabled?: boolean; // Enable/disable UI animations
+  immersiveMode?: boolean; // Enable immersive mode devtools warnings
   autoBackup?: boolean; // Auto-backup conversations
   developerMode?: boolean; // Show debug information
   showEmotionDetection?: boolean; // Show/hide emotion detection boxes
@@ -408,6 +409,10 @@ export interface Settings {
 export function loadSettings(): Settings {
   const settings = localStorage.getItem('alterEgoSettings');
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const immersiveFlag =
+    process.env.REACT_APP_IMMERSIVE_MODE === 'true' ||
+    (typeof localStorage !== 'undefined' &&
+      localStorage.getItem('alterEgo_immersiveMode') === 'true');
 
   if (!settings) {
     return {
@@ -418,6 +423,7 @@ export function loadSettings(): Settings {
       textSpeed: 40, // Default text speed (characters per second)
       showEmotionDetection: isDevelopment, // Show emotion detection in dev mode only by default
       personaVersion: PERSONA_VERSION, // Initialize with current version
+      immersiveMode: immersiveFlag,
     };
   }
 
@@ -431,6 +437,7 @@ export function loadSettings(): Settings {
       showEmotionDetection:
         parsedSettings.showEmotionDetection ?? isDevelopment,
       personaVersion: parsedSettings.personaVersion ?? '1.0.0', // Default to old version to trigger migration
+      immersiveMode: parsedSettings.immersiveMode ?? immersiveFlag,
     };
   } catch (e) {
     console.error('Error parsing settings:', e);
@@ -442,6 +449,7 @@ export function loadSettings(): Settings {
       textSpeed: 40,
       showEmotionDetection: isDevelopment,
       personaVersion: PERSONA_VERSION,
+      immersiveMode: immersiveFlag,
     };
   }
 }

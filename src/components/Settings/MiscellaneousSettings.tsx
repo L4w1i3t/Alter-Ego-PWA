@@ -113,21 +113,59 @@ const NumberInput = styled.input`
 const CheckboxContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5em;
+  gap: 0.75em;
 
   @media (max-width: 768px) {
     gap: 1em;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 `;
 
 const Checkbox = styled.input`
-  width: 16px;
-  height: 16px;
-  accent-color: #0f0;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #0f0;
+  border-radius: 4px;
+  background: transparent;
+  color: #0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+
+  &::before {
+    content: '✕';
+    font-size: 0.75em;
+    opacity: 0.6;
+    line-height: 1;
+  }
+
+  &:hover {
+    border-color: #0ff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #0ff;
+    outline-offset: 2px;
+  }
+
+  &:checked {
+    background: #0f0;
+    border-color: #0ff;
+    color: #000;
+  }
+
+  &:checked::before {
+    content: '✔';
+    opacity: 1;
+  }
 
   @media (max-width: 768px) {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 `;
 
@@ -138,6 +176,46 @@ const CheckboxLabel = styled.label`
 
   @media (max-width: 768px) {
     font-size: 1em;
+  }
+`;
+
+const InfoButton = styled.button`
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid #0ff;
+  background: rgba(0, 40, 60, 0.6);
+  color: #0ff;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 120, 160, 0.4);
+    border-color: #0ff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #0ff;
+    outline-offset: 2px;
+  }
+`;
+
+const ImmersiveInfoBox = styled.div`
+  margin-top: -0.25em;
+  margin-bottom: 1em;
+  padding: 0.75em 1em;
+  border: 1px solid #0ff;
+  background: rgba(0, 20, 40, 0.85);
+  color: #0ff;
+  font-size: 0.9em;
+  line-height: 1.5;
+  border-radius: 0.25em;
+
+  strong {
+    color: #fff;
   }
 `;
 
@@ -257,6 +335,11 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
   const [developerMode, setDeveloperMode] = useState<boolean>(false);
   const [showEmotionDetection, setShowEmotionDetection] =
     useState<boolean>(false);
+  const [immersiveMode, setImmersiveMode] = useState<boolean>(false);
+  const [initialImmersiveMode, setInitialImmersiveMode] =
+    useState<boolean>(false);
+  const [showImmersiveInfo, setShowImmersiveInfo] =
+    useState<boolean>(false);
 
   const sampleText =
     'Hello! This is how ALTER EGO will type responses at this speed.';
@@ -276,6 +359,10 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
 
     // Load emotion detection setting
     setShowEmotionDetection(settings.showEmotionDetection ?? false);
+
+    const immersiveEnabled = settings.immersiveMode ?? false;
+    setImmersiveMode(immersiveEnabled);
+    setInitialImmersiveMode(immersiveEnabled);
   }, []);
 
   useEffect(() => {
@@ -306,6 +393,14 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
     setIsInstantText(e.target.checked);
   };
 
+  const handleImmersiveToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImmersiveMode(e.target.checked);
+  };
+
+  const toggleImmersiveInfo = () => {
+    setShowImmersiveInfo(prev => !prev);
+  };
+
   const handleEmotionDetectionToggle = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -321,14 +416,27 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
     try {
       const currentSettings = loadSettings();
       const speedToSave = isInstantText ? 1000 : textSpeed; // Use 1000 for instant
+      const immersiveChanged = initialImmersiveMode !== immersiveMode;
 
       saveSettings({
         ...currentSettings,
         textSpeed: speedToSave,
         showEmotionDetection: showEmotionDetection,
+        immersiveMode,
       });
+
+      if (immersiveMode) {
+        localStorage.setItem('alterEgo_immersiveMode', 'true');
+      } else {
+        localStorage.removeItem('alterEgo_immersiveMode');
+      }
+      setInitialImmersiveMode(immersiveMode);
+      setShowImmersiveInfo(false);
       onBack(); // Navigate back first
-      showSuccess('Miscellaneous settings saved successfully.'); // Then show notification
+      const successMessage = immersiveChanged
+        ? 'Miscellaneous settings saved. Reload to apply immersive mode changes.'
+        : 'Miscellaneous settings saved successfully.';
+      showSuccess(successMessage); // Then show notification
     } catch (error) {
       showError('Error saving miscellaneous settings.');
       console.error('Failed to save miscellaneous settings:', error);
@@ -342,6 +450,37 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
         These options allow you to fine-tune how the application behaves and
         feels during use.
       </InfoBox>{' '}
+      <SettingRow>
+        <Label htmlFor="immersiveMode">Immersive Mode:</Label>
+        <CheckboxContainer>
+          <Checkbox
+            type="checkbox"
+            id="immersiveMode"
+            checked={immersiveMode}
+            onChange={handleImmersiveToggle}
+          />
+          <CheckboxLabel htmlFor="immersiveMode">
+            Disable interating with Developer Tools in production
+          </CheckboxLabel>
+          <InfoButton
+            type="button"
+            onClick={toggleImmersiveInfo}
+            aria-label="More information about immersive mode"
+            aria-expanded={showImmersiveInfo}
+          >
+            i
+          </InfoButton>
+        </CheckboxContainer>
+      </SettingRow>
+      {showImmersiveInfo && (
+        <ImmersiveInfoBox>
+          <strong>Immersive Mode:</strong> Activates gentle warnings when developer tools open in production.
+          This keeps you aware of debugging on live deployments without blocking interactions.
+          <br />
+          <strong>Tip:</strong> Reload after saving to apply changes.
+        </ImmersiveInfoBox>
+      )}
+
       <SettingRow>
         <Label htmlFor="instantText">Instant Text:</Label>
         <CheckboxContainer>
@@ -407,9 +546,6 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
         </SettingRow>
       )}
       <InfoText style={{ fontSize: '0.9em', color: '#0f06' }}>
-        <strong>Emotion Detection:</strong> Shows boxes analyzing the emotional
-        content of both your messages and ALTER EGO's responses. This feature is
-        automatically hidden in production mode for a cleaner interface.{' '}
         {process.env.NODE_ENV === 'development' &&
           'In development mode, you can toggle this feature on/off above.'}
       </InfoText>
