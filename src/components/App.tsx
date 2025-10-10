@@ -470,8 +470,26 @@ const App: React.FC = () => {
   }, []);
 
   // Voice synthesis utilities
+  const sanitizeForVoice = (s: string): string => {
+    try {
+      // Remove emoji/pictographs and common emoticons to avoid TTS reading them
+      const noEmoji = s.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+      return noEmoji.replace(/(:\)|;\)|:\(|:D|XD|xD|:\]|;\]|:\}|<3|:\/|:\\\(|\^_\^|¯\\_\(ツ\)_\/¯)/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    } catch {
+      // Fallback: strip common surrogate pair range for emojis
+      return s
+        .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
+        .trim();
+    }
+  };
+
   const synthesizeVoice = async (text: string, voicemodel_id: string) => {
     if (voicemodel_id === 'None' || !text) return;
+
+    // Ensure TTS never receives emojis/emoji-like tokens
+    const cleanText = sanitizeForVoice(text);
 
     // Stop any currently playing speech
     if (window.speechSynthesis.speaking) {
@@ -501,7 +519,7 @@ const App: React.FC = () => {
     try {
       if (model.provider === 'browser') {
         // Use browser's built-in speech synthesis
-        const utterance = new SpeechSynthesisUtterance(text);
+        const utterance = new SpeechSynthesisUtterance(cleanText);
         
         // Set the specific voice if one is configured
         if (model.voiceId) {
@@ -552,7 +570,7 @@ const App: React.FC = () => {
 
           // Call ElevenLabs API with proper settings
           const audioBlob = await textToSpeech(
-            text,
+            cleanText,
             model.voiceId || 'eleven_multilingual_v2',
             model.settings || { stability: 0.5, similarity_boost: 0.5 }
           );

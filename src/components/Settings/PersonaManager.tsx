@@ -1,6 +1,6 @@
 import React, { useState, useEffect, startTransition } from 'react';
 import styled from 'styled-components';
-import { loadPersonas, savePersonas, Persona } from '../../utils/storageUtils';
+import { loadPersonas, savePersonas, Persona, isExamplePersonaName } from '../../utils/storageUtils';
 import { dispatchAppEvent, EVENTS } from '../../utils/events';
 import ConfirmationDialog from '../Common/ConfirmationDialog';
 import { showSuccess, showError } from '../Common/NotificationManager';
@@ -650,8 +650,7 @@ BEHAVIORAL GUIDELINES:
   const isDefaultPersona = (name: string) => name === 'ALTER EGO';
 
   // Check if a persona is one of the example personas
-  const isExamplePersona = (name: string) =>
-    name === 'Marcus "Detective" Kane' || name === 'Luna "Starweaver" Chen';
+  const isExamplePersona = (name: string) => isExamplePersonaName(name);
 
   // Render the persona list and editor
   return (

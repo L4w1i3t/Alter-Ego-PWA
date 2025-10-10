@@ -333,12 +333,10 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
   const [notificationDuration, setNotificationDuration] =
     useState<number>(5000);
   const [soundNotifications, setSoundNotifications] = useState<boolean>(false);
-  const [showTimestamps, setShowTimestamps] = useState<boolean>(true);
-  const [compactMode, setCompactMode] = useState<boolean>(false);
-  const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(true);
+  // Removed: showTimestamps, compactMode, reduce motion (animationsEnabled)
   const [overallTextScale, setOverallTextScale] = useState<number>(1);
   const [responseTextScale, setResponseTextScale] = useState<number>(1);
-  const [bubbleMaxWidthPercent, setBubbleMaxWidthPercent] = useState<number>(70);
+  // Removed: bubbleMaxWidthPercent
   const [autoBackup, setAutoBackup] = useState<boolean>(false);
   const [developerMode, setDeveloperMode] = useState<boolean>(false);
   const [showEmotionDetection, setShowEmotionDetection] =
@@ -375,12 +373,10 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
     setInitialImmersiveMode(immersiveEnabled);
 
     // Load new UI settings
-    setShowTimestamps(settings.showTimestamps ?? true);
-    setCompactMode(settings.compactMode ?? false);
-    setAnimationsEnabled(settings.animationsEnabled ?? true);
+    // Removed: timestamps/compact/reduce motion
     setOverallTextScale(settings.overallTextScale ?? 1);
     setResponseTextScale(settings.responseTextScale ?? 1);
-    setBubbleMaxWidthPercent(settings.bubbleMaxWidthPercent ?? 70);
+    // Removed: bubble width
   }, []);
 
   useEffect(() => {
@@ -434,10 +430,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
     const v = Number(e.target.value);
     setResponseTextScale(Math.min(2, Math.max(0.8, v)));
   };
-  const handleBubbleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = Number(e.target.value);
-    setBubbleMaxWidthPercent(Math.min(90, Math.max(50, v)));
-  };
+  // Removed: bubble width handler
 
   const handlePreview = () => {
     setPreviewText('');
@@ -455,12 +448,8 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
         textSpeed: speedToSave,
         showEmotionDetection: showEmotionDetection,
         immersiveMode,
-        showTimestamps,
-        compactMode,
-        animationsEnabled,
         overallTextScale,
         responseTextScale,
-        bubbleMaxWidthPercent,
       });
 
       if (immersiveMode) {
@@ -521,62 +510,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
           </span>
         </InputContainer>
       </SettingRow>
-      <SettingRow>
-        <Label htmlFor="bubbleWidth">Bubble Width:</Label>
-        <InputContainer>
-          <NumberInput
-            id="bubbleWidth"
-            type="number"
-            min="50"
-            max="90"
-            value={bubbleMaxWidthPercent}
-            onChange={handleBubbleWidthChange}
-          />
-          <span style={{ color: '#0f08', fontSize: '0.9em' }}>% of container</span>
-        </InputContainer>
-      </SettingRow>
-      <SettingRow>
-        <Label htmlFor="timestamps">Show Timestamps:</Label>
-        <CheckboxContainer>
-          <Checkbox
-            type="checkbox"
-            id="timestamps"
-            checked={showTimestamps}
-            onChange={e => setShowTimestamps(e.target.checked)}
-          />
-          <CheckboxLabel htmlFor="timestamps">
-            Display message times in chat
-          </CheckboxLabel>
-        </CheckboxContainer>
-      </SettingRow>
-      <SettingRow>
-        <Label htmlFor="compactMode">Compact Mode:</Label>
-        <CheckboxContainer>
-          <Checkbox
-            type="checkbox"
-            id="compactMode"
-            checked={compactMode}
-            onChange={e => setCompactMode(e.target.checked)}
-          />
-          <CheckboxLabel htmlFor="compactMode">
-            Reduce spacing for denser layout
-          </CheckboxLabel>
-        </CheckboxContainer>
-      </SettingRow>
-      <SettingRow>
-        <Label htmlFor="reduceMotion">Reduce Motion:</Label>
-        <CheckboxContainer>
-          <Checkbox
-            type="checkbox"
-            id="reduceMotion"
-            checked={!animationsEnabled ? true : false}
-            onChange={e => setAnimationsEnabled(!e.target.checked)}
-          />
-          <CheckboxLabel htmlFor="reduceMotion">
-            Minimize animations and typing effect
-          </CheckboxLabel>
-        </CheckboxContainer>
-      </SettingRow>
+      {/* Removed: Bubble Width, Show Timestamps, Compact Mode, Reduce Motion */}
       <SettingRow>
         <Label htmlFor="immersiveMode">Immersive Mode:</Label>
         <CheckboxContainer>

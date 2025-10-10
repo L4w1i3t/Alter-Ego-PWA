@@ -507,6 +507,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     }
 
     saveChatHistory(updatedHistory);
+    try {
+      window.dispatchEvent(new CustomEvent('chat-history-updated'));
+    } catch {}
 
     try {
       const ltmMessages = normalized
@@ -584,6 +587,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           id: newSessionId,
         };
         saveChatHistory(historyCopy);
+        try {
+          window.dispatchEvent(new CustomEvent('chat-history-updated'));
+        } catch {}
       }
     }
 
@@ -888,7 +894,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       } catch {}
 
       // Call the AI service with the combined context (including images)
-      const response = await sendMessageToAI(
+      let response = await sendMessageToAI(
         query,
         effectiveSystemPrompt,
         messagesForAI,
@@ -896,6 +902,27 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         imageUrls, // Pass images to AI service
         sessionId // Pass session ID for token tracking
       );
+
+      // Output sanitization: enforce no emojis and trim meaningless closers
+      try {
+        const stripEmojis = (s: string) =>
+          s
+            // Remove emoji presentation and most pictographs
+            .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+            // Remove standard emoticons / kaomoji-like patterns conservatively
+            .replace(/(:\)|;\)|:\(|:D|XD|xD|:\]|;\]|:\}|<3|:\/|:\\\(|\^_\^|¯\\_\(ツ\)_\/¯)/g, '');
+        const stripStockClosers = (s: string) => {
+          const patterns = [
+            // placeholder text to keep the list valid and not have a red line
+            /\b(Bingus McWingus (Surely nobody will end their sentence with this, right?)\.)/gi,
+          ];
+          let out = s;
+          for (const p of patterns) out = out.replace(p, '');
+          // Clean extra spaces/lines introduced
+          return out.replace(/\s{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        };
+        response = stripStockClosers(stripEmojis(response));
+      } catch {}
 
       // Update conversation history with the AI's response
       const assistantMessageBase: Message = {

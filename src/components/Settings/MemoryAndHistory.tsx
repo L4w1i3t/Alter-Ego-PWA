@@ -14,6 +14,10 @@ import {
   showWarning,
   showInfo,
 } from '../Common/NotificationManager';
+import { clearAllMemory as clearAllLTM } from '../../memory/longTermDB';
+import { clearAllAssociations } from '../../memory/associativeMemory';
+import { loadPersonas } from '../../utils/storageUtils';
+import ConfirmationDialog from '../Common/ConfirmationDialog';
 
 const Container = styled.div`
   display: flex;
@@ -475,6 +479,10 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
   );
   const [personaFilter, setPersonaFilter] = useState<string>('all');
   const [uniquePersonas, setUniquePersonas] = useState<string[]>([]);
+  const [allPersonaNames, setAllPersonaNames] = useState<string[]>([]);
+  const [personaToClear, setPersonaToClear] = useState<string>('');
+  const [isPersonaConfirmOpen, setIsPersonaConfirmOpen] = useState(false);
+  const [isAllConfirmOpen, setIsAllConfirmOpen] = useState(false);
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -507,6 +515,21 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
     loadHistoryData();
   }, []);
 
+  // Sync when other parts of the app update chat history
+  useEffect(() => {
+    const onUpdated = () => loadHistoryData();
+    window.addEventListener(
+      'chat-history-updated',
+      onUpdated as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        'chat-history-updated',
+        onUpdated as EventListener
+      );
+    };
+  }, []);
+
   const loadHistoryData = () => {
     const chatHistory = loadChatHistory();
     setHistory(chatHistory);
@@ -516,6 +539,18 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       new Set(chatHistory.map(entry => entry.persona))
     );
     setUniquePersonas(personas);
+
+    // Also pre-populate manage tab persona list from storage
+    try {
+      const stored = loadPersonas().map(p => p.name);
+      const combined = Array.from(new Set([...(stored || []), ...personas]));
+      setAllPersonaNames(combined);
+      if (!personaToClear && combined.length > 0) {
+        setPersonaToClear(combined[0]);
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
 
     // Initial filtering
     setFilteredHistory(chatHistory);
@@ -537,6 +572,17 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
       setSavedMemoryBuffer(latestBuffer);
       setMemoryBuffer(latestBuffer);
       setDisplayMode('manage');
+      // refresh personas list when entering manage tab
+      try {
+        const stored = loadPersonas().map(p => p.name);
+        const combined = Array.from(new Set([...(stored || []), ...uniquePersonas]));
+        setAllPersonaNames(combined);
+        if (!personaToClear && combined.length > 0) {
+          setPersonaToClear(combined[0]);
+        }
+      } catch (e) {
+        // ignore
+      }
     }
   };
 
@@ -703,15 +749,46 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
     }
   };
 
-  const handleClearMemory = () => {
+  const handleConfirmClearPersona = async () => {
+    setIsPersonaConfirmOpen(false);
+    if (!personaToClear) {
+      showWarning('Please select a character to clear.');
+      return;
+    }
     try {
+      // Clear both STM (chat history) and LTM (Dexie + associations) for selected persona
+      await clearConversation(personaToClear);
+      showSuccess(`Cleared memory (STM + LTM) for ${personaToClear}.`);
+      // Notify and refresh UI state
+      window.dispatchEvent(new CustomEvent('chat-history-updated'));
+      loadHistoryData();
+      setSelectedEntry(null);
+    } catch (err) {
+      console.error('Failed to clear persona memory:', err);
+      showError('Error clearing persona memory.');
+    }
+  };
+
+  const handleConfirmClearAll = async () => {
+    setIsAllConfirmOpen(false);
+    try {
+      // Clear all long-term memory (Dexie) and associations
+      await clearAllLTM();
+      clearAllAssociations();
+      // Clear all short-term conversation history (all personas) in localStorage
       clearMemory();
-      clearConversation();
+      // Reset current persona's in-memory session and view
+      await clearConversation(currentPersona);
       window.dispatchEvent(new CustomEvent('clear-chat-display'));
-      showSuccess('Memory cleared successfully.');
-    } catch (error) {
-      showError('Error clearing memory.');
-      console.error('Failed to clear memory:', error);
+      window.dispatchEvent(new CustomEvent('chat-history-updated'));
+      // Refresh UI lists and selections
+      loadHistoryData();
+      setSelectedEntry(null);
+      setPersonaFilter('all');
+      showSuccess('Cleared ALL personas\' memory (STM + LTM).');
+    } catch (err) {
+      console.error('Failed to clear all memory:', err);
+      showError('Error clearing all memory.');
     }
   };
 
@@ -889,13 +966,68 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
         </SectionCard>
 
         <DangerCard>
-          <SectionTitle>Clear Conversation Memory</SectionTitle>
+          <SectionTitle>Clear Memory (Selected Character)</SectionTitle>
           <SectionDescription>
-            This erases all stored conversation history with ALTER EGO. This
-            action cannot be undone.
+            Permanently delete BOTH short-term conversation history and long-term memory (including associations) for a single character.
           </SectionDescription>
-          <DangerButton onClick={handleClearMemory}>Clear Memory</DangerButton>
+          <InputGroup>
+            <Label htmlFor="persona-clear-select">Character:</Label>
+            <Select
+              id="persona-clear-select"
+              value={personaToClear}
+              onChange={e => setPersonaToClear(e.target.value)}
+            >
+              {allPersonaNames.length === 0 ? (
+                <option value="" disabled>
+                  No characters available
+                </option>
+              ) : (
+                allPersonaNames.map(p => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))
+              )}
+            </Select>
+          </InputGroup>
+          <DangerButton
+            onClick={() => setIsPersonaConfirmOpen(true)}
+            disabled={!personaToClear}
+          >
+            Clear Selected Character Memory
+          </DangerButton>
         </DangerCard>
+
+        <DangerCard>
+          <SectionTitle>Clear Memory (All Characters)</SectionTitle>
+          <SectionDescription>
+            Permanently delete ALL short-term conversation histories and long-term memories (including associations) across all characters.
+          </SectionDescription>
+          <DangerButton onClick={() => setIsAllConfirmOpen(true)}>
+            Clear All Memory
+          </DangerButton>
+        </DangerCard>
+
+        <ConfirmationDialog
+          isOpen={isPersonaConfirmOpen}
+          title="Confirm Character Memory Deletion"
+          message={`This will permanently erase BOTH short-term (chat) and long-term memory for "${personaToClear}". This cannot be undone.`}
+          confirmText="Delete Memory"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={handleConfirmClearPersona}
+          onCancel={() => setIsPersonaConfirmOpen(false)}
+        />
+        <ConfirmationDialog
+          isOpen={isAllConfirmOpen}
+          title="Confirm Delete ALL Memory"
+          message="This will permanently erase ALL short-term conversations and long-term memories (including associations) for every character. This cannot be undone."
+          confirmText="Delete ALL Memory"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={handleConfirmClearAll}
+          onCancel={() => setIsAllConfirmOpen(false)}
+        />
       </ManageSection>
     );
   };

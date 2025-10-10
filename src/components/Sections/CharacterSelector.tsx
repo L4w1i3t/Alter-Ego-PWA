@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { loadPersonas, Persona } from '../../utils/storageUtils';
+import {
+  loadPersonas,
+  Persona,
+  isExamplePersonaName,
+} from '../../utils/storageUtils';
 
 const SelectorOverlay = styled.div`
   position: fixed;
@@ -24,10 +28,13 @@ const SelectorOverlay = styled.div`
 const SelectorContent = styled.div`
   background: #000;
   border: 1px solid #0f0;
-  padding: 1.5em;
-  border-radius: 5px;
-  width: 300px;
-  max-width: 90vw;
+  padding: 1.2em 1.2em 1.2em;
+  border-radius: 10px;
+  width: min(920px, 92vw);
+  max-height: min(86vh, 1000px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0, 255, 0, 0.15);
 
   @media (max-width: 768px) {
     width: 100%;
@@ -39,10 +46,18 @@ const SelectorContent = styled.div`
   }
 `;
 
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+`;
+
 const Title = styled.h2`
-  margin-bottom: 1em;
-  font-size: 1.2em;
-  text-align: center;
+  margin: 0;
+  font-size: 1.25em;
+  letter-spacing: 0.02em;
 
   @media (max-width: 768px) {
     font-size: 1.5em;
@@ -50,21 +65,75 @@ const Title = styled.h2`
   }
 `;
 
+const Toolbar = styled.div`
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+`;
+
+const SearchInput = styled.input`
+  flex: 1 1 280px;
+  background: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+  padding: 0.6em 0.8em;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    border-color: #6f6;
+  }
+`;
+
+const Toggle = styled.button.withConfig({
+  shouldForwardProp: p => p !== 'active',
+})<{ active?: boolean }>`
+  background: transparent;
+  color: ${p => (p.active ? '#000' : '#0f0')};
+  border: 1px solid #0f0;
+  padding: 0.5em 0.8em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  ${p => (p.active ? 'background: #0f0;' : '')}
+
+  &:hover {
+    background: ${p => (p.active ? '#9f9' : '#0f0')};
+    color: #000;
+  }
+`;
+
 const CharacterList = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.8rem;
+  overflow: auto;
+  padding-right: 0.4rem;
+  flex: 1 1 auto;
+  border-top: 1px solid #0f03;
+  border-bottom: 1px solid #0f03;
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
 `;
 
 const CharacterItem = styled.li`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5em 0;
-  border-bottom: 1px solid #0f03;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid #0f03;
+  border-radius: 8px;
+  padding: 0.8rem;
+  background: #000;
+  transition: border-color 0.2s ease, transform 0.08s ease;
 
-  &:last-child {
-    border-bottom: none;
+  &:hover {
+    border-color: #0f0;
+    transform: translateY(-1px);
   }
 
   @media (max-width: 768px) {
@@ -76,7 +145,16 @@ const CharacterItem = styled.li`
   }
 `;
 
+const CharacterHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+`;
+
 const CharacterName = styled.span`
+  font-weight: 600;
+  letter-spacing: 0.02em;
   @media (max-width: 768px) {
     font-size: 1.2em;
     text-align: center;
@@ -84,13 +162,23 @@ const CharacterName = styled.span`
   }
 `;
 
+const Tag = styled.span`
+  border: 1px solid #0f03;
+  color: #0f08;
+  padding: 0.15em 0.45em;
+  border-radius: 999px;
+  font-size: 0.75em;
+`;
+
 const LoadButton = styled.button`
   background: #000;
   color: #0f0;
   border: 1px solid #0f0;
-  padding: 0.3em 0.5em;
-  font-size: 0.8em;
+  padding: 0.5em 0.8em;
+  font-size: 0.9em;
   cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 
   &:hover {
     background: #0f0;
@@ -108,14 +196,21 @@ const LoadButton = styled.button`
   }
 `;
 
+const FooterRow = styled.div`
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.8rem;
+`;
+
 const CloseButton = styled.button`
-  margin-top: 1.5em;
   background: #000;
   color: #0f0;
   border: 1px solid #0f0;
-  padding: 0.5em 1em;
-  width: 100%;
+  padding: 0.8em 1.2em;
+  border-radius: 8px;
   cursor: pointer;
+  transition: all 0.2s ease;
 
   &:hover {
     background: #0f0;
@@ -143,6 +238,8 @@ const CharacterSelector: React.FC<CharacterSelectorProps> = ({
   onClose,
 }) => {
   const [personas, setPersonas] = useState<Persona[]>([]);
+  const [query, setQuery] = useState('');
+  const [showExamplesOnly, setShowExamplesOnly] = useState(false);
 
   useEffect(() => {
     // Load personas from storage
@@ -150,25 +247,63 @@ const CharacterSelector: React.FC<CharacterSelectorProps> = ({
     setPersonas(loadedPersonas);
   }, []);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return personas.filter(p => {
+      if (showExamplesOnly && !isExamplePersonaName(p.name)) return false;
+      if (!q) return true;
+      return p.name.toLowerCase().includes(q) || p.content.toLowerCase().includes(q);
+    });
+  }, [personas, query, showExamplesOnly]);
+
   const handleSelect = (name: string) => {
     onSelect(name);
   };
 
   return (
     <SelectorOverlay>
-      <SelectorContent>
-        <Title>Select Character</Title>
+      <SelectorContent role="dialog" aria-modal="true" aria-label="Character selector">
+        <TitleRow>
+          <Title>Select Character</Title>
+          <CloseButton onClick={onClose} aria-label="Close selector">Close</CloseButton>
+        </TitleRow>
+        <Toolbar>
+          <SearchInput
+            type="text"
+            placeholder="Search by name or content..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            aria-label="Search characters"
+          />
+          <Toggle
+            type="button"
+            active={showExamplesOnly}
+            onClick={() => setShowExamplesOnly(v => !v)}
+            aria-pressed={showExamplesOnly}
+            aria-label="Show only example personas"
+          >
+            Examples only
+          </Toggle>
+        </Toolbar>
         <CharacterList>
-          {personas.map(persona => (
+          {filtered.map(persona => (
             <CharacterItem key={persona.name}>
-              <CharacterName>{persona.name}</CharacterName>
+              <CharacterHeader>
+                <CharacterName>{persona.name}</CharacterName>
+                {isExamplePersonaName(persona.name) && <Tag>Example</Tag>}
+              </CharacterHeader>
               <LoadButton onClick={() => handleSelect(persona.name)}>
                 Load
               </LoadButton>
             </CharacterItem>
           ))}
+          {filtered.length === 0 && (
+            <li style={{ color: '#0f08', padding: '0.6rem' }}>No matching characters.</li>
+          )}
         </CharacterList>
-        <CloseButton onClick={onClose}>Close</CloseButton>
+        <FooterRow>
+          <CloseButton onClick={onClose}>Close</CloseButton>
+        </FooterRow>
       </SelectorContent>
     </SelectorOverlay>
   );
