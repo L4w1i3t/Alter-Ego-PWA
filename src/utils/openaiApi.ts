@@ -168,10 +168,7 @@ async function postOpenAIRequest(
         truncatedBody ||
         response.statusText;
 
-      if (
-        shouldRetryStatus(response.status) &&
-        attempt < maxRetries
-      ) {
+      if (shouldRetryStatus(response.status) && attempt < maxRetries) {
         const retryHeader = response.headers.get('retry-after');
         const retryAfterSeconds = retryHeader ? Number(retryHeader) : NaN;
         const delay =
@@ -397,14 +394,16 @@ export const generateChatCompletion = async (
   // Build the complete system prompt with security and character definition
   const fullSystemPrompt = buildSystemPrompt(systemPrompt);
 
-  // Log the complete system prompt for debugging
-  console.log('=== SYSTEM PROMPT SUMMARY ===');
-  console.log(
-    `Total length: ${fullSystemPrompt.length} chars | Security rules: ${SECURITY_RULES.length} chars | Persona context: ${systemPrompt.length} chars`
-  );
-  logStringInChunks('System Prompt (final order)', fullSystemPrompt);
-  logStringInChunks('Persona Context (raw)', systemPrompt);
-  console.log('=== END SYSTEM PROMPT SUMMARY ===');
+  // Log the complete system prompt for debugging (development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== SYSTEM PROMPT SUMMARY ===');
+    console.log(
+      `Total length: ${fullSystemPrompt.length} chars | Security rules: ${SECURITY_RULES.length} chars | Persona context: ${systemPrompt.length} chars`
+    );
+    logStringInChunks('System Prompt (final order)', fullSystemPrompt);
+    logStringInChunks('Persona Context (raw)', systemPrompt);
+    console.log('=== END SYSTEM PROMPT SUMMARY ===');
+  }
 
   // Verify if the default system prompt is included
   if (!verifySystemPrompt(fullSystemPrompt)) {
@@ -433,28 +432,30 @@ export const generateChatCompletion = async (
   };
 
   // Log the complete payload being sent to OpenAI (sanitized)
-  console.log('=== OPENAI API REQUEST ===');
-  console.log('Model:', model);
-  console.log('Temperature:', temperature);
-  console.log('Max Tokens:', maxTokens);
-  console.log('Total Messages:', messages.length);
-  console.log(
-    'API Key:',
-    OPENAI_API_KEY
-      ? `${OPENAI_API_KEY.substring(0, 8)}...${OPENAI_API_KEY.slice(-4)}`
-      : 'Not set'
-  );
-  console.log('Messages Structure:');
-  messages.forEach((msg, index) => {
-    console.log(`Message ${index} (${msg.role}):`, {
-      role: msg.role,
-      contentLength: msg.content.length,
-      contentPreview:
-        msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''),
-      // Remove fullContent to avoid logging sensitive data
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== OPENAI API REQUEST ===');
+    console.log('Model:', model);
+    console.log('Temperature:', temperature);
+    console.log('Max Tokens:', maxTokens);
+    console.log('Total Messages:', messages.length);
+    console.log(
+      'API Key:',
+      OPENAI_API_KEY
+        ? `${OPENAI_API_KEY.substring(0, 8)}...${OPENAI_API_KEY.slice(-4)}`
+        : 'Not set'
+    );
+    console.log('Messages Structure:');
+    messages.forEach((msg, index) => {
+      const content = typeof msg.content === 'string' ? msg.content : '';
+      console.log(`Message ${index} (${msg.role}):`, {
+        role: msg.role,
+        contentLength: content.length,
+        contentPreview:
+          content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+      });
     });
-  });
-  console.log('=== END OPENAI PAYLOAD ===');
+    console.log('=== END OPENAI PAYLOAD ===');
+  }
 
   try {
     const endpoint = 'https://api.openai.com/v1/chat/completions';
@@ -471,7 +472,6 @@ export const generateChatCompletion = async (
       payload,
       requestLabel: 'OpenAI chat completion',
     });
-
 
     // Calculate response time
     const endTime = performance.now();
@@ -554,9 +554,11 @@ export const generateVisionChatCompletion = async (
       : 'AI Assistant';
     effectiveSystemPrompt = buildVisionPrompt(characterName);
 
-    console.log(
-      ' Using optimized lightweight system prompt for fresh image conversation'
-    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        ' Using optimized lightweight system prompt for fresh image conversation'
+      );
+    }
     console.log(`Original prompt: ${systemPrompt.length} characters`);
     console.log(`Optimized prompt: ${effectiveSystemPrompt.length} characters`);
     console.log(`Filtered history length: ${userAssistantHistory.length}`);
@@ -567,9 +569,11 @@ export const generateVisionChatCompletion = async (
       : 'AI Assistant';
     effectiveSystemPrompt = buildStreamlinedVisionPrompt(characterName);
 
-    console.log(
-      ' Using streamlined system prompt for image conversation with history'
-    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        ' Using streamlined system prompt for image conversation with history'
+      );
+    }
     console.log(`Original prompt: ${systemPrompt.length} characters`);
     console.log(
       `Streamlined prompt: ${effectiveSystemPrompt.length} characters`
@@ -578,7 +582,9 @@ export const generateVisionChatCompletion = async (
   } else {
     // Use full system prompt for text-only conversations
     effectiveSystemPrompt = buildSystemPrompt(systemPrompt);
-    console.log(' Using full system prompt (text-only conversation)');
+    if (process.env.NODE_ENV === 'development') {
+      console.log(' Using full system prompt (text-only conversation)');
+    }
     console.log(
       `History length: ${userAssistantHistory.length}, Images: ${images.length}`
     );
@@ -687,13 +693,15 @@ export const generateVisionChatCompletion = async (
   };
 
   // Log the complete payload being sent to OpenAI (without full image data)
-  console.log('=== VISION OPENAI API PAYLOAD ===');
-  console.log('Model:', model);
-  console.log('Temperature:', temperature);
-  console.log('Max Tokens:', maxTokens);
-  console.log('Total Messages:', messages.length);
-  console.log('Images in current message:', images.length);
-  console.log('=== END VISION PAYLOAD ===');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== VISION OPENAI API PAYLOAD ===');
+    console.log('Model:', model);
+    console.log('Temperature:', temperature);
+    console.log('Max Tokens:', maxTokens);
+    console.log('Total Messages:', messages.length);
+    console.log('Images in current message:', images.length);
+    console.log('=== END VISION PAYLOAD ===');
+  }
 
   try {
     const endpoint = 'https://api.openai.com/v1/chat/completions';
@@ -710,7 +718,6 @@ export const generateVisionChatCompletion = async (
       payload,
       requestLabel: 'OpenAI vision chat completion',
     });
-
 
     // Calculate response time
     const endTime = performance.now();
@@ -904,4 +911,3 @@ export const generateLightweightVision = async (
     throw error;
   }
 };
-

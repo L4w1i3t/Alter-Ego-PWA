@@ -8,6 +8,7 @@ package-lock.json
 # Production builds
 dist/
 build/
+docs/
 
 # Environment variables
 .env.local

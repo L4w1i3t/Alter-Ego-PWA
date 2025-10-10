@@ -444,6 +444,7 @@ const App: React.FC = () => {
   const [currentPersonaContent, setCurrentPersonaContent] = useState('');
   const [voiceModel, setVoiceModel] = useState('None');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   // Performance monitoring state
   const isDevelopment = process.env.NODE_ENV === 'development';
   const [showDevTools, setShowDevTools] = useState(isDevelopment);
@@ -453,15 +454,74 @@ const App: React.FC = () => {
   const synthesizeVoice = async (text: string, voicemodel_id: string) => {
     if (voicemodel_id === 'None' || !text) return;
 
-    const models = loadVoiceModels();
-    const model = models[voicemodel_id];
+    // Stop any currently playing speech
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
 
-    if (!model) return;
+    // Stop any currently playing ElevenLabs audio
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setCurrentAudio(null);
+    }
+
+    console.log('Synthesizing voice with model ID:', voicemodel_id);
+    
+    const models = loadVoiceModels();
+    console.log('Available voice models:', Object.keys(models));
+    
+    const model = models[voicemodel_id];
+    console.log('Selected model:', model);
+
+    if (!model) {
+      console.warn('Voice model not found:', voicemodel_id);
+      return;
+    }
 
     try {
       if (model.provider === 'browser') {
         // Use browser's built-in speech synthesis
         const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Set the specific voice if one is configured
+        if (model.voiceId) {
+          let voices = window.speechSynthesis.getVoices();
+          
+          // If voices array is empty, try to load them
+          if (voices.length === 0) {
+            // Wait for voices to load
+            await new Promise<void>((resolve) => {
+              if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => {
+                  voices = window.speechSynthesis.getVoices();
+                  resolve();
+                };
+              } else {
+                // Fallback timeout
+                setTimeout(() => {
+                  voices = window.speechSynthesis.getVoices();
+                  resolve();
+                }, 100);
+              }
+            });
+          }
+          
+          console.log('Available voices:', voices.map(v => ({ name: v.name, uri: v.voiceURI })));
+          console.log('Looking for voice with ID:', model.voiceId);
+          
+          const selectedVoice = voices.find(
+            v => v.voiceURI === model.voiceId
+          );
+          
+          if (selectedVoice) {
+            console.log('Selected voice:', selectedVoice.name);
+            utterance.voice = selectedVoice;
+          } else {
+            console.warn('Voice not found, using default. Available voices:', voices.length);
+          }
+        }
+        
         window.speechSynthesis.speak(utterance);
       } else if (model.provider === 'elevenlabs') {
         try {
@@ -479,13 +539,66 @@ const App: React.FC = () => {
           );
 
           if (audioBlob) {
-            await playAudio(audioBlob);
+            // Create and track the audio element for interruption capability
+            const url = URL.createObjectURL(audioBlob);
+            const audio = new Audio(url);
+            setCurrentAudio(audio);
+
+            // Set up event handlers
+            audio.onended = () => {
+              URL.revokeObjectURL(url);
+              setCurrentAudio(null);
+            };
+
+            audio.onerror = (error) => {
+              console.error('Audio playback error:', error);
+              URL.revokeObjectURL(url);
+              setCurrentAudio(null);
+            };
+
+            // Play the audio
+            try {
+              await audio.play();
+            } catch (playError) {
+              console.error('Audio play error:', playError);
+              URL.revokeObjectURL(url);
+              setCurrentAudio(null);
+            }
           }
         } catch (apiError) {
           console.error('Error with ElevenLabs API:', apiError);
           // Fall back to browser speech synthesis on error
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.text = `ElevenLabs error. Fallback voice: ${text}`;
+          
+          // Try to use the same voice selection logic for fallback
+          if (model.voiceId) {
+            let voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) {
+              // Wait for voices to load
+              await new Promise<void>((resolve) => {
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                  window.speechSynthesis.onvoiceschanged = () => {
+                    voices = window.speechSynthesis.getVoices();
+                    resolve();
+                  };
+                } else {
+                  setTimeout(() => {
+                    voices = window.speechSynthesis.getVoices();
+                    resolve();
+                  }, 100);
+                }
+              });
+            }
+            
+            const selectedVoice = voices.find(
+              v => v.voiceURI === model.voiceId
+            );
+            if (selectedVoice) {
+              utterance.voice = selectedVoice;
+            }
+          }
+          
           window.speechSynthesis.speak(utterance);
         }
       }
@@ -618,6 +731,22 @@ const App: React.FC = () => {
       setVoiceModel(settings.voiceModel);
     }
   }, [setCurrentPersona]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      // Stop any playing speech synthesis
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+      
+      // Stop any playing ElevenLabs audio
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+    };
+  }, [currentAudio]);
 
   // Add effect to listen for AI responses and synthesize voice
   useEffect(() => {

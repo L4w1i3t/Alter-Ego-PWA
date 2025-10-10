@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { loadSettings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
+import { loadSettings, Settings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
 import TypingAnimation from '../Common/TypingAnimation';
 import { openImageInNewTab } from '../../utils/imageUtils';
 import { UserIcon } from '../Common/Icons';
@@ -271,11 +271,49 @@ const MainContent: React.FC<MainContentProps> = ({
   const [responseEmotions, setResponseEmotions] = useState<string[]>([]);
   const [currentEmotion, setCurrentEmotion] = useState<string>('neutral');
   const [avatarLoadError, setAvatarLoadError] = useState(false);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const [showEmotionDetection, setShowEmotionDetection] = useState(() => {
+    const initialSettings = loadSettings();
+    return !isProduction && (initialSettings.showEmotionDetection ?? false);
+  });
 
-  // Load settings to check if emotion detection should be shown
-  const settings = loadSettings();
-  const showEmotionDetection = settings.showEmotionDetection ?? false;
+  useEffect(() => {
+    const handleSettingsUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<Settings>).detail;
+      if (detail && typeof detail === 'object') {
+        setShowEmotionDetection(
+          !isProduction && (detail.showEmotionDetection ?? false)
+        );
+      } else {
+        const latest = loadSettings();
+        setShowEmotionDetection(
+          !isProduction && (latest.showEmotionDetection ?? false)
+        );
+      }
+    };
 
+    const handleStorageUpdate = (event: StorageEvent) => {
+      if (event.key === 'alterEgoSettings') {
+        const latest = loadSettings();
+        setShowEmotionDetection(
+          !isProduction && (latest.showEmotionDetection ?? false)
+        );
+      }
+    };
+
+    window.addEventListener(
+      'alter-ego-settings-updated',
+      handleSettingsUpdated as EventListener
+    );
+    window.addEventListener('storage', handleStorageUpdate);
+    return () => {
+      window.removeEventListener(
+        'alter-ego-settings-updated',
+        handleSettingsUpdated as EventListener
+      );
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, [isProduction]);
   // Debug mobile layout issues
   useEffect(() => {
     const checkMobileLayout = () => {

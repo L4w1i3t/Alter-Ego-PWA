@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
   GearIcon,
@@ -374,18 +374,141 @@ const DigitalTear = styled.div<{ $side: 'left' | 'right'; $delay: number }>`
   }
 `;
 
+// Tooltip styles for the easter egg
+const TooltipContainer = styled.div`
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+`;
+
+const TooltipTrigger = styled.button`
+  background: none;
+  border: none;
+  color: #0f0;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+  flex-shrink: 0;
+  box-sizing: border-box;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(0, 255, 0, 0.15);
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+  }
+
+  &:focus {
+    outline: 1px solid #0f0;
+    outline-offset: 2px;
+  }
+
+  &:active {
+    transform: scale(1.05);
+  }
+`;
+
+const TooltipContent = styled.div<{ $isVisible: boolean }>`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #002233, #001122);
+  border: 2px solid #0f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #0f0;
+  font-size: 0.85em;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.8),
+    0 4px 16px rgba(0, 255, 0, 0.4),
+    inset 0 1px 0 rgba(0, 255, 0, 0.2);
+  z-index: 99999;
+  opacity: ${props => props.$isVisible ? 1 : 0};
+  visibility: ${props => props.$isVisible ? 'visible' : 'hidden'};
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 0 4px rgba(0, 255, 0, 0.6);
+  
+  /* Ensure tooltip doesn't go off screen */
+  max-width: 280px;
+  word-wrap: break-word;
+  white-space: normal;
+
+  /* Position adjustment for better visibility */
+  @media (max-height: 800px) {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 8px;
+    
+    &::after {
+      top: -6px;
+      border-top-color: transparent;
+      border-bottom-color: #0f0;
+    }
+
+    &::before {
+      top: -5px;
+      border-top-color: transparent;
+      border-bottom-color: #002233;
+    }
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #0f0;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #002233;
+    z-index: 1;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.8em;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    max-width: 240px;
+  }
+`;
+
 interface SoftwareDetailsProps {
   onBack: () => void;
 }
 
 const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
   const currentYear = new Date().getFullYear();
+  const [showEasterEggTooltip, setShowEasterEggTooltip] = useState(false);
 
   const details = {
     softwareName: 'ALTER EGO',
-    version: '0.8.0',
+    version: '0.8.5',
     buildDate: 'July 2024',
-    developedBy: 'L4w1i3t',
+    developedBy: ['L4w1i3t', 'ALTER EGO'],
     technologies: [
       'React 18.2.0',
       'TypeScript',
@@ -430,7 +553,7 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
     knownIssues: [
       'Voice recognition is not yet implemented',
       'Open-source language models are still in development',
-      'Emotion detection algorithm is basic and may produce false positives',
+      'Emotion detection algorithm may produce false positives',
       'Limited offline AI processing capabilities',
       'Voice synthesis latency depends on internet connection',
       'Open-source backend integration is work-in-progress',
@@ -485,14 +608,26 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           <CardContent>
             <DetailsList>
               <DetailsItem>
-                <strong>Developer:</strong> {details.developedBy}
+                <strong>Developer:</strong> {details.developedBy.join(', ')}
+                <TooltipContainer>
+                  <TooltipTrigger
+                    onClick={() => setShowEasterEggTooltip(!showEasterEggTooltip)}
+                    onBlur={() => setShowEasterEggTooltip(false)}
+                    aria-label="Easter egg info"
+                  >
+                    <InfoIcon size={14} />
+                  </TooltipTrigger>
+                  <TooltipContent $isVisible={showEasterEggTooltip}>
+                    Yes, ALTER EGO managed to help in developing itself.
+                  </TooltipContent>
+                </TooltipContainer>
               </DetailsItem>
               <DetailsItem>
                 <strong>Build Date:</strong> {details.buildDate}
               </DetailsItem>
               <DetailsItem>
                 <strong>Copyright:</strong> © {currentYear}{' '}
-                {details.developedBy}
+                {details.developedBy[0]}
               </DetailsItem>
               <DetailsItem>
                 <strong>Platform:</strong> Progressive Web App

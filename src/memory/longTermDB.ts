@@ -337,7 +337,6 @@ export async function semanticSearchMessages(
   }
 }
 
-
 // Helper function to extract keywords from a query
 function extractKeywords(query: string): string[] {
   // Remove common stop words
@@ -423,7 +422,6 @@ function computeRecencyBoost(timestamp?: Date | string): number {
   const recencyRatio = (RECENCY_WINDOW_DAYS - ageDays) / RECENCY_WINDOW_DAYS;
   return recencyRatio * 0.15;
 }
-
 
 // Persona-specific memory operations
 export async function savePersonaMemory(

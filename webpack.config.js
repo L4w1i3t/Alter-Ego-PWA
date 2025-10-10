@@ -153,6 +153,8 @@ module.exports = {
     ],
   },
   optimization: {
+    // Avoid double-defining NODE_ENV: we'll define it explicitly below
+    nodeEnv: false,
     splitChunks: {
       chunks: 'all',
       cacheGroups: {
@@ -166,7 +168,7 @@ module.exports = {
     runtimeChunk: 'single',
   },
   plugins: [
-    new HtmlWebpackPlugin({
+  new HtmlWebpackPlugin({
       // Use the root index.html instead of the one in public
       template: './index.html',
       filename: 'index.html',
@@ -179,7 +181,7 @@ module.exports = {
               'Content-Security-Policy': {
                 'http-equiv': 'Content-Security-Policy',
                 content:
-                  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.elevenlabs.io http://127.0.0.1:8000 ws:; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'",
+                  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.elevenlabs.io http://127.0.0.1:8000 ws: wss:; media-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'",
               },
             },
           }),
@@ -203,13 +205,17 @@ module.exports = {
         },
       ],
     }),
+    // Define only the vars we need without clobbering process.env entirely
     new webpack.DefinePlugin({
-      'process.env': JSON.stringify({
-        NODE_ENV: process.env.NODE_ENV || 'development',
-        PUBLIC_URL: publicPath.slice(0, -1), // Remove trailing slash
-        // Opt-in flag to enable immersive mode (soft devtools blocking) in production
-        REACT_APP_IMMERSIVE_MODE: process.env.REACT_APP_IMMERSIVE_MODE || 'false',
-      })
+      'process.env.NODE_ENV': JSON.stringify(
+        process.env.NODE_ENV || (isDevelopment ? 'development' : 'production')
+      ),
+      // Let webpack set NODE_ENV based on mode to avoid conflicts
+      'process.env.PUBLIC_URL': JSON.stringify(publicPath.slice(0, -1)),
+      'process.env.REACT_APP_IMMERSIVE_MODE': JSON.stringify(process.env.REACT_APP_IMMERSIVE_MODE || 'false'),
+      'process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING': JSON.stringify(process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING || 'false'),
+      'process.env.REACT_APP_LOG_LEVEL': JSON.stringify(process.env.REACT_APP_LOG_LEVEL || 'info'),
+      'process.env.REACT_APP_SECURITY_CONFIG': JSON.stringify(process.env.REACT_APP_SECURITY_CONFIG || ''),
     }),
     new PerformanceMetricsPlugin(),
     // Add bundle analyzer only when explicitly requested

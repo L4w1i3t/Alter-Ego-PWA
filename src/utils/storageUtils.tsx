@@ -434,9 +434,9 @@ export function loadSettings(): Settings {
       ...parsedSettings,
       memoryBuffer: parsedSettings.memoryBuffer ?? 3,
       textSpeed: parsedSettings.textSpeed ?? 40,
-      showEmotionDetection:
-        parsedSettings.showEmotionDetection ?? isDevelopment,
-      personaVersion: parsedSettings.personaVersion ?? '1.0.0', // Default to old version to trigger migration
+      showEmotionDetection: isDevelopment
+        ? (parsedSettings.showEmotionDetection ?? true)
+        : false,
       immersiveMode: parsedSettings.immersiveMode ?? immersiveFlag,
     };
   } catch (e) {
@@ -455,5 +455,17 @@ export function loadSettings(): Settings {
 }
 
 export function saveSettings(settings: Settings): void {
-  localStorage.setItem('alterEgoSettings', JSON.stringify(settings));
+  const isProduction = process.env.NODE_ENV === 'production';
+  const sanitizedSettings: Settings = {
+    ...settings,
+    showEmotionDetection: isProduction ? false : settings.showEmotionDetection,
+  };
+  localStorage.setItem('alterEgoSettings', JSON.stringify(sanitizedSettings));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('alter-ego-settings-updated', {
+        detail: sanitizedSettings,
+      })
+    );
+  }
 }

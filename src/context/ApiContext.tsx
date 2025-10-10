@@ -745,9 +745,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         ...(imageIds.length > 0 && { imageIds }),
       };
 
-      const {
-        normalized: normalizedUserMessage,
-      } = normalizeMessageMetadata(userMessageBase);
+      const { normalized: normalizedUserMessage } =
+        normalizeMessageMetadata(userMessageBase);
 
       const updatedFullHistory: Message[] = [
         ...conversationHistory,
@@ -904,9 +903,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         content: response,
         timestamp: new Date().toISOString(),
       };
-      const {
-        normalized: normalizedAssistantMessage,
-      } = normalizeMessageMetadata(assistantMessageBase);
+      const { normalized: normalizedAssistantMessage } =
+        normalizeMessageMetadata(assistantMessageBase);
 
       const finalHistory: Message[] = [
         ...updatedFullHistory,

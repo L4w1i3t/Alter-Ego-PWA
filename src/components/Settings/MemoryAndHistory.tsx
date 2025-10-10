@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useApi } from '../../context/ApiContext';
-import { loadChatHistory, ChatHistoryEntry } from '../../utils/storageUtils';
+import {
+  loadChatHistory,
+  ChatHistoryEntry,
+  loadSettings,
+  saveSettings,
+  clearMemory,
+} from '../../utils/storageUtils';
 import {
   showSuccess,
   showError,
@@ -374,15 +380,89 @@ const ButtonContainer = styled.div`
   }
 `;
 
+const ManageSection = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+
+  @media (max-width: 768px) {
+    gap: 2em;
+  }
+`;
+
+const SectionCard = styled.div`
+  width: 100%;
+  border: 1px solid #0f04;
+  border-radius: 0.4em;
+  padding: 1.5em;
+  background: #001000;
+`;
+
+const SectionTitle = styled.h3`
+  margin: 0 0 0.6em;
+  font-size: 1em;
+`;
+
+const SectionDescription = styled.p`
+  margin: 0 0 1em;
+  color: #0f08;
+  line-height: 1.4;
+`;
+
+const HelperText = styled.p`
+  margin: 1em 0 0;
+  font-size: 0.9em;
+  color: #0f08;
+  font-style: italic;
+`;
+
+const ManageButtonRow = styled.div`
+  display: flex;
+  gap: 1em;
+  margin-top: 1.5em;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const PrimaryButton = styled(Button)`
+  margin-left: 0;
+  flex: 1;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const DangerCard = styled(SectionCard)`
+  border-color: #f00;
+  background: #150000;
+`;
+
+const DangerButton = styled(PrimaryButton)`
+  border-color: #f00;
+  color: #f00;
+
+  &:hover {
+    background: #f00;
+    color: #000;
+  }
+`;
+
 interface MemoryAndHistoryProps {
   onBack: () => void;
 }
 
-type DisplayMode = 'chronological' | 'search' | 'detail';
+type DisplayMode = 'chronological' | 'search' | 'detail' | 'manage';
 
 const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
   // Active tab/view
-  const [activeTab, setActiveTab] = useState<'browse' | 'search'>('browse');
+  const [activeTab, setActiveTab] = useState<'browse' | 'search' | 'manage'>(
+    'browse'
+  );
   const [displayMode, setDisplayMode] = useState<DisplayMode>('chronological');
 
   // Chat history state (chronological view)
@@ -408,11 +488,18 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
   >([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  const [savedMemoryBuffer, setSavedMemoryBuffer] = useState(() => {
+    const settings = loadSettings();
+    return settings.memoryBuffer ?? 3;
+  });
+  const [memoryBuffer, setMemoryBuffer] = useState(savedMemoryBuffer);
+
   const {
     searchLongTermMemory,
     retrieveTimeBasedMemories,
     retrieveLastNMemories,
     currentPersona,
+    clearConversation,
   } = useApi();
 
   useEffect(() => {
@@ -435,14 +522,21 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
   };
 
   // Handle tab switching
-  const handleTabChange = (tab: 'browse' | 'search') => {
+  const handleTabChange = (tab: 'browse' | 'search' | 'manage') => {
     setActiveTab(tab);
+    setSelectedEntry(null);
+
     if (tab === 'browse') {
       setDisplayMode('chronological');
-      setSelectedEntry(null);
-    } else {
+    } else if (tab === 'search') {
       setDisplayMode('search');
       setSearchResults([]);
+    } else {
+      const latestSettings = loadSettings();
+      const latestBuffer = latestSettings.memoryBuffer ?? 3;
+      setSavedMemoryBuffer(latestBuffer);
+      setMemoryBuffer(latestBuffer);
+      setDisplayMode('manage');
     }
   };
 
@@ -590,6 +684,37 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
   };
 
   // Render functions for different views
+  const handleResetMemoryBuffer = () => {
+    setMemoryBuffer(savedMemoryBuffer);
+  };
+
+  const handleSaveMemoryBuffer = () => {
+    try {
+      const currentSettings = loadSettings();
+      saveSettings({
+        ...currentSettings,
+        memoryBuffer,
+      });
+      setSavedMemoryBuffer(memoryBuffer);
+      showSuccess('Memory settings saved successfully.');
+    } catch (error) {
+      showError('Error saving memory settings.');
+      console.error('Failed to save memory settings:', error);
+    }
+  };
+
+  const handleClearMemory = () => {
+    try {
+      clearMemory();
+      clearConversation();
+      window.dispatchEvent(new CustomEvent('clear-chat-display'));
+      showSuccess('Memory cleared successfully.');
+    } catch (error) {
+      showError('Error clearing memory.');
+      console.error('Failed to clear memory:', error);
+    }
+  };
+
   const renderChronologicalView = () => (
     <>
       <FilterSection>
@@ -713,6 +838,68 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
     </>
   );
 
+  const renderManageView = () => {
+    const hasMemoryChanges = memoryBuffer !== savedMemoryBuffer;
+
+    return (
+      <ManageSection>
+        <SectionCard>
+          <SectionTitle>Short-Term Memory Window</SectionTitle>
+          <SectionDescription>
+            These settings control how many conversation exchanges ALTER EGO
+            remembers in short-term memory. Lower values may reduce response
+            quality but can improve performance and minimize token costs.
+          </SectionDescription>
+          <InputGroup>
+            <Label htmlFor="memoryBuffer">Remember last:</Label>
+            <Select
+              id="memoryBuffer"
+              value={memoryBuffer}
+              onChange={e => setMemoryBuffer(Number(e.target.value))}
+            >
+              <option value="1">
+                1 exchange (worst quality, least tokens)
+              </option>
+              <option value="2">2 exchanges</option>
+              <option value="3">3 exchanges (recommended)</option>
+              <option value="5">5 exchanges</option>
+              <option value="10">
+                10 exchanges (best quality, most tokens)
+              </option>
+            </Select>
+          </InputGroup>
+          <HelperText>
+            Note: Each exchange includes both your message and ALTER EGO's
+            response. Changes apply to new messages only.
+          </HelperText>
+          <ManageButtonRow>
+            <PrimaryButton
+              onClick={handleResetMemoryBuffer}
+              disabled={!hasMemoryChanges}
+            >
+              Reset
+            </PrimaryButton>
+            <PrimaryButton
+              onClick={handleSaveMemoryBuffer}
+              disabled={!hasMemoryChanges}
+            >
+              Save Settings
+            </PrimaryButton>
+          </ManageButtonRow>
+        </SectionCard>
+
+        <DangerCard>
+          <SectionTitle>Clear Conversation Memory</SectionTitle>
+          <SectionDescription>
+            This erases all stored conversation history with ALTER EGO. This
+            action cannot be undone.
+          </SectionDescription>
+          <DangerButton onClick={handleClearMemory}>Clear Memory</DangerButton>
+        </DangerCard>
+      </ManageSection>
+    );
+  };
+
   const renderDetailView = () => {
     if (!selectedEntry) return null;
 
@@ -763,10 +950,17 @@ const MemoryAndHistory: React.FC<MemoryAndHistoryProps> = ({ onBack }) => {
         >
           Search Memory
         </Tab>
+        <Tab
+          active={activeTab === 'manage'}
+          onClick={() => handleTabChange('manage')}
+        >
+          Manage Memory
+        </Tab>
       </TabContainer>
 
       {displayMode === 'chronological' && renderChronologicalView()}
       {displayMode === 'search' && renderSearchView()}
+      {displayMode === 'manage' && renderManageView()}
       {displayMode === 'detail' && renderDetailView()}
 
       {displayMode !== 'detail' && (

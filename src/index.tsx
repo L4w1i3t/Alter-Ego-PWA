@@ -4,7 +4,7 @@ import App from './components/App';
 import { ApiProvider } from './context/ApiContext';
 import { initializePWA } from './utils/pwaUtils';
 import { devToolsBlocker } from './utils/devToolsBlocker';
-import { advancedSecurity } from './utils/advancedSecurity';
+// advancedSecurity is intentionally not imported by default to avoid UX harm
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';

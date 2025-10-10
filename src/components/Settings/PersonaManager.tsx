@@ -503,9 +503,7 @@ BACKGROUND & KNOWLEDGE:
 BEHAVIORAL GUIDELINES:
 - [How they respond to questions in their area]
 - [How they handle topics outside their comfort zone]
-- [Their approach to helping vs. their own agenda]
-
-Remember: Be specific and detailed. The more personality you give this character, the more they'll come alive in conversations!`,
+- [Their approach to helping vs. their own agenda]`,
       lastModified: new Date().toISOString(),
     });
     setViewingPersona(null);

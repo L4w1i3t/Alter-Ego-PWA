@@ -134,7 +134,10 @@ const Checkbox = styled.input`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 
   &::before {
     content: '✕';
@@ -190,7 +193,9 @@ const InfoButton = styled.button`
   background: rgba(0, 40, 60, 0.6);
   color: #0ff;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 
   &:hover {
     background: rgba(0, 120, 160, 0.4);
@@ -335,11 +340,11 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
   const [developerMode, setDeveloperMode] = useState<boolean>(false);
   const [showEmotionDetection, setShowEmotionDetection] =
     useState<boolean>(false);
+  const isProduction = process.env.NODE_ENV === 'production';
   const [immersiveMode, setImmersiveMode] = useState<boolean>(false);
   const [initialImmersiveMode, setInitialImmersiveMode] =
     useState<boolean>(false);
-  const [showImmersiveInfo, setShowImmersiveInfo] =
-    useState<boolean>(false);
+  const [showImmersiveInfo, setShowImmersiveInfo] = useState<boolean>(false);
 
   const sampleText =
     'Hello! This is how ALTER EGO will type responses at this speed.';
@@ -358,7 +363,9 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
     }
 
     // Load emotion detection setting
-    setShowEmotionDetection(settings.showEmotionDetection ?? false);
+    setShowEmotionDetection(
+      isProduction ? false : (settings.showEmotionDetection ?? false)
+    );
 
     const immersiveEnabled = settings.immersiveMode ?? false;
     setImmersiveMode(immersiveEnabled);
@@ -474,13 +481,13 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
       </SettingRow>
       {showImmersiveInfo && (
         <ImmersiveInfoBox>
-          <strong>Immersive Mode:</strong> Activates gentle warnings when developer tools open in production.
-          This keeps you aware of debugging on live deployments without blocking interactions.
+          <strong>Immersive Mode:</strong> Activates gentle warnings when
+          developer tools open in production. This keeps you aware of debugging
+          on live deployments without blocking interactions.
           <br />
           <strong>Tip:</strong> Reload after saving to apply changes.
         </ImmersiveInfoBox>
       )}
-
       <SettingRow>
         <Label htmlFor="instantText">Instant Text:</Label>
         <CheckboxContainer>

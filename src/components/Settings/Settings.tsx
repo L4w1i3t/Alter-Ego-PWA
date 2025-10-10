@@ -4,11 +4,9 @@ import SoftwareDetails from './SoftwareDetails';
 import PersonaManager from './PersonaManager';
 import VoiceModelManager from './VoiceModelManager';
 import ApiKeyManager from './ApiKeyManager';
-import ClearMemory from './ClearMemory';
 import FactoryReset from './FactoryReset';
 import { DesktopInstall } from './DesktopInstall';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
-import MemorySettings from './MemoryManager';
 import MemoryAndHistory from './MemoryAndHistory';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
@@ -26,7 +24,6 @@ import {
   DownloadIcon,
   InfoIcon,
   WarningIcon,
-  TrashIcon,
 } from '../Common/Icons';
 
 const SettingsOverlay = styled.div`
@@ -471,11 +468,6 @@ const Settings: React.FC<SettingsProps> = ({
         return <PersonaManager onBack={handleBack} />;
       case 'Memory & History':
         return <MemoryAndHistory onBack={handleBack} />;
-      // Removed Image Gallery view
-      case 'Clear Memory':
-        return <ClearMemory onBack={handleBack} />;
-      case 'Memory Settings':
-        return <MemorySettings onBack={handleBack} />;
       case 'Open Source Setup':
         return <OpenSourceSettings onBack={handleBack} />;
       case 'Miscellaneous':
@@ -534,30 +526,9 @@ const Settings: React.FC<SettingsProps> = ({
                 </CategoryIcon>
                 <CategoryTitle>Memory & History</CategoryTitle>
                 <CategoryDescription>
-                  Browse and search conversation history
+                  Review history, adjust memory limits, and clear stored data
                 </CategoryDescription>
               </SettingsCategory>
-              {/** Image Gallery menu removed **/}
-              <SettingsCategory onClick={() => handleMenuClick('Clear Memory')}>
-                <CategoryIcon>
-                  <TrashIcon size={20} aria-hidden="true" />
-                </CategoryIcon>
-                <CategoryTitle>Clear Memory</CategoryTitle>
-                <CategoryDescription>
-                  Reset conversation context and memory
-                </CategoryDescription>
-              </SettingsCategory>{' '}
-              <SettingsCategory
-                onClick={() => handleMenuClick('Memory Settings')}
-              >
-                <CategoryIcon>
-                  <MemoryIcon size={20} aria-hidden="true" />
-                </CategoryIcon>
-                <CategoryTitle>Memory Settings</CategoryTitle>
-                <CategoryDescription>
-                  Configure conversation memory size
-                </CategoryDescription>
-              </SettingsCategory>{' '}
               <SettingsCategory
                 onClick={
                   process.env.NODE_ENV === 'production'

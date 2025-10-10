@@ -1,5 +1,5 @@
 // Add version control to your service worker
-const CACHE_VERSION = '1.0.0';
+const CACHE_VERSION = '1.0.1';
 const CACHE_NAME = `app-cache-${CACHE_VERSION}`;
 
 // List of all assets to pre-cache (critical files needed for offline functionality)
@@ -65,20 +65,27 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - network first, falling back to cache
+// Fetch event - network first, falling back to cache for same-origin GET requests only
 self.addEventListener('fetch', event => {
+  const { request } = event;
+
   // Don't handle browser-sync or webpack related requests in development
-  if (event.request.url.includes('webpack-dev-server') || 
-      event.request.url.includes('hot-update') ||
-      event.request.url.includes('sockjs-node')) {
+  if (request.url.includes('webpack-dev-server') || 
+      request.url.includes('hot-update') ||
+      request.url.includes('sockjs-node')) {
     return;
   }
-  
+  // Only handle same-origin GET requests
+  const isSameOrigin = new URL(request.url).origin === self.location.origin;
+  if (request.method !== 'GET' || !isSameOrigin) {
+    return; // Let the browser handle non-GET or cross-origin
+  }
+
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then(response => {
         // Don't cache non-successful responses or non-GET requests
-        if (!response || response.status !== 200 || event.request.method !== 'GET') {
+        if (!response || response.status !== 200) {
           return response;
         }
 
@@ -88,22 +95,23 @@ self.addEventListener('fetch', event => {
         // Cache the fetched resource
         caches.open(CACHE_NAME)
           .then(cache => {
-            cache.put(event.request, responseToCache);
+            cache.put(request, responseToCache);
           });
         
         return response;
       })
       .catch(() => {
         // If network fetch fails, try to serve from cache
-        return caches.match(event.request)
+        return caches.match(request)
           .then(cachedResponse => {
             if (cachedResponse) {
               return cachedResponse;
             }
             
             // If the request is for an HTML page, return the offline page
-            if (event.request.headers.get('accept').includes('text/html')) {
-              return caches.match('/');
+            const accept = request.headers.get('accept') || '';
+            if (accept.includes('text/html')) {
+              return caches.match('/index.html');
             }
           });
       })
@@ -114,5 +122,8 @@ self.addEventListener('fetch', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'CLIENTS_CLAIM') {
+    self.clients.claim();
   }
 });
