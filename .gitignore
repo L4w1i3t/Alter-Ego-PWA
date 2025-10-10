@@ -8,6 +8,8 @@ package-lock.json
 # Production builds
 dist/
 build/
+
+# Documentation and paper
 docs/
 
 # Environment variables
@@ -77,6 +79,10 @@ alterego-backend/
 
 # venvs
 venv/
+
+# Miscellaneous
+checklines.py
+removeemojis.py
 
 # .gitignore itself
 .gitignore

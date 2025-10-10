@@ -17,8 +17,8 @@ import {
 const InputContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.sm};
-  padding: ${theme.spacing.md};
+  gap: calc(${theme.spacing.sm} * var(--ae-spacing-scale));
+  padding: calc(${theme.spacing.md} * var(--ae-spacing-scale));
   background-color: ${theme.colors.surface};
   border-radius: ${theme.borderRadius.md};
   box-shadow: ${theme.shadows.sm};
@@ -34,7 +34,7 @@ const InputContainer = styled.div`
 
 const InputRow = styled.div`
   display: flex;
-  gap: ${theme.spacing.sm};
+  gap: calc(${theme.spacing.sm} * var(--ae-spacing-scale));
   align-items: center;
 `;
 
@@ -108,12 +108,12 @@ const HiddenFileInput = styled.input`
 
 const TextInput = styled.input`
   flex: 1;
-  padding: ${theme.spacing.md};
+  padding: calc(${theme.spacing.md} * var(--ae-spacing-scale));
   border: none;
   border-radius: ${theme.borderRadius.md};
   background-color: rgba(255, 255, 255, 0.1);
   color: ${theme.colors.text};
-  font-size: 1rem;
+  font-size: calc(1rem * var(--ae-overall-text-scale));
 
   /* Ensure virtual keyboard works on mobile */
   -webkit-user-select: text !important;

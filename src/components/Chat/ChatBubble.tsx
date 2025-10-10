@@ -12,8 +12,8 @@ interface BubbleProps {
 const Bubble = styled.div.withConfig({
   shouldForwardProp: prop => prop !== 'isUser',
 })<BubbleProps>`
-  max-width: 70%;
-  padding: ${theme.spacing.md};
+  max-width: var(--ae-bubble-max-width);
+  padding: calc(${theme.spacing.md} * var(--ae-spacing-scale));
   border-radius: ${theme.borderRadius.lg};
   background-color: ${props =>
     props.isUser ? theme.colors.primary : theme.colors.surface};
@@ -27,6 +27,7 @@ const MessageText = styled.p`
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: calc(1rem * var(--ae-response-effective-scale));
 `;
 
 const Timestamp = styled.div`
@@ -65,6 +66,7 @@ interface ChatBubbleProps {
   isUser: boolean;
   timestamp: Date;
   images?: string[]; // Array of image URLs to display
+  showTimestamp?: boolean;
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({
@@ -72,6 +74,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   isUser,
   timestamp,
   images,
+  showTimestamp,
 }) => {
   const formattedTime = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
@@ -80,7 +83,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
 
   // Get text speed from settings
   const settings = loadSettings();
-  const textSpeed = settings.textSpeed || 40;
+  const textSpeed = settings.animationsEnabled === false ? 1000 : settings.textSpeed || 40;
 
   const handleImageClick = (imageUrl: string) => {
     // Open image in new tab for full size viewing
@@ -120,7 +123,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
           </TypingAnimation>
         ))}
 
-      <Timestamp>{formattedTime}</Timestamp>
+      {showTimestamp !== false && <Timestamp>{formattedTime}</Timestamp>}
     </Bubble>
   );
 };

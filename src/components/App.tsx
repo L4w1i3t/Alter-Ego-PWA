@@ -11,6 +11,7 @@ const CharacterSelector = lazy(() => import('./Sections/CharacterSelector'));
 import NotificationManager from './Common/NotificationManager';
 import { useApi } from '../context/ApiContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
+import { applySettingsToCssVariables } from '../styles/GlobalStyles';
 import '../styles/mobile.css';
 import {
   loadSettings,
@@ -449,6 +450,24 @@ const App: React.FC = () => {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const [showDevTools, setShowDevTools] = useState(isDevelopment);
   const [devToolsCollapsed, setDevToolsCollapsed] = useState(false);
+
+  // Apply CSS variables for typography/spacing based on settings
+  useEffect(() => {
+    const apply = () => {
+      applySettingsToCssVariables();
+      const s = loadSettings();
+      const overall = s.overallTextScale ?? 1;
+      const response = s.responseTextScale ?? 1;
+      const effective = overall !== 1 ? overall : response;
+      document.documentElement.style.setProperty(
+        '--ae-response-effective-scale', String(Math.min(2, Math.max(0.8, effective)))
+      );
+    };
+    apply();
+    const handler = () => apply();
+    window.addEventListener('alter-ego-settings-updated', handler as any);
+    return () => window.removeEventListener('alter-ego-settings-updated', handler as any);
+  }, []);
 
   // Voice synthesis utilities
   const synthesizeVoice = async (text: string, voicemodel_id: string) => {

@@ -393,6 +393,7 @@ export interface Settings {
   voiceModel: string | null;
   memoryBuffer: number; // Make sure this is consistently named memoryBuffer
   textSpeed?: number; // Characters per second for typing animation
+  // UI/UX toggles and presentation
   notificationDuration?: number; // Duration for notifications in milliseconds
   soundNotifications?: boolean; // Enable/disable notification sounds
   showTimestamps?: boolean; // Show/hide message timestamps
@@ -405,6 +406,10 @@ export interface Settings {
   openSourceModel?: string; // Selected open-source model
   backendUrl?: string; // Custom backend URL for open-source models
   personaVersion?: string; // Track persona definition version for migrations
+  // New presentation controls
+  overallTextScale?: number; // Global font scale (1 = 100%)
+  responseTextScale?: number; // Chat message font scale (used only if overallTextScale === 1)
+  bubbleMaxWidthPercent?: number; // Max width of chat bubbles (percentage 50-90)
 }
 export function loadSettings(): Settings {
   const settings = localStorage.getItem('alterEgoSettings');
@@ -422,6 +427,12 @@ export function loadSettings(): Settings {
       memoryBuffer: 3, // Default to 3 messages
       textSpeed: 40, // Default text speed (characters per second)
       showEmotionDetection: isDevelopment, // Show emotion detection in dev mode only by default
+      showTimestamps: true,
+      compactMode: false,
+      animationsEnabled: true,
+      overallTextScale: 1,
+      responseTextScale: 1,
+      bubbleMaxWidthPercent: 70,
       personaVersion: PERSONA_VERSION, // Initialize with current version
       immersiveMode: immersiveFlag,
     };
@@ -437,6 +448,12 @@ export function loadSettings(): Settings {
       showEmotionDetection: isDevelopment
         ? (parsedSettings.showEmotionDetection ?? true)
         : false,
+      showTimestamps: parsedSettings.showTimestamps ?? true,
+      compactMode: parsedSettings.compactMode ?? false,
+      animationsEnabled: parsedSettings.animationsEnabled ?? true,
+      overallTextScale: parsedSettings.overallTextScale ?? 1,
+      responseTextScale: parsedSettings.responseTextScale ?? 1,
+      bubbleMaxWidthPercent: parsedSettings.bubbleMaxWidthPercent ?? 70,
       immersiveMode: parsedSettings.immersiveMode ?? immersiveFlag,
     };
   } catch (e) {
@@ -448,6 +465,12 @@ export function loadSettings(): Settings {
       memoryBuffer: 3,
       textSpeed: 40,
       showEmotionDetection: isDevelopment,
+      showTimestamps: true,
+      compactMode: false,
+      animationsEnabled: true,
+      overallTextScale: 1,
+      responseTextScale: 1,
+      bubbleMaxWidthPercent: 70,
       personaVersion: PERSONA_VERSION,
       immersiveMode: immersiveFlag,
     };

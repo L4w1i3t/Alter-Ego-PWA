@@ -4,14 +4,15 @@ import ChatBubble from './ChatBubble';
 import { theme } from '../../styles/theme';
 import { Message } from '../../types';
 import { markEvent, endTimer } from '../../utils/performanceMetrics';
+import { loadSettings } from '../../utils/storageUtils';
 
 const ChatContainer = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${theme.spacing.md};
+  padding: calc(${theme.spacing.md} * var(--ae-spacing-scale));
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.md};
+  gap: calc(${theme.spacing.md} * var(--ae-spacing-scale));
 `;
 
 interface ChatAreaProps {
@@ -21,6 +22,7 @@ interface ChatAreaProps {
 const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLength = useRef(messages.length);
+  const settings = loadSettings();
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -45,6 +47,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
     prevMessagesLength.current = messages.length;
   }, [messages]);
 
+  const showTimestamps = settings.showTimestamps ?? true;
+
   return (
     <ChatContainer>
       {messages.map((message, index) => (
@@ -53,6 +57,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
           message={message.text}
           isUser={message.isUser}
           timestamp={message.timestamp}
+          showTimestamp={showTimestamps}
         />
       ))}
       <div ref={messagesEndRef} />

@@ -1,4 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
+import { loadSettings } from '../utils/storageUtils';
 
 export const GlobalStyles = createGlobalStyle`  * {
     box-sizing: border-box;
@@ -17,6 +18,15 @@ export const GlobalStyles = createGlobalStyle`  * {
     -moz-user-select: text !important;
     -ms-user-select: text !important;
   }
+  :root {
+    /* Defaults; will be updated at runtime from settings */
+    --ae-overall-text-scale: 1;
+    --ae-response-text-scale: 1;
+    --ae-bubble-max-width: 70%;
+    --ae-spacing-scale: 1;
+    --ae-reduce-motion: 0; /* 1 to reduce */
+  }
+  
   html, body {
     margin: 0;
     padding: 0;
@@ -24,6 +34,7 @@ export const GlobalStyles = createGlobalStyle`  * {
     background: #000;
     color: #0f0;
     font-family: monospace, "Courier New", Courier;
+    font-size: calc(16px * var(--ae-overall-text-scale));
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -145,3 +156,22 @@ export const GlobalStyles = createGlobalStyle`  * {
     scrollbar-color: #0f0 #000;
   }
 `;
+
+// One-time sync of CSS variables from settings at app start.
+// Components can also listen to the 'alter-ego-settings-updated' event to re-apply.
+export const applySettingsToCssVariables = () => {
+  try {
+    const s = loadSettings();
+    const root = document.documentElement;
+    const overall = Math.min(1.6, Math.max(0.8, s.overallTextScale ?? 1));
+    const response = Math.min(2, Math.max(0.8, s.responseTextScale ?? 1));
+    const bubble = Math.min(90, Math.max(50, s.bubbleMaxWidthPercent ?? 70));
+    root.style.setProperty('--ae-overall-text-scale', String(overall));
+    root.style.setProperty('--ae-response-text-scale', String(response));
+    root.style.setProperty('--ae-bubble-max-width', `${bubble}%`);
+    // Spacing scale ties to compact mode: 0.9 when compact, else 1
+    const spacingScale = s.compactMode ? 0.9 : 1;
+    root.style.setProperty('--ae-spacing-scale', String(spacingScale));
+    root.style.setProperty('--ae-reduce-motion', s.animationsEnabled === false ? '1' : '0');
+  } catch {}
+};
