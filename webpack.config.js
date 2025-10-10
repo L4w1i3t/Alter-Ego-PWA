@@ -180,8 +180,9 @@ module.exports = {
             meta: {
               'Content-Security-Policy': {
                 'http-equiv': 'Content-Security-Policy',
+                // Note: frame-ancestors is ignored in meta; enforced via HTTP headers on Vercel
                 content:
-                  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.elevenlabs.io http://127.0.0.1:8000 ws: wss:; media-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'",
+                  "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.elevenlabs.io http://127.0.0.1:8000 ws: wss:; media-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'",
               },
             },
           }),
