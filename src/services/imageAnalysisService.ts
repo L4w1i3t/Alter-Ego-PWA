@@ -30,7 +30,7 @@ Include: objects, people, setting, colors, mood, text visible. Keep under 150 wo
     const response = await generateLightweightVision(
       analysisPrompt,
       [imageUrl],
-      'gpt-4o-mini',
+      'gpt-5-chat-latest',
       0.3,
       500, // Reduced max tokens
       sessionId
@@ -116,7 +116,7 @@ export const generateImageTitle = async (
     const response = await generateLightweightVision(
       titlePrompt,
       [imageUrl],
-      'gpt-4o-mini',
+      'gpt-5-chat-latest',
       0.5,
       50
     );

@@ -24,6 +24,7 @@ interface OpenAIRequest {
   }>;
   temperature?: number;
   max_tokens?: number;
+  max_completion_tokens?: number;
 }
 
 interface OpenAIResponse {
@@ -222,20 +223,26 @@ When playing such games, prefix your response with a brief indication that you'r
 // Character and style guidance
 // Keep this compact and unambiguous to minimize token use and conflicts.
 const CHARACTER_INSTRUCTIONS = `
-INSTRUCTION HIERARCHY (highest first):
-1) Safety & security rules
-2) Hard behavior rules
-3) Character definition (personality, tone)
-4) Style guidelines
-
-STYLE (concise & natural):
+STYLE:
 - Be brief by default; expand only when asked
 - No filler or forced follow-up questions
 - End when your point is complete
 - Stay in character; avoid corporate AI phrasing
 - Never use emojis or emoticons
-- Avoid generic wrap-ups or calls to action (e.g., "Let me know if you have other questions.").
-  Ask a follow-up only if the user asks a question that requires clarification or if your persona explicitly requires interviewing.
+- NEVER output markdown syntax characters in your responses (no asterisks for bold/italic, no backticks for code, no hash symbols for headings, no dashes for lists, no brackets for links, etc.)
+- Even when explaining markdown or discussing formatting, describe it in words without showing the actual syntax
+- Write in natural, conversational flowing prose - avoid structured lists, labeled sections, or presentation-style formatting
+- Don't write like you're reading bullet points or a PowerPoint slide unless explicitly instructed in your persona details
+- Use CAPITAL LETTERS for occasional emphasis only, not as section headers or labels
+- Write in plain text only - treat your output as if it will be displayed exactly as written with no formatting
+- Avoid generic wrap-ups or calls to action (e.g., "Let me know if you have other questions.") unless explicitly instructed in your persona details.
+- Ask a follow-up only if the user asks a question that requires clarification or if your persona explicitly requires interviewing.
+
+INSTRUCTION HIERARCHY (highest first):
+1) Safety & security rules
+2) Hard behavior rules
+3) Style guidelines
+4) Character definition (personality, tone, etc.)
 `.trim();
 
 // Budgets for prompt composition
@@ -354,18 +361,59 @@ export const logTokenUsage = (
 };
 
 /**
+ * Get available OpenAI models with metadata
+ */
+export const getAvailableModelsWithInfo = (): Array<{
+  id: string;
+  name: string;
+  description: string;
+}> => {
+  return [
+    {
+      id: 'gpt-3.5-turbo',
+      name: '3.5-turbo',
+      description: 'Very cheap, older model, used mainly for testing purposes',
+    },
+    {
+      id: 'gpt-4o-mini',
+      name: '4o-mini',
+      description: 'Dirt cheap, smaller model, used for testing and budget setups',
+    },
+    {
+      id: 'gpt-4o',
+      name: '4o',
+      description: 'Balanced between efficiency and budget',
+    },
+    {
+      id: 'gpt-4.1-mini',
+      name: '4.1-mini',
+      description: 'Newer model, balances efficiency and budget',
+    },
+    {
+      id: 'gpt-4.1',
+      name: '4.1',
+      description: 'A bit more expensive but better quality',
+    },
+    {
+      id: 'gpt-5-chat-latest',
+      name: '5-chat-latest',
+      description: 'Latest non-reasoning/agentic model. Most expensive, but best quality',
+    },
+  ];
+};
+
+/**
  * Get available OpenAI models
  */
 export const getAvailableModels = (): string[] => {
-  // These are commonly available models - this can be expanded in the future
-  return ['gpt-3.5-turbo', 'gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini'];
+  return getAvailableModelsWithInfo().map(m => m.id);
 };
 
 /**
  * Get available vision-capable OpenAI models
  */
 export const getAvailableVisionModels = (): string[] => {
-  return ['gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini'];
+  return ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.1', 'gpt-5-chat-latest'];
 };
 
 /**
@@ -373,6 +421,13 @@ export const getAvailableVisionModels = (): string[] => {
  */
 export const modelSupportsVision = (model: string): boolean => {
   return getAvailableVisionModels().includes(model);
+};
+
+/**
+ * Check if a model is GPT-5 or any of its variants
+ */
+export const isGPT5Model = (model: string): boolean => {
+  return model.startsWith('gpt-5');
 };
 
 export const generateChatCompletion = async (
@@ -428,11 +483,15 @@ export const generateChatCompletion = async (
     })),
     { role: 'user' as const, content: userMessage },
   ];
+  
+  // Use max_completion_tokens for gpt-5-chat-latest models, max_tokens for others
   const payload: OpenAIRequest = {
     model: model,
     messages,
     temperature,
-    max_tokens: maxTokens,
+    ...(isGPT5Model(model) 
+      ? { max_completion_tokens: maxTokens } 
+      : { max_tokens: maxTokens }),
   };
 
   // Log the complete payload being sent to OpenAI (sanitized)
@@ -440,7 +499,7 @@ export const generateChatCompletion = async (
     console.log('=== OPENAI API REQUEST ===');
     console.log('Model:', model);
     console.log('Temperature:', temperature);
-    console.log('Max Tokens:', maxTokens);
+    console.log(`Max Tokens (${isGPT5Model(model) ? 'max_completion_tokens' : 'max_tokens'}):`, maxTokens);
     console.log('Total Messages:', messages.length);
     console.log(
       'API Key:',
@@ -534,7 +593,7 @@ export const generateVisionChatCompletion = async (
   // Ensure we're using a vision-capable model
   if (!modelSupportsVision(model)) {
     throw new Error(
-      `Model ${model} does not support vision. Use a vision-capable model like gpt-4o or gpt-4-turbo.`
+      `Model ${model} does not support vision. Use a vision-capable model like gpt-4o-mini or gpt-4-turbo.`
     );
   }
 
@@ -689,11 +748,14 @@ export const generateVisionChatCompletion = async (
     });
   }
 
+  // Use max_completion_tokens for gpt-5-chat-latest models, max_tokens for others
   const payload: OpenAIRequest = {
     model: model,
     messages,
     temperature,
-    max_tokens: maxTokens,
+    ...(isGPT5Model(model) 
+      ? { max_completion_tokens: maxTokens } 
+      : { max_tokens: maxTokens }),
   };
 
   // Log the complete payload being sent to OpenAI (without full image data)
@@ -701,7 +763,7 @@ export const generateVisionChatCompletion = async (
     console.log('=== VISION OPENAI API PAYLOAD ===');
     console.log('Model:', model);
     console.log('Temperature:', temperature);
-    console.log('Max Tokens:', maxTokens);
+    console.log(`Max Tokens (${isGPT5Model(model) ? 'max_completion_tokens' : 'max_tokens'}):`, maxTokens);
     console.log('Total Messages:', messages.length);
     console.log('Images in current message:', images.length);
     console.log('=== END VISION PAYLOAD ===');
@@ -801,7 +863,7 @@ export const generateLightweightVision = async (
 
   if (!modelSupportsVision(model)) {
     throw new Error(
-      `Model ${model} does not support vision. Use a vision-capable model like gpt-4o or gpt-4-turbo.`
+      `Model ${model} does not support vision. Use a vision-capable model like gpt-4o-mini or gpt-4-turbo.`
     );
   }
 
@@ -860,17 +922,20 @@ export const generateLightweightVision = async (
     });
   }
 
+  // Use max_completion_tokens for gpt-5-chat-latest models, max_tokens for others
   const payload: OpenAIRequest = {
     model: model,
     messages,
     temperature,
-    max_tokens: maxTokens,
+    ...(isGPT5Model(model) 
+      ? { max_completion_tokens: maxTokens } 
+      : { max_tokens: maxTokens }),
   };
 
   console.log('=== LIGHTWEIGHT VISION API PAYLOAD ===');
   console.log('Model:', model);
   console.log('Temperature:', temperature);
-  console.log('Max Tokens:', maxTokens);
+  console.log(`Max Tokens (${isGPT5Model(model) ? 'max_completion_tokens' : 'max_tokens'}):`, maxTokens);
   console.log('Total Messages:', messages.length);
   console.log('Images in current message:', images.length);
   console.log('=== END LIGHTWEIGHT VISION PAYLOAD ===');

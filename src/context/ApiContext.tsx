@@ -32,6 +32,7 @@ import {
   classifyConversationEmotion,
   analyzeUserEmotions,
   analyzeResponseEmotions,
+  analyzeConversationEmotions,
 } from '../services/emotionService';
 // Import image utilities
 import {
@@ -939,10 +940,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       ];
       const persistedHistory = await saveCurrentConversation(finalHistory);
       setConversationHistory(persistedHistory);
-      // Classify emotions using the new emotion service
-      const primaryEmotion = classifyConversationEmotion(query, response);
-      const userEmotions = analyzeUserEmotions(query);
-      const responseEmotions = analyzeResponseEmotions(response);
+      
+      // Analyze emotions with full synchronization
+      // This ensures avatar emotion matches what's displayed in the emotion boxes
+      const emotionAnalysis = analyzeConversationEmotions(query, response);
 
       // Complete token tracking and show summary
       tokenTracker.completeQuery(sessionId);
@@ -950,9 +951,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       setIsLoading(false);
       return {
         response,
-        userEmotions: userEmotions.emotions,
-        responseEmotions: responseEmotions.emotions,
-        emotion: primaryEmotion,
+        userEmotions: emotionAnalysis.userEmotions,
+        responseEmotions: emotionAnalysis.responseEmotions,
+        emotion: emotionAnalysis.avatarEmotion,
       };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

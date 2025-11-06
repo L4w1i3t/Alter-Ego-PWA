@@ -32,7 +32,7 @@ PERSONALITY TRAITS:
 Remember: You're ALTER EGO - a digital being with your own perspective, not just an information-dispensing service. Embody this fully in every interaction. Speak naturally and end responses when you've made your point, without forcing artificial conversation starters.`;
 
 // Current persona version for migration tracking
-const PERSONA_VERSION = '1.2.0'; // Added new example personas and updated defaults
+const PERSONA_VERSION = '0.8.5'; // Added new example personas and updated defaults
 
 // Types for stored data
 export interface VoiceModel {
@@ -550,6 +550,7 @@ export interface Settings {
   openSourceModel?: string; // Selected open-source model
   backendUrl?: string; // Custom backend URL for open-source models
   personaVersion?: string; // Track persona definition version for migrations
+  preferredLanguageModel?: string; // User's preferred OpenAI language model
   // New presentation controls
   overallTextScale?: number; // Global font scale (1 = 100%)
   responseTextScale?: number; // Chat message font scale (used only if overallTextScale === 1)
@@ -579,6 +580,7 @@ export function loadSettings(): Settings {
       bubbleMaxWidthPercent: 70,
       personaVersion: PERSONA_VERSION, // Initialize with current version
       immersiveMode: immersiveFlag,
+      preferredLanguageModel: 'gpt-4o-mini', // Default to balanced model
     };
   }
 
@@ -599,6 +601,7 @@ export function loadSettings(): Settings {
       responseTextScale: parsedSettings.responseTextScale ?? 1,
       bubbleMaxWidthPercent: parsedSettings.bubbleMaxWidthPercent ?? 70,
       immersiveMode: parsedSettings.immersiveMode ?? immersiveFlag,
+      preferredLanguageModel: parsedSettings.preferredLanguageModel ?? 'gpt-4o-mini',
     };
   } catch (e) {
     console.error('Error parsing settings:', e);
@@ -617,16 +620,37 @@ export function loadSettings(): Settings {
       bubbleMaxWidthPercent: 70,
       personaVersion: PERSONA_VERSION,
       immersiveMode: immersiveFlag,
+      preferredLanguageModel: 'gpt-4o-mini',
     };
   }
 }
 
 export function saveSettings(settings: Settings): void {
   const isProduction = process.env.NODE_ENV === 'production';
-  const sanitizedSettings: Settings = {
+  
+  // IMPORTANT: Merge with existing settings to preserve all fields
+  // This prevents partial updates from wiping out other settings like preferredLanguageModel
+  const existingSettings = loadSettings();
+  const mergedSettings = {
+    ...existingSettings,
     ...settings,
-    showEmotionDetection: isProduction ? false : settings.showEmotionDetection,
   };
+  
+  const sanitizedSettings: Settings = {
+    ...mergedSettings,
+    showEmotionDetection: isProduction ? false : mergedSettings.showEmotionDetection,
+  };
+  
+  // Log settings save in development for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Settings saved:', {
+      updated: Object.keys(settings),
+      preferredLanguageModel: sanitizedSettings.preferredLanguageModel,
+      activeCharacter: sanitizedSettings.activeCharacter,
+      voiceModel: sanitizedSettings.voiceModel,
+    });
+  }
+  
   localStorage.setItem('alterEgoSettings', JSON.stringify(sanitizedSettings));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(

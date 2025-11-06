@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 import TypingAnimation from '../Common/TypingAnimation';
+import MarkdownRenderer from '../Common/MarkdownRenderer';
 import { loadSettings } from '../../utils/storageUtils';
 import { openImageInNewTab } from '../../utils/imageUtils';
 
@@ -23,7 +24,12 @@ const Bubble = styled.div.withConfig({
   position: relative;
 `;
 
-const MessageText = styled.p`
+const MessageText = styled.div`
+  margin: 0;
+  font-size: calc(1rem * var(--ae-response-effective-scale));
+`;
+
+const PlainMessageText = styled.div`
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
@@ -110,7 +116,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       {/* Display message text */}
       {message &&
         (isUser ? (
-          <MessageText>{message}</MessageText>
+          <MessageText>
+            <MarkdownRenderer content={message} />
+          </MessageText>
         ) : (
           <TypingAnimation
             text={message}
@@ -118,7 +126,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             showCursor={true}
           >
             {(displayText: string, isComplete: boolean) => (
-              <MessageText>{displayText}</MessageText>
+              <MessageText>
+                <MarkdownRenderer content={displayText} />
+              </MessageText>
             )}
           </TypingAnimation>
         ))}

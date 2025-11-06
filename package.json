@@ -29,16 +29,18 @@
     "dexie": "^4.0.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "styled-components": "^6.1.16",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    
-    "body-parser": "^1.20.1",
     "@types/node": "^20.17.27",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.2.15",
     "@types/uuid": "^9.0.7",
+    "body-parser": "^1.20.1",
     "copy-webpack-plugin": "^13.0.0",
     "cross-env": "^7.0.3",
     "css-loader": "^6.8.1",

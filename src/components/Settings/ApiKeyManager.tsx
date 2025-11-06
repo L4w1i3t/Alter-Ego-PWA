@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { loadApiKeys, saveApiKeys, ApiKeys } from '../../utils/storageUtils';
+import { loadApiKeys, saveApiKeys, ApiKeys, loadSettings, saveSettings } from '../../utils/storageUtils';
 import {
   showSuccess,
   showError,
@@ -13,6 +13,7 @@ import {
   assessKeyStrength,
   sanitizeKeyForLogging,
 } from '../../utils/keyValidation';
+import { getAvailableModelsWithInfo } from '../../utils/openaiApi';
 
 const Container = styled.div`
   color: #0f0;
@@ -61,6 +62,29 @@ const Input = styled.input`
   border: 1px solid #0f0;
   border-radius: 0.2em;
   font-family: monospace;
+
+  @media (max-width: 768px) {
+    padding: 1em;
+    font-size: 1em;
+    border-width: 2px;
+    border-radius: 0.3em;
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.7em;
+  background: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+  border-radius: 0.2em;
+  font-family: monospace;
+  cursor: pointer;
+
+  option {
+    background: #000;
+    color: #0f0;
+  }
 
   @media (max-width: 768px) {
     padding: 1em;
@@ -165,6 +189,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
     OPENAI_API_KEY: '',
     ELEVENLABS_API_KEY: '',
   });
+  const [preferredModel, setPreferredModel] = useState<string>('gpt-4o-mini');
   const [isValidating, setIsValidating] = useState(false);
   const [validationResults, setValidationResults] = useState<{
     openai: { valid: boolean; error?: string; warnings?: string[] } | null;
@@ -175,9 +200,11 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
   });
 
   useEffect(() => {
-    // Load existing API keys
+    // Load existing API keys and settings
     const savedKeys = loadApiKeys();
+    const settings = loadSettings();
     setKeys(savedKeys);
+    setPreferredModel(settings.preferredLanguageModel || 'gpt-4o-mini');
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -253,7 +280,15 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       }
 
       await saveApiKeys(keys);
-      showSuccess('API keys saved and encrypted successfully!');
+      
+      // Save preferred language model
+      const currentSettings = loadSettings();
+      saveSettings({
+        ...currentSettings,
+        preferredLanguageModel: preferredModel,
+      });
+      
+      showSuccess('API keys and language model preference saved successfully!');
     } catch (error) {
       showError('Error saving API keys.');
       console.error('Failed to save API keys:', error);
@@ -288,7 +323,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       <InfoBox>
         You'll need API keys to use certain features of ALTER EGO. The OpenAI
         API key is required for using OpenAI models, and the ElevenLabs key is
-        needed for voice synthesis.
+        needed for voice synthesis. Choose your preferred language model based on your needs and budget.
       </InfoBox>
 
       <FormGroup>
@@ -312,6 +347,24 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
             OpenAI dashboard
           </a>
           .
+        </Description>
+      </FormGroup>
+
+      <FormGroup>
+        <Label htmlFor="preferredLanguageModel">Preferred Language Model:</Label>
+        <Select
+          id="preferredLanguageModel"
+          value={preferredModel}
+          onChange={(e) => setPreferredModel(e.target.value)}
+        >
+          {getAvailableModelsWithInfo().map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.name} - {model.description}
+            </option>
+          ))}
+        </Select>
+        <Description>
+          Choose the OpenAI language model that best fits your needs and budget. This will be used for all chat interactions.
         </Description>
       </FormGroup>
 

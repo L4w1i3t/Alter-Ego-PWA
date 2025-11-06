@@ -32,7 +32,7 @@ export interface AIConfig {
 
 // Default configuration
 const defaultConfig: AIConfig = {
-  model: 'gpt-4o-mini',
+  model: 'gpt-4o-mini', // Default to balanced model
   temperature: 0.9, // Higher temperature for more creative, less robotic responses
   maxTokens: 1000,
 };
@@ -41,11 +41,31 @@ const defaultConfig: AIConfig = {
 export const getAIConfig = (): AIConfig => {
   try {
     const configStr = localStorage.getItem('alterEgo_aiConfig');
-    if (!configStr) return defaultConfig;
-    return JSON.parse(configStr);
+    const settings = loadSettings();
+    
+    // If no saved config, return default with preferred model from settings
+    if (!configStr) {
+      return {
+        ...defaultConfig,
+        model: settings.preferredLanguageModel || defaultConfig.model,
+      };
+    }
+    
+    const config = JSON.parse(configStr);
+    
+    // Always use preferred language model from settings if available
+    if (settings.preferredLanguageModel) {
+      config.model = settings.preferredLanguageModel;
+    }
+    
+    return config;
   } catch (error) {
     console.error('Error loading AI config:', error);
-    return defaultConfig;
+    const settings = loadSettings();
+    return {
+      ...defaultConfig,
+      model: settings.preferredLanguageModel || defaultConfig.model,
+    };
   }
 };
 
@@ -162,10 +182,18 @@ export const sendMessageToAI = async (
 
     // Get current configuration and apply any overrides
     const currentConfig = getAIConfig();
+    
     const finalConfig = {
       ...currentConfig,
       ...config,
     };
+    
+    // IMPORTANT: Use preferred language model from settings unless explicitly overridden in config
+    // This ensures the user's model selection from API Keys settings is respected
+    if (!config?.model && settings.preferredLanguageModel) {
+      finalConfig.model = settings.preferredLanguageModel;
+      console.log(`Using preferred language model from settings: ${finalConfig.model}`);
+    }
 
     // Check if we have images and need to use vision
     const hasImages = images && images.length > 0;
@@ -183,9 +211,9 @@ export const sendMessageToAI = async (
       // Ensure we're using a vision-capable model
       if (!modelSupportsVision(finalConfig.model)) {
         console.log(
-          `Model ${finalConfig.model} doesn't support vision, switching to gpt-4o`
+          `Model ${finalConfig.model} doesn't support vision, switching to gpt-4o-mini`
         );
-        finalConfig.model = 'gpt-4o';
+        finalConfig.model = 'gpt-4o-mini';
       }
 
       console.log(

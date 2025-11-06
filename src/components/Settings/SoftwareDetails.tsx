@@ -519,7 +519,7 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
       'Service Workers',
       'PWA Technologies',
       'OpenAI API',
-      'OpenAI Vision API (GPT-4o)',
+      'OpenAI Vision API',
       'ElevenLabs API',
       'Webpack 5',
     ],
