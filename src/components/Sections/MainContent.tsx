@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { loadSettings, Settings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
+import { EVENTS } from '../../config/constants';
 import TypingAnimation from '../Common/TypingAnimation';
 import { openImageInNewTab } from '../../utils/imageUtils';
 import { UserIcon } from '../Common/Icons';
@@ -302,13 +303,13 @@ const MainContent: React.FC<MainContentProps> = ({
     };
 
     window.addEventListener(
-      'alter-ego-settings-updated',
+      EVENTS.SETTINGS_UPDATED,
       handleSettingsUpdated as EventListener
     );
     window.addEventListener('storage', handleStorageUpdate);
     return () => {
       window.removeEventListener(
-        'alter-ego-settings-updated',
+        EVENTS.SETTINGS_UPDATED,
         handleSettingsUpdated as EventListener
       );
       window.removeEventListener('storage', handleStorageUpdate);

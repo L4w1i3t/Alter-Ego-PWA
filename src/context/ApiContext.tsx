@@ -5,17 +5,14 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import {
-  sendMessageToAI,
-  AIConfig,
-  MessageHistory,
-} from '../services/aiService';
+import { sendMessageToAI } from '../services/aiService';
+import type { AIConfig, MessageHistory, ChatHistoryEntry } from '../types';
 import {
   loadChatHistory,
   saveChatHistory,
-  ChatHistoryEntry,
   loadSettings,
 } from '../utils/storageUtils';
+import { MEMORY } from '../config/constants';
 import { v4 as uuidv4 } from 'uuid';
 // Import functions from our long-term memory database
 import {
@@ -51,18 +48,10 @@ import {
   buildFactsLine,
 } from '../memory/associativeMemory';
 import { buildShortTermContext } from '../utils/contextBuilder';
+import { logger } from '../utils/logger';
+import type { Message } from '../types';
 
-// Define message type
-interface Message {
-  role: 'user' | 'assistant' | 'system'; // Added 'system' role for RAG context
-  content: string;
-  timestamp?: string;
-  id?: number;
-  images?: string[]; // Array of image URLs/data URLs
-  imageIds?: string[]; // Array of cached image IDs for reference
-}
-
-const DEFAULT_MEMORY_BUFFER = 3;
+const DEFAULT_MEMORY_BUFFER = MEMORY.DEFAULT_BUFFER;
 const normalizeMemoryBuffer = (value?: number): number => {
   if (typeof value !== 'number') return DEFAULT_MEMORY_BUFFER;
   if (!Number.isFinite(value) || value <= 0) return DEFAULT_MEMORY_BUFFER;
@@ -293,13 +282,11 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         if (!existingLTM) {
           const ltmMessages = normalizedMessages
             .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-            .map(msg => ({
-              text: toLtmText(msg),
-              isUser: msg.role === 'user',
-              timestamp: toLtmDate(msg.timestamp),
-              ...(typeof msg.id === 'number' ? { id: msg.id } : {}),
-            }))
-            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+            .sort((a, b) => {
+              const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+              const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+              return timeA - timeB;
+            });
 
           const limitedMessages =
             ltmMessages.length > MAX_LTM_MESSAGES
@@ -309,12 +296,16 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           await savePersonaMemory(personaName, {
             messages: limitedMessages,
             users: [],
-            aiConfig: {},
+            aiConfig: {
+              model: 'gpt-4o-mini',
+              temperature: 0.9,
+              maxTokens: 1000,
+            },
             voiceConfig: { enabled: false, language: 'en-US' },
           });
         }
       } catch (err) {
-        console.error('Error storing in long-term memory:', err);
+        logger.error('Error storing in long-term memory:', err);
       }
     } else {
       const newSessionId = uuidv4();
@@ -336,25 +327,15 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const searchLongTermMemory = async (query: string): Promise<Message[]> => {
     try {
       const searchResults = await searchMessages(query, currentPersona);
-      // Convert to the Message format
-      return searchResults.map(msg => {
-        const timestamp = msg.timestamp
-          ? msg.timestamp instanceof Date
-            ? msg.timestamp.toISOString()
-            : new Date(msg.timestamp).toISOString()
-          : new Date().toISOString();
+      // Messages are already in correct format from database
+      searchResults.forEach(msg => {
         if (typeof msg.id === 'number') {
           registerExistingMessageId(msg.id);
         }
-        return {
-          role: msg.isUser ? ('user' as const) : ('assistant' as const),
-          content: msg.text,
-          id: msg.id,
-          timestamp,
-        };
       });
+      return searchResults;
     } catch (err) {
-      console.error('Error searching long-term memory:', err);
+      logger.error('Error searching long-term memory:', err);
       return [];
     }
   };
@@ -370,25 +351,15 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         endDate,
         currentPersona
       );
-      // Convert to the Message format
-      return messages.map(msg => {
-        const timestamp = msg.timestamp
-          ? msg.timestamp instanceof Date
-            ? msg.timestamp.toISOString()
-            : new Date(msg.timestamp).toISOString()
-          : new Date().toISOString();
+      // Register message IDs
+      messages.forEach(msg => {
         if (typeof msg.id === 'number') {
           registerExistingMessageId(msg.id);
         }
-        return {
-          role: msg.isUser ? ('user' as const) : ('assistant' as const),
-          content: msg.text,
-          id: msg.id,
-          timestamp,
-        };
       });
+      return messages;
     } catch (err) {
-      console.error('Error retrieving time-based memories:', err);
+      logger.error('Error retrieving time-based memories:', err);
       return [];
     }
   };
@@ -397,25 +368,15 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const retrieveLastNMemories = async (count: number): Promise<Message[]> => {
     try {
       const messages = await getLastNMessages(count, currentPersona);
-      // Convert to the Message format
-      return messages.map(msg => {
-        const timestamp = msg.timestamp
-          ? msg.timestamp instanceof Date
-            ? msg.timestamp.toISOString()
-            : new Date(msg.timestamp).toISOString()
-          : new Date().toISOString();
+      // Register message IDs
+      messages.forEach(msg => {
         if (typeof msg.id === 'number') {
           registerExistingMessageId(msg.id);
         }
-        return {
-          role: msg.isUser ? ('user' as const) : ('assistant' as const),
-          content: msg.text,
-          id: msg.id,
-          timestamp,
-        };
       });
+      return messages;
     } catch (err) {
-      console.error('Error retrieving last N memories:', err);
+      logger.error('Error retrieving last N memories:', err);
       return [];
     }
   };
@@ -434,25 +395,15 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         5 // Retrieve max 5 relevant messages
       );
 
-      // Convert to Message format
-      return searchResults.map(msg => {
-        const timestamp = msg.timestamp
-          ? msg.timestamp instanceof Date
-            ? msg.timestamp.toISOString()
-            : new Date(msg.timestamp).toISOString()
-          : new Date().toISOString();
+      // Register message IDs
+      searchResults.forEach(msg => {
         if (typeof msg.id === 'number') {
           registerExistingMessageId(msg.id);
         }
-        return {
-          role: msg.isUser ? ('user' as const) : ('assistant' as const),
-          content: msg.text,
-          id: msg.id,
-          timestamp,
-        };
       });
+      return searchResults;
     } catch (err) {
-      console.error('Error in semantic search of long-term memory:', err);
+      logger.error('Error in semantic search of long-term memory:', err);
       return [];
     }
   };
@@ -515,13 +466,11 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     try {
       const ltmMessages = normalized
         .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-        .map(msg => ({
-          text: toLtmText(msg),
-          isUser: msg.role === 'user',
-          timestamp: toLtmDate(msg.timestamp),
-          id: msg.id,
-        }))
-        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        .sort((a, b) => {
+          const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return timeA - timeB;
+        });
 
       const limited =
         ltmMessages.length > MAX_LTM_MESSAGES
@@ -536,12 +485,16 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         await savePersonaMemory(currentPersona, {
           messages: limited,
           users: [],
-          aiConfig: {},
+          aiConfig: {
+            model: 'gpt-4o-mini',
+            temperature: 0.9,
+            maxTokens: 1000,
+          },
           voiceConfig: { enabled: false, language: 'en-US' },
         });
       }
     } catch (err) {
-      console.error('Error saving to long-term memory:', err);
+      logger.error('Error saving to long-term memory:', err);
     }
 
     return normalized;
@@ -604,14 +557,14 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         );
         clearPersonaAssociations(targetPersona);
       } catch (err) {
-        console.warn('Failed to clear associative memory for persona:', err);
+        logger.warn('Failed to clear associative memory for persona:', err);
       }
     } catch (err) {
-      console.error('Error clearing from long-term memory:', err);
+      logger.error('Error clearing from long-term memory:', err);
     }
 
     // Log confirmation that memory was fully cleared
-    console.log(`Memory fully cleared for persona: ${targetPersona}`);
+    logger.info(`Memory fully cleared for persona: ${targetPersona}`);
   };
 
   // Function to change the current persona
@@ -694,7 +647,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
       // Process images if provided
       if (images && images.length > 0) {
-        console.log(`Processing ${images.length} images...`);
+        logger.debug(`Processing ${images.length} images...`);
 
         // Validate all images first
         for (const image of images) {
@@ -725,7 +678,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
             imageUrls.push(compressedDataUrl);
             imageIds.push(cachedImage.id);
 
-            console.log(`Processed image: ${image.name} (${cachedImage.id})`);
+            logger.debug(`Processed image: ${image.name} (${cachedImage.id})`);
 
             // Queue image for background AI analysis (doesn't block user response)
             queueImageForAnalysis(
@@ -735,7 +688,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
               2
             ); // Priority 2 for user uploads
           } catch (err) {
-            console.error('Error processing image:', err);
+            logger.error('Error processing image:', err);
             throw new Error(
               `Failed to process image ${image.name}: ${err instanceof Error ? err.message : 'Unknown error'}`
             );
@@ -767,7 +720,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           charBudget: 2000,
         });
 
-      console.log(
+      logger.debug(
         `Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`
       );
 
@@ -780,7 +733,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           addAssociations(currentPersona, pairs);
         }
       } catch (e) {
-        console.warn('Association parse failed:', e);
+        logger.warn('Association parse failed:', e);
       }
 
       try {
@@ -804,7 +757,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           });
         }
       } catch (assocErr) {
-        console.warn('Failed to build associative context:', assocErr);
+        logger.warn('Failed to build associative context:', assocErr);
       }
 
       // Get IDs of messages already in short-term memory to avoid duplicates
@@ -828,12 +781,12 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           // Format memories properly for RAG
           relevantMemories = formatMemoriesForRAG(searchResults);
 
-          console.log(
+          logger.debug(
             `Retrieved ${searchResults.length} semantically relevant memories from long-term storage`
           );
         }
       } catch (err) {
-        console.error('Error retrieving from long-term memory:', err);
+        logger.error('Error retrieving from long-term memory:', err);
       } // Construct the full message history for the AI (excluding system prompt and current user message)
       const messagesForAI: MessageHistory[] = [
         // Associative context comes first so the model sees persona-specific facts
@@ -858,22 +811,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         })),
       ];
 
-      // Debug logging to verify no duplicate user messages    // Debug logging (only in development)
+      // Debug logging (only in development)
       if (process.env.NODE_ENV === 'development') {
-        console.log('=== MESSAGE CONSTRUCTION DEBUG ===');
-        console.log('Current user query:', query);
-        console.log('Images attached:', imageUrls.length);
-        console.log('Conversation history length:', conversationHistory.length);
-        console.log(
+        logger.debug('=== MESSAGE CONSTRUCTION DEBUG ===');
+        logger.debug('Current user query:', query);
+        logger.debug('Images attached:', imageUrls.length);
+        logger.debug('Conversation history length:', conversationHistory.length);
+        logger.debug(
           'Limited context for AI length:',
           limitedContextForAI.length
         );
-        console.log('Messages for AI length:', messagesForAI.length);
-        console.log(
+        logger.debug('Messages for AI length:', messagesForAI.length);
+        logger.debug(
           'Messages for AI roles:',
           messagesForAI.map(m => m.role)
         );
-        console.log('=== END MESSAGE DEBUG ===');
+        logger.debug('=== END MESSAGE DEBUG ===');
       }
 
       // Build an enhanced system prompt with associative facts (compact)

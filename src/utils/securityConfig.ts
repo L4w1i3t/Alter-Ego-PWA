@@ -3,6 +3,8 @@
  * Centralized configuration for all security features
  */
 
+import { logger } from './logger';
+
 export interface SecurityConfig {
   // Developer tools blocking
   blockDevTools: boolean;
@@ -148,7 +150,7 @@ export function getSecurityConfig(): SecurityConfig {
     try {
       config = JSON.parse(customConfig) as SecurityConfig;
     } catch (e) {
-      console.warn(
+      logger.warn(
         'Invalid security configuration in REACT_APP_SECURITY_CONFIG, using defaults'
       );
       config = getDefaultConfigForEnv(env);
@@ -159,7 +161,7 @@ export function getSecurityConfig(): SecurityConfig {
 
   // Validate the configuration
   if (!validateSecurityConfig(config)) {
-    console.warn(
+    logger.warn(
       'Invalid security configuration detected, using safe defaults'
     );
     config = getDefaultConfigForEnv(env);
@@ -193,7 +195,7 @@ export function validateSecurityConfig(config: SecurityConfig): boolean {
     typeof config.devToolsDetectionThreshold !== 'number' ||
     config.devToolsDetectionThreshold < 0
   ) {
-    console.error('Invalid devToolsDetectionThreshold in security config');
+    logger.error('Invalid devToolsDetectionThreshold in security config');
     return false;
   }
 
@@ -201,7 +203,7 @@ export function validateSecurityConfig(config: SecurityConfig): boolean {
     typeof config.debuggerCheckInterval !== 'number' ||
     config.debuggerCheckInterval < 100
   ) {
-    console.error('Invalid debuggerCheckInterval in security config');
+    logger.error('Invalid debuggerCheckInterval in security config');
     return false;
   }
 
@@ -209,7 +211,7 @@ export function validateSecurityConfig(config: SecurityConfig): boolean {
     typeof config.warningDuration !== 'number' ||
     config.warningDuration < 1000
   ) {
-    console.error('Invalid warningDuration in security config');
+    logger.error('Invalid warningDuration in security config');
     return false;
   }
 

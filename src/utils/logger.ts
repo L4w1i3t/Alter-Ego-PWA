@@ -1,7 +1,7 @@
 // Logging utility for ALTER EGO PWA
 // Provides consistent logging with environment-based controls
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LoggerConfig {
   enableConsoleLogging: boolean;

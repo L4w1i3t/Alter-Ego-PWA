@@ -15,12 +15,17 @@ try {
 
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-// Determine if we're building for GitHub Pages
-const isGitHubPages = process.env.GITHUB_PAGES === 'true';
-const isDevelopment = process.env.NODE_ENV === 'development';
+// Export a function that receives the env and argv from webpack CLI
+module.exports = (env, argv) => {
+  // Determine build mode from webpack's --mode flag (not from environment)
+  const isDevelopment = argv.mode === 'development';
+  const isProduction = argv.mode === 'production';
+  
+  // Determine if we're building for GitHub Pages
+  const isGitHubPages = process.env.GITHUB_PAGES === 'true';
 
-// Use the correct repository name for GitHub Pages
-const publicPath = isGitHubPages ? '/Alter-Ego-PWA/' : '/';
+  // Use the correct repository name for GitHub Pages
+  const publicPath = isGitHubPages ? '/Alter-Ego-PWA/' : '/';
 
 // Performance metrics log directory
 const METRICS_DIR = path.resolve(__dirname, 'performance-metrics');
@@ -101,7 +106,7 @@ class PerformanceMetricsPlugin {
   }
 }
 
-module.exports = {
+return {
   entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -202,26 +207,35 @@ module.exports = {
         },
         {
           from: 'service-worker.js',
-          to: 'service-worker.js'
+          to: 'service-worker.js',
+          transform(content) {
+            // Inject version from package.json into service worker
+            const packageJson = require('./package.json');
+            return content
+              .toString()
+              .replace('const CACHE_VERSION = \'1.0.1\';', 
+                      `const CACHE_VERSION = '${packageJson.version}';`);
+          }
         },
       ],
     }),
     // Define only the vars we need without clobbering process.env entirely
     new webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify(
-        process.env.NODE_ENV || (isDevelopment ? 'development' : 'production')
-      ),
-      // Let webpack set NODE_ENV based on mode to avoid conflicts
+      // Set NODE_ENV based on the build mode (from --mode flag)
+      'process.env.NODE_ENV': JSON.stringify(isDevelopment ? 'development' : 'production'),
       'process.env.PUBLIC_URL': JSON.stringify(publicPath.slice(0, -1)),
       'process.env.REACT_APP_IMMERSIVE_MODE': JSON.stringify(process.env.REACT_APP_IMMERSIVE_MODE || 'false'),
       'process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING': JSON.stringify(process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING || 'false'),
       'process.env.REACT_APP_LOG_LEVEL': JSON.stringify(process.env.REACT_APP_LOG_LEVEL || 'info'),
       'process.env.REACT_APP_SECURITY_CONFIG': JSON.stringify(process.env.REACT_APP_SECURITY_CONFIG || ''),
+      // Add build-time flag for service worker and other places that need compile-time mode detection
+      '__IS_DEV__': JSON.stringify(isDevelopment),
     }),
     new PerformanceMetricsPlugin(),
     // Add bundle analyzer only when explicitly requested
     ...(process.env.ANALYZE_BUNDLE === 'true' ? [new BundleAnalyzerPlugin()] : [])
-  ],devServer: {
+  ],
+  devServer: {
     static: {
       directory: path.join(__dirname, './'),
     },
@@ -240,4 +254,5 @@ module.exports = {
     }
   },
   stats: isDevelopment ? 'minimal' : 'normal',
+};
 };

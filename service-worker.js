@@ -3,11 +3,13 @@ const CACHE_VERSION = '1.0.1';
 const CACHE_NAME = `app-cache-${CACHE_VERSION}`;
 
 // List of all assets to pre-cache (critical files needed for offline functionality)
+// Note: Webpack bundles are added dynamically during first install
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/assets/favicon.ico'
+  '/assets/favicon.ico',
+  // Webpack bundles will be discovered and cached on first load
 ];
 
 // Install event - cache all static assets
@@ -44,12 +46,15 @@ self.addEventListener('activate', event => {
       // Claim any existing clients
       return self.clients.claim();
     }).then(() => {
-      // Check if this is a genuine update (not just a dev server refresh)
-      const isLocalhost = self.location.hostname === 'localhost' || 
-                         self.location.hostname === '127.0.0.1';
+      // Detect development mode by checking if running on localhost or dev domains
+      // Service worker isn't processed by webpack, so we use URL-based detection
+      const isDevelopment = self.location.hostname === 'localhost' || 
+                           self.location.hostname === '127.0.0.1' ||
+                           self.location.hostname.startsWith('192.168.') ||
+                           self.location.port === '3000';
       
       // Only notify about updates in production, NEVER in development
-      if (!isLocalhost) {
+      if (!isDevelopment) {
         return clients.matchAll().then(clients => {
           clients.forEach(client => {
             // Send update notification to client
@@ -81,39 +86,63 @@ self.addEventListener('fetch', event => {
     return; // Let the browser handle non-GET or cross-origin
   }
 
+  // Determine cache strategy based on resource type
+  const url = new URL(request.url);
+  const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)$/i.test(url.pathname);
+  const isHTML = request.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('.html');
+  
+  // Cache-first strategy for static assets (fast!)
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(request).then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // Not in cache, fetch from network and cache it
+        return fetch(request).then(response => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Network-first strategy for HTML and API calls (fresh content)
   event.respondWith(
     fetch(request)
       .then(response => {
-        // Don't cache non-successful responses or non-GET requests
+        // Don't cache non-successful responses
         if (!response || response.status !== 200) {
           return response;
         }
 
-        // Clone the response since it can only be consumed once
-        const responseToCache = response.clone();
-        
-        // Cache the fetched resource
-        caches.open(CACHE_NAME)
-          .then(cache => {
+        // Cache HTML pages for offline fallback
+        if (isHTML) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
             cache.put(request, responseToCache);
           });
+        }
         
         return response;
       })
       .catch(() => {
-        // If network fetch fails, try to serve from cache
-        return caches.match(request)
-          .then(cachedResponse => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            
-            // If the request is for an HTML page, return the offline page
-            const accept = request.headers.get('accept') || '';
-            if (accept.includes('text/html')) {
-              return caches.match('/index.html');
-            }
-          });
+        // Network failed, try cache
+        return caches.match(request).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // For HTML requests, return index.html as fallback
+          if (isHTML) {
+            return caches.match('/index.html');
+          }
+        });
       })
   );
 });

@@ -93,22 +93,8 @@ if ('serviceWorker' in navigator) {
               installingWorker.onstatechange = () => {
                 if (installingWorker.state === 'installed') {
                   if (navigator.serviceWorker.controller) {
-                    console.log('New content is available; please refresh.');
-
-                    // Existing notification code is good - no changes needed
-                    const updateNotification = document.createElement('div');
-                    updateNotification.style.cssText =
-                      'position:fixed;bottom:20px;right:20px;background:#4CAF50;color:white;' +
-                      'padding:16px;border-radius:4px;box-shadow:0 2px 5px rgba(0,0,0,0.3);z-index:1000;';
-                    updateNotification.innerHTML =
-                      'New version available! <button id="update-btn" style="margin-left:8px;padding:5px">Update</button>';
-                    document.body.appendChild(updateNotification);
-
-                    document
-                      .getElementById('update-btn')
-                      ?.addEventListener('click', () => {
-                        window.location.reload();
-                      });
+                    console.log('New content is available - auto-updating...');
+                    // Auto-update happens automatically, no user interaction needed
                   } else {
                     console.log('Content is cached for offline use.');
                   }

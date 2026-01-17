@@ -4,6 +4,9 @@ import Header from './Header/Header';
 import QuerySection from './Sections/QuerySection';
 import MainContent from './Sections/MainContent';
 import Footer from './Footer/Footer';
+import { logger } from '../utils/logger';
+import { useAppState } from '../hooks/useAppState';
+import DevToolsMetrics from './DevTools/DevToolsMetrics';
 const Settings = lazy(() => import('./Settings/Settings'));
 const ModelSelection = lazy(() => import('./Sections/ModelSelection'));
 const WarmingUp = lazy(() => import('./Sections/WarmingUp'));
@@ -13,6 +16,7 @@ import { useApi } from '../context/ApiContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import { applySettingsToCssVariables } from '../styles/GlobalStyles';
 import '../styles/mobile.css';
+import { EVENTS } from '../config/constants';
 import {
   loadSettings,
   saveSettings,
@@ -37,234 +41,7 @@ import {
   clearPerformanceData,
 } from '../utils/performanceMetrics';
 
-// Dev mode UI components for performance metrics
-const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(0, 20, 0, 0.8);
-  border: 1px solid #0f0;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 0.8em;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 300px;
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(2px);
-
-  ${props =>
-    props.$collapsed &&
-    `
-    padding: 8px;
-    gap: 0;
-    max-width: 50px;
-    max-height: 50px;
-    overflow: hidden;
-  `}
-
-  @media (max-width: 768px) {
-    bottom: 70px; /* Above footer on mobile, adjusted for reduced footer height */
-    right: 10px;
-    left: auto;
-    max-width: calc(100vw - 20px);
-    font-size: 0.75em;
-    padding: 10px;
-    opacity: 0.95;
-    border-width: 2px;
-
-    ${props =>
-      props.$collapsed &&
-      `
-      left: auto;
-      right: 10px;
-      max-width: 50px;
-      max-height: 50px;
-      padding: 8px;
-    `}
-  }
-`;
-
-const CollapseButton = styled.button`
-  background: #000;
-  color: #0f0;
-  border: 1px solid #0f0;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  font-family: monospace;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  align-self: flex-end;
-  margin-bottom: 5px;
-  min-width: 24px;
-  min-height: 24px;
-  position: relative;
-
-  &:hover {
-    background: #0f0;
-    color: #000;
-    box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 6px;
-    height: 6px;
-    background: #ff0;
-    border-radius: 50%;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    font-size: 16px;
-    margin-bottom: 3px;
-    border-width: 2px;
-
-    &::after {
-      width: 8px;
-      height: 8px;
-      top: -3px;
-      right: -3px;
-      opacity: 1; /* Always show indicator on mobile for better UX */
-    }
-
-    &:hover {
-      background: #0f0;
-      color: #000;
-    }
-  }
-`;
-
-const DevMetricsContent = styled.div<{ $collapsed?: boolean }>`
-  display: ${props => (props.$collapsed ? 'none' : 'flex')};
-  flex-direction: column;
-  gap: 8px;
-  transition: opacity 0.3s ease;
-`;
-
-const DevButton = styled.button`
-  background: #000;
-  color: #0f0;
-  border: 1px solid #0f0;
-  border-radius: 3px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-family: monospace;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: #0f0;
-    color: #000;
-    box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
-  }
-`;
-
-const MetricsTitle = styled.div`
-  font-size: 12px;
-  color: #0f0;
-  text-align: center;
-  font-weight: bold;
-  border-bottom: 1px solid #0f0;
-  padding-bottom: 5px;
-  margin-bottom: 5px;
-`;
-
-const MetricsRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  padding: 2px 0;
-`;
-
-const MetricsLabel = styled.span`
-  color: #0f0;
-`;
-
-const MetricsValue = styled.span`
-  color: #fff;
-  font-weight: bold;
-`;
-
-const ButtonRow = styled.div`
-  display: flex;
-  gap: 5px;
-`;
-
-const HotkeyInfo = styled.div`
-  margin-top: 5px;
-  color: #0f0;
-  font-size: 10px;
-  text-align: center;
-  opacity: 0.8;
-`;
-
-const PerformanceIndicator = styled.div<{ value: number }>`
-  width: 100%;
-  height: 4px;
-  background: #003300;
-  margin-top: 2px;
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: ${props => Math.min(100, props.value)}%;
-    background: ${props =>
-      props.value > 80
-        ? '#00ff00'
-        : props.value > 50
-          ? '#aaff00'
-          : props.value > 30
-            ? '#ffaa00'
-            : '#ff3300'};
-    transition:
-      width 0.5s ease,
-      background 0.5s ease;
-  }
-`;
-
-const ExpandButton = styled.button`
-  background: none;
-  border: none;
-  color: #0f0;
-  cursor: pointer;
-  padding: 0;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
+// Styled components for main app layout
 const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -284,168 +61,55 @@ const AppContainer = styled.div`
   }
 `;
 
-// Counter to track component renders
-let renderCount = 0;
-
-// LiveMetrics component to show real-time performance data
-const LiveMetrics: React.FC = () => {
-  const [fps, setFps] = useState<number>(0);
-  const [memory, setMemory] = useState<{
-    used: number;
-    total: number;
-    percent: number;
-  }>({
-    used: 0,
-    total: 0,
-    percent: 0,
-  });
-  const [tokenStats, setTokenStats] = useState<{
-    total: number;
-    byModel: Record<string, number>;
-  }>({
-    total: 0,
-    byModel: {},
-  });
-  const [expanded, setExpanded] = useState<boolean>(false);
-
-  // Update metrics using shared tracking with performance monitor
-  useEffect(() => {
-    // Migrate legacy encrypted API keys to plaintext JSON for reliable reads
-    migrateApiKeysIfNeeded();
-
-    let rafId: number;
-    let memoryIntervalId: number;
-
-    // Synchronize with the FPS tracking in performanceMetrics.ts
-    const updateStats = () => {
-      // Access the FPS from the external performanceMetrics value
-      if (window.ALTER_EGO_METRICS) {
-        setFps(window.ALTER_EGO_METRICS.currentFPS || 0);
-      }
-
-      rafId = requestAnimationFrame(updateStats);
-    };
-
-    // Start animation frame loop for smooth updates
-    rafId = requestAnimationFrame(updateStats);
-
-    // Update memory and token stats on interval
-    memoryIntervalId = window.setInterval(() => {
-      // Update memory stats
-      const memory = (performance as any).memory;
-      if (memory) {
-        const used = Math.round(memory.usedJSHeapSize / (1024 * 1024));
-        const total = Math.round(memory.jsHeapSizeLimit / (1024 * 1024));
-        const percent = Math.round(
-          (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100
-        );
-
-        setMemory({ used, total, percent });
-      }
-
-      // Update token usage stats
-      setTokenStats(getTokenUsageStats());
-    }, 1000);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      clearInterval(memoryIntervalId);
-    };
-  }, []);
-
-  return (
-    <>
-      <MetricsTitle>ALTER EGO Performance Monitor</MetricsTitle>
-
-      <MetricsRow>
-        <MetricsLabel>FPS:</MetricsLabel>
-        <MetricsValue>{fps}</MetricsValue>
-      </MetricsRow>
-      <PerformanceIndicator value={fps > 60 ? 100 : (fps / 60) * 100} />
-
-      <MetricsRow>
-        <MetricsLabel>Memory:</MetricsLabel>
-        <MetricsValue>
-          {memory.used} MB / {memory.total} MB
-        </MetricsValue>
-      </MetricsRow>
-      <PerformanceIndicator value={100 - memory.percent} />
-
-      <MetricsRow>
-        <MetricsLabel>Tokens Used:</MetricsLabel>
-        <MetricsValue>{tokenStats.total.toLocaleString()}</MetricsValue>
-      </MetricsRow>
-
-      {expanded && (
-        <>
-          <MetricsTitle>Token Usage by Model</MetricsTitle>
-          {Object.entries(tokenStats.byModel).map(([model, count]) => (
-            <MetricsRow key={model}>
-              <MetricsLabel>{model}:</MetricsLabel>
-              <MetricsValue>{count.toLocaleString()}</MetricsValue>
-            </MetricsRow>
-          ))}
-
-          <MetricsTitle>System Info</MetricsTitle>
-          <MetricsRow>
-            <MetricsLabel>Screen:</MetricsLabel>
-            <MetricsValue>
-              {window.innerWidth}x{window.innerHeight}
-            </MetricsValue>
-          </MetricsRow>
-          <MetricsRow>
-            <MetricsLabel>Platform:</MetricsLabel>
-            <MetricsValue>{navigator.platform}</MetricsValue>
-          </MetricsRow>
-          <MetricsRow>
-            <MetricsLabel>Render Count:</MetricsLabel>
-            <MetricsValue>{renderCount}</MetricsValue>
-          </MetricsRow>
-        </>
-      )}
-
-      <ExpandButton onClick={() => setExpanded(!expanded)}>
-        {expanded ? ' Show Less' : ' Show More'}
-      </ExpandButton>
-    </>
-  );
-};
-
 const App: React.FC = () => {
   const { setCurrentPersona } = useApi();
 
   // Log mounting for debugging
   useEffect(() => {
-    console.log(`App component mounted (render #${++renderCount})`);
+    logger.debug('App component mounted');
 
     // Capture reload events
     const beforeUnloadHandler = () => {
-      console.log('Page is about to reload/unload');
+      logger.debug('Page is about to reload/unload');
     };
 
     window.addEventListener('beforeunload', beforeUnloadHandler);
 
     return () => {
-      console.log('App component unmounting');
+      logger.debug('App component unmounting');
       window.removeEventListener('beforeunload', beforeUnloadHandler);
     };
   }, []);
-  // UI state
-  const [showSettings, setShowSettings] = useState(false);
-  const [settingsInitialView, setSettingsInitialView] = useState<
-    string | undefined
-  >(undefined);
-  const [showModelSelection, setShowModelSelection] = useState(false); // Default to not showing
-  const [showWarmingUp, setShowWarmingUp] = useState(false);
-  const [showCharacterSelector, setShowCharacterSelector] = useState(false);
 
-  // App state
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [activeCharacter, setActiveCharacter] = useState('ALTER EGO');
-  const [currentPersonaContent, setCurrentPersonaContent] = useState('');
-  const [voiceModel, setVoiceModel] = useState('None');
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  // Use centralized app state hook
+  const { state, actions } = useAppState();
+  const {
+    showSettings,
+    settingsInitialView,
+    showModelSelection,
+    showWarmingUp,
+    showCharacterSelector,
+    selectedModel,
+    activeCharacter,
+    currentPersonaContent,
+    voiceModel,
+    isFirstLoad,
+    currentAudio,
+  } = state;
+  const {
+    setShowSettings,
+    setSettingsInitialView,
+    setShowModelSelection,
+    setShowWarmingUp,
+    setShowCharacterSelector,
+    setSelectedModel,
+    setActiveCharacter,
+    setCurrentPersonaContent,
+    setVoiceModel,
+    setIsFirstLoad,
+    setCurrentAudio,
+  } = actions;
+
   // Performance monitoring state
   const isDevelopment = process.env.NODE_ENV === 'development';
   const [showDevTools, setShowDevTools] = useState(isDevelopment);
@@ -465,8 +129,8 @@ const App: React.FC = () => {
     };
     apply();
     const handler = () => apply();
-    window.addEventListener('alter-ego-settings-updated', handler as any);
-    return () => window.removeEventListener('alter-ego-settings-updated', handler as any);
+    window.addEventListener(EVENTS.SETTINGS_UPDATED, handler as any);
+    return () => window.removeEventListener(EVENTS.SETTINGS_UPDATED, handler as any);
   }, []);
 
   // Voice synthesis utilities
@@ -503,16 +167,14 @@ const App: React.FC = () => {
       setCurrentAudio(null);
     }
 
-    console.log('Synthesizing voice with model ID:', voicemodel_id);
-    
-    const models = loadVoiceModels();
-    console.log('Available voice models:', Object.keys(models));
-    
-    const model = models[voicemodel_id];
-    console.log('Selected model:', model);
+    logger.debug('Synthesizing voice with model ID:', voicemodel_id);
 
-    if (!model) {
-      console.warn('Voice model not found:', voicemodel_id);
+    const models = loadVoiceModels();
+    logger.debug('Available voice models:', Object.keys(models));
+
+    const model = models[voicemodel_id];
+    logger.debug('Selected model:', model);    if (!model) {
+      logger.warn('Voice model not found:', voicemodel_id);
       return;
     }
 
@@ -544,18 +206,18 @@ const App: React.FC = () => {
             });
           }
           
-          console.log('Available voices:', voices.map(v => ({ name: v.name, uri: v.voiceURI })));
-          console.log('Looking for voice with ID:', model.voiceId);
+          logger.debug('Available voices:', voices.map(v => ({ name: v.name, uri: v.voiceURI })));
+          logger.debug('Looking for voice with ID:', model.voiceId);
           
           const selectedVoice = voices.find(
             v => v.voiceURI === model.voiceId
           );
           
           if (selectedVoice) {
-            console.log('Selected voice:', selectedVoice.name);
+            logger.debug('Selected voice:', selectedVoice.name);
             utterance.voice = selectedVoice;
           } else {
-            console.warn('Voice not found, using default. Available voices:', voices.length);
+            logger.warn('Voice not found, using default. Available voices:', voices.length);
           }
         }
         
@@ -588,7 +250,7 @@ const App: React.FC = () => {
             };
 
             audio.onerror = (error) => {
-              console.error('Audio playback error:', error);
+              logger.error('Audio playback error:', error);
               URL.revokeObjectURL(url);
               setCurrentAudio(null);
             };
@@ -597,13 +259,13 @@ const App: React.FC = () => {
             try {
               await audio.play();
             } catch (playError) {
-              console.error('Audio play error:', playError);
+              logger.error('Audio play error:', playError);
               URL.revokeObjectURL(url);
               setCurrentAudio(null);
             }
           }
         } catch (apiError) {
-          console.error('Error with ElevenLabs API:', apiError);
+          logger.error('Error with ElevenLabs API:', apiError);
           // Fall back to browser speech synthesis on error
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.text = `ElevenLabs error. Fallback voice: ${text}`;
@@ -640,7 +302,7 @@ const App: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error synthesizing speech:', error);
+      logger.error('Error synthesizing speech:', error);
     }
   };
 
@@ -844,12 +506,12 @@ const App: React.FC = () => {
 
   const generateMetricsReport = async () => {
     await triggerPerformanceReport();
-    console.log('Performance report manually generated');
+    logger.info('Performance report manually generated');
   };
 
   const clearMetrics = () => {
     clearPerformanceData();
-    console.log('Performance metrics cleared');
+    logger.info('Performance metrics cleared');
   };
 
   // Add database export functionality
@@ -870,14 +532,14 @@ const App: React.FC = () => {
 
           const result = await response.json();
           if (result.success) {
-            console.log(
+            logger.info(
               `Database content exported successfully to db-metrics/${result.filename}`
             );
-          } else {
+          } else{
             throw new Error('Failed to save to server');
           }
         } catch (serverError) {
-          console.error(
+          logger.error(
             'Error saving to server, falling back to client download:',
             serverError
           );
@@ -890,7 +552,7 @@ const App: React.FC = () => {
         saveClientSideFile(dbContent);
       }
     } catch (error) {
-      console.error('Failed to export database content:', error);
+      logger.error('Failed to export database content:', error);
     }
   };
 
@@ -958,44 +620,15 @@ const App: React.FC = () => {
             onClose={handleCloseCharacterSelector}
           />
         )}
-      </Suspense>{' '}
+      </Suspense>
       {isDevelopment && showDevTools && (
-        <DevMetricsControl $collapsed={devToolsCollapsed}>
-          <CollapseButton
-            onClick={() => setDevToolsCollapsed(!devToolsCollapsed)}
-            title={
-              devToolsCollapsed
-                ? 'Expand Performance Monitor'
-                : 'Collapse Performance Monitor'
-            }
-          >
-            {devToolsCollapsed ? '' : ''}
-          </CollapseButton>
-
-          <DevMetricsContent $collapsed={devToolsCollapsed}>
-            <LiveMetrics />
-            <ButtonRow>
-              <DevButton onClick={generateMetricsReport}>
-                Generate Metrics Report
-              </DevButton>
-            </ButtonRow>
-            <ButtonRow>
-              <DevButton onClick={clearMetrics}>Clear Metrics</DevButton>
-            </ButtonRow>
-            <ButtonRow>
-              <DevButton onClick={exportDbContent}>Export Dexie DB</DevButton>
-            </ButtonRow>{' '}
-            <HotkeyInfo>
-              Hotkey: Ctrl+Alt+P
-              <br />
-              Clear metrics: Ctrl+Alt+M
-              <br />
-              Toggle panel: Ctrl+Shift+D
-              <br />
-              Collapse/Expand: Ctrl+Shift+C
-            </HotkeyInfo>
-          </DevMetricsContent>
-        </DevMetricsControl>
+        <DevToolsMetrics
+          collapsed={devToolsCollapsed}
+          onToggleCollapse={() => setDevToolsCollapsed(!devToolsCollapsed)}
+          onGenerateReport={generateMetricsReport}
+          onClearMetrics={clearMetrics}
+          onExportDb={exportDbContent}
+        />
       )}
       <NotificationManager />
     </AppContainer>

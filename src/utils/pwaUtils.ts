@@ -1,5 +1,8 @@
 // PWA Installation Utilities - Simplified Universal Approach
 
+import { logger } from './logger';
+import { EVENTS } from '../config/constants';
+
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
@@ -38,21 +41,21 @@ export const initializePWA = (): void => {
       e.preventDefault();
       deferredPrompt = e;
       installPromptAvailable = true;
-      console.log('PWA install prompt available');
+      logger.info('PWA install prompt available');
 
       // Notify components that install is available
-      window.dispatchEvent(new CustomEvent('pwa-install-available'));
+      window.dispatchEvent(new CustomEvent(EVENTS.PWA_INSTALL_AVAILABLE));
     }
   );
 
   // Listen for app installed event
   window.addEventListener('appinstalled', () => {
-    console.log('PWA was installed');
+    logger.info('PWA was installed');
     deferredPrompt = null;
     installPromptAvailable = false;
 
     // Notify components that PWA was installed
-    window.dispatchEvent(new CustomEvent('pwa-installed'));
+    window.dispatchEvent(new CustomEvent(EVENTS.PWA_INSTALLED));
   });
 };
 
@@ -97,12 +100,12 @@ export const installPWA = async (): Promise<{
     const { outcome } = await deferredPrompt!.userChoice;
 
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+      logger.info('User accepted the install prompt');
       deferredPrompt = null;
       installPromptAvailable = false;
       return { success: true };
     } else {
-      console.log('User dismissed the install prompt');
+      logger.info('User dismissed the install prompt');
       return {
         success: false,
         error:
@@ -110,7 +113,7 @@ export const installPWA = async (): Promise<{
       };
     }
   } catch (error) {
-    console.error('Error during PWA installation:', error);
+    logger.error('Error during PWA installation:', error);
     return {
       success: false,
       error:

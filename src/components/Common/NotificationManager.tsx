@@ -124,41 +124,49 @@ const NotificationTitle = styled.div<{
 `;
 
 const CloseButton = styled.button`
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid currentColor;
+  border-radius: 0.25em;
   color: inherit;
-  font-size: 0; /* hide any text content */
   cursor: pointer;
   padding: 0;
   margin-left: 1em;
-  opacity: 0.7;
+  opacity: 0.8;
+  width: 2em;
+  height: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
   position: relative;
-  width: 1.2em; /* ensure clickable icon area */
-  height: 1.2em;
 
-  &::before,
+  /* X made from two diagonal lines */
+  &::before {
+    content: '';
+    position: absolute;
+    width: 1.2em;
+    height: 2px;
+    background: currentColor;
+    transform: rotate(45deg);
+  }
+
   &::after {
     content: '';
     position: absolute;
-    left: 50%;
-    top: 10%;
-    width: 2px;
-    height: 80%;
+    width: 1.2em;
+    height: 2px;
     background: currentColor;
-    border-radius: 1px;
-    transform-origin: center;
-  }
-
-  &::before {
-    transform: translateX(-50%) rotate(45deg);
-  }
-
-  &::after {
-    transform: translateX(-50%) rotate(-45deg);
+    transform: rotate(-45deg);
   }
 
   &:hover {
     opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 `;
 

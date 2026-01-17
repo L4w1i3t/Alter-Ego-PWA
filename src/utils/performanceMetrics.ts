@@ -6,6 +6,7 @@
 // Import OpenAI token usage stats
 import { getTokenUsageStats } from './openaiApi';
 import { tokenTracker } from './tokenTracker';
+import { removeTokenUsage, removeTokenSummaries } from './storageUtils';
 
 // Declare custom window properties for metrics sharing
 declare global {
@@ -195,6 +196,11 @@ export const initPerformanceMonitoring = (): void => {
   if (isDevMode && !hotkeyListenerInitialized) {
     setupHotkeyListener();
     hotkeyListenerInitialized = true;
+  }
+
+  // Expose clearPerformanceData globally for manual memory management
+  if (typeof window !== 'undefined') {
+    (window as any).clearAllPerformanceMetrics = clearPerformanceData;
   }
 
   // Capture Web Vitals after page load
@@ -413,6 +419,10 @@ export const trackAiResponseTime = (responseTimeMs: number): void => {
   if (!isMetricsEnabled || !currentReport) return;
 
   aiResponseTimes.push(responseTimeMs);
+  // Cap array to last 1000 responses to prevent memory leak
+  if (aiResponseTimes.length > 1000) {
+    aiResponseTimes.shift();
+  }
 
   // Update the AI performance metrics immediately
   updateAiPerformanceMetrics();
@@ -1019,8 +1029,8 @@ export const clearPerformanceData = (): void => {
 
   // Clear token logs persisted in localStorage
   try {
-    localStorage.removeItem('alterEgo_tokenUsage');
-    localStorage.removeItem('alterEgo_tokenSummaries');
+    removeTokenUsage();
+    removeTokenSummaries();
   } catch (e) {
     console.warn('Failed to clear token usage logs:', e);
   }

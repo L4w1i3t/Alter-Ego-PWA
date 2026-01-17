@@ -10,37 +10,31 @@ import {
   validateBackendReady,
   OPEN_SOURCE_CONFIG,
 } from '../utils/openSourceApi';
-import { loadApiKeys, loadSettings } from '../utils/storageUtils';
+import { loadApiKeys, loadSettings, getAIConfigFromStorage, saveAIConfigToStorage } from '../utils/storageUtils';
 import {
   getOpenSourceStatus,
   checkOpenSourceFallback,
 } from '../utils/openSourceWip';
+import type { AIConfig, MessageHistory } from '../types';
+import { AI, STORAGE_KEYS } from '../config/constants';
+import { logger } from '../utils/logger';
 
-// Interface for conversation history
-export interface MessageHistory {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  images?: string[]; // Array of image URLs/data URLs for vision
-}
+// Re-export types for backward compatibility
+export type { AIConfig, MessageHistory };
 
-// Interface for configuration
-export interface AIConfig {
-  model: string;
-  temperature: number;
-  maxTokens: number;
-}
+// Types are now imported from centralized location
 
 // Default configuration
 const defaultConfig: AIConfig = {
-  model: 'gpt-4o-mini', // Default to balanced model
-  temperature: 0.9, // Higher temperature for more creative, less robotic responses
-  maxTokens: 1000,
+  model: AI.DEFAULT_MODEL,
+  temperature: AI.DEFAULT_TEMPERATURE,
+  maxTokens: AI.DEFAULT_MAX_TOKENS,
 };
 
 // Get current configuration
 export const getAIConfig = (): AIConfig => {
   try {
-    const configStr = localStorage.getItem('alterEgo_aiConfig');
+    const configStr = getAIConfigFromStorage();
     const settings = loadSettings();
     
     // If no saved config, return default with preferred model from settings
@@ -60,7 +54,7 @@ export const getAIConfig = (): AIConfig => {
     
     return config;
   } catch (error) {
-    console.error('Error loading AI config:', error);
+    logger.error('Error loading AI config:', error);
     const settings = loadSettings();
     return {
       ...defaultConfig,
@@ -71,7 +65,7 @@ export const getAIConfig = (): AIConfig => {
 
 // Save configuration
 export const saveAIConfig = (config: AIConfig): void => {
-  localStorage.setItem('alterEgo_aiConfig', JSON.stringify(config));
+  saveAIConfigToStorage(JSON.stringify(config));
 };
 
 // Get available models
@@ -113,14 +107,14 @@ export const sendMessageToAI = async (
 
       // If images are provided, we need to use OpenAI since open-source backend doesn't support vision yet
       if (images && images.length > 0) {
-        console.log(
+        logger.info(
           'Images detected, switching to OpenAI Vision API for processing...'
         );
         // Fall through to OpenAI logic
       } else {
         // Try to use the open-source backend for text-only
         try {
-          console.log('Using open-source backend for AI completion');
+          logger.info('Using open-source backend for AI completion');
 
           // Validate backend is ready
           const backendStatus = await validateBackendReady();
@@ -146,8 +140,8 @@ export const sendMessageToAI = async (
             { role: 'user', content: message },
           ];
 
-          console.log(`Using open-source model: ${openSourceModel}`);
-          console.log(
+          logger.debug(`Using open-source model: ${openSourceModel}`);
+          logger.debug(
             `Using ${history.length} messages from history for AI context`
           );
 
@@ -161,14 +155,14 @@ export const sendMessageToAI = async (
 
           return response;
         } catch (backendError) {
-          console.error('Open-source backend error:', backendError);
+          logger.error('Open-source backend error:', backendError);
 
           // Fallback to OpenAI if backend fails
-          console.log('Falling back to OpenAI due to backend error');
+          logger.info('Falling back to OpenAI due to backend error');
           const fallbackMessage = ` Open-source backend unavailable (${backendError instanceof Error ? backendError.message : 'Unknown error'}). Switching to OpenAI...`;
 
           // Continue to OpenAI logic below
-          console.warn(fallbackMessage);
+          logger.warn(fallbackMessage);
         }
       }
     }
@@ -192,7 +186,7 @@ export const sendMessageToAI = async (
     // This ensures the user's model selection from API Keys settings is respected
     if (!config?.model && settings.preferredLanguageModel) {
       finalConfig.model = settings.preferredLanguageModel;
-      console.log(`Using preferred language model from settings: ${finalConfig.model}`);
+      logger.debug(`Using preferred language model from settings: ${finalConfig.model}`);
     }
 
     // Check if we have images and need to use vision
@@ -210,13 +204,13 @@ export const sendMessageToAI = async (
     if (hasImages) {
       // Ensure we're using a vision-capable model
       if (!modelSupportsVision(finalConfig.model)) {
-        console.log(
+        logger.debug(
           `Model ${finalConfig.model} doesn't support vision, switching to gpt-4o-mini`
         );
         finalConfig.model = 'gpt-4o-mini';
       }
 
-      console.log(
+      logger.debug(
         `Using vision model: ${finalConfig.model} with ${images.length} images`
       );
 
@@ -242,12 +236,12 @@ export const sendMessageToAI = async (
     } else {
       // Regular text-only completion
       // Log a concise prompt summary for debugging
-      console.log(
+      logger.debug(
         `System prompt ready -> model: ${finalConfig.model}, length: ${mergedSystemPrompt.length} chars`
       );
 
       // Log the number of messages in history for debugging
-      console.log(
+      logger.debug(
         `Using ${history.length} messages from history for AI context`
       );
 
@@ -268,7 +262,7 @@ export const sendMessageToAI = async (
       return response;
     }
   } catch (error) {
-    console.error('Error in AI service:', error);
+    logger.error('Error in AI service:', error);
     if (error instanceof Error) {
       return `Error: ${error.message}`;
     }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { EVENTS } from '../../config/constants';
 import {
   installPWA,
   isPWAInstalled,
@@ -277,15 +278,15 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
       setInstallError(null);
     };
 
-    window.addEventListener('pwa-install-available', handleInstallAvailable);
-    window.addEventListener('pwa-installed', handleInstalled);
+    window.addEventListener(EVENTS.PWA_INSTALL_AVAILABLE, handleInstallAvailable);
+    window.addEventListener(EVENTS.PWA_INSTALLED, handleInstalled);
 
     return () => {
       window.removeEventListener(
-        'pwa-install-available',
+        EVENTS.PWA_INSTALL_AVAILABLE,
         handleInstallAvailable
       );
-      window.removeEventListener('pwa-installed', handleInstalled);
+      window.removeEventListener(EVENTS.PWA_INSTALLED, handleInstalled);
     };
   }, []);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import styled from 'styled-components';
 import SoftwareDetails from './SoftwareDetails';
 import PersonaManager from './PersonaManager';

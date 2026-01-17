@@ -32,13 +32,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
     if (messages.length > prevMessagesLength.current) {
       const latestMessage = messages[messages.length - 1];
 
-      if (!latestMessage.isUser) {
+      if (latestMessage.role !== 'user') {
         // End the timer for message processing (started in ChatInput)
         const responseTime = endTimer('message_processing');
 
         // Log the AI response event with its length and response time
         markEvent('ai_response_received', {
-          length: latestMessage.text.length,
+          length: latestMessage.content.length,
           responseTime: responseTime || undefined,
         });
       }
@@ -54,9 +54,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
       {messages.map((message, index) => (
         <ChatBubble
           key={index}
-          message={message.text}
-          isUser={message.isUser}
-          timestamp={message.timestamp}
+          message={message.content}
+          isUser={message.role === 'user'}
+          timestamp={message.timestamp ? new Date(message.timestamp) : new Date()}
+          images={message.images}
           showTimestamp={showTimestamps}
         />
       ))}

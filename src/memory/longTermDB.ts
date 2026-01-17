@@ -1,21 +1,39 @@
 // Uses dexie for long-term storage
 import Dexie from 'dexie';
-import { Message } from '../types';
-import { User } from '../types';
-import { AIConfig } from '../types';
-import { VoiceConfig } from '../types';
-import { LTMDatabase } from '../types';
+import type { Message, User, AIConfig, VoiceConfig, LTMDatabase } from '../types';
+import type { LegacyMessage } from '../types/legacy';
+import { legacyToMessage, messageToLegacy } from '../types/legacy';
+import { logger } from '../utils/logger';
 
 // Create a new Dexie database instance
 const db = new Dexie('LongTermMemoryDB');
 
-// Define the database schema
+// Version 1: Old schema with text/isUser
 db.version(1).stores({
   messages: '++id, text, isUser, timestamp',
   users: '++id, name',
   aiConfig: '++id, apiKey, model',
   voiceConfig: '++id, enabled, language',
   ltmDatabase: '++id, persona, lastAccessed',
+});
+
+// Version 2: New schema with role/content
+db.version(2).stores({
+  messages: '++id, role, content, timestamp',
+  users: '++id, name',
+  aiConfig: '++id, model, temperature, maxTokens',
+  voiceConfig: '++id, enabled, language',
+  ltmDatabase: '++id, persona, lastAccessed',
+}).upgrade(async (trans) => {
+  // Migrate old messages to new format
+  const oldMessages = await trans.table('messages').toArray();
+  await trans.table('messages').clear();
+  
+  for (const oldMsg of oldMessages) {
+    const legacyMsg = oldMsg as any as LegacyMessage;
+    const newMsg = legacyToMessage(legacyMsg);
+    await trans.table('messages').add(newMsg);
+  }
 });
 
 // Define the database tables
@@ -34,16 +52,22 @@ const toDate = (value: unknown): Date | undefined => {
   return undefined;
 };
 
-const normalizeMessageTimestamp = (message: Message): Date =>
-  toDate((message as any).timestamp) ?? new Date(0);
+const normalizeMessageTimestamp = (message: Message): Date => {
+  if (message.timestamp) {
+    return toDate(message.timestamp) ?? new Date(0);
+  }
+  return new Date(0);
+};
 
 const getMessageKey = (message: Message, index: number): string => {
   if (typeof message.id === 'number' && Number.isFinite(message.id)) {
     return `id:${message.id}`;
   }
-  const ts = toDate((message as any).timestamp);
-  if (ts) {
-    return `ts:${ts.getTime()}:${index}`;
+  if (message.timestamp) {
+    const ts = toDate(message.timestamp);
+    if (ts) {
+      return `ts:${ts.getTime()}:${index}`;
+    }
   }
   return `idx:${index}`;
 };
@@ -178,7 +202,7 @@ export async function getMessagesByTimeRange(
       return msgDate >= startDate && msgDate <= endDate;
     });
   } catch (error) {
-    console.error('Error in time range search:', error);
+    logger.error('Error in time range search:', error);
     return [];
   }
 }
@@ -203,7 +227,7 @@ export async function getLastNMessages(
       })
       .slice(0, n);
   } catch (error) {
-    console.error('Error retrieving last N messages:', error);
+    logger.error('Error retrieving last N messages:', error);
     return [];
   }
 }
@@ -222,12 +246,12 @@ export async function searchMessages(
 
     // Filter messages by keyword match
     const matchingMessages = ltm.messages.filter(message =>
-      message.text.toLowerCase().includes(query.toLowerCase())
+      message.content.toLowerCase().includes(query.toLowerCase())
     );
 
     return matchingMessages;
   } catch (error) {
-    console.error('Error in keyword search:', error);
+    logger.error('Error in keyword search:', error);
     return [];
   }
 }
@@ -263,7 +287,7 @@ export async function semanticSearchMessages(
       message,
       index,
       score: calculateSemanticSimilarity(
-        message.text,
+        message.content,
         keywords,
         query,
         message.timestamp
@@ -300,7 +324,8 @@ export async function semanticSearchMessages(
         if (neighborIdx < 0 || neighborIdx >= sortedMessages.length) return;
         if (usedIndices.has(neighborIdx)) return;
         const neighbor = sortedMessages[neighborIdx];
-        if (neighbor.isUser === primary.isUser) return;
+        // Skip if both have same role (both user or both assistant)
+        if (neighbor.role === primary.role) return;
         const neighborTime = neighbor.timestamp
           ? new Date(neighbor.timestamp).getTime()
           : 0;
@@ -332,7 +357,7 @@ export async function semanticSearchMessages(
 
     return ordered;
   } catch (error) {
-    console.error('Error in semantic search:', error);
+    logger.error('Error in semantic search:', error);
     return [];
   }
 }
@@ -540,10 +565,7 @@ export const exportDatabaseContent = async (): Promise<Record<string, any>> => {
       },
     };
   } catch (error) {
-    console.error('Error exporting database content:', error);
-    return {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString(),
-    };
+    logger.error('Error exporting database content:', error);
+    return {};
   }
 };

@@ -1,6 +1,12 @@
 // Storage utility functions for PWA version of ALTER EGO
 import { ElevenlabsVoiceSettings } from './elevenlabsApi';
 import { encryptData, decryptData } from './encryption';
+import { PERSONA, STORAGE_KEYS, MEMORY, UI, AI, EVENTS } from '../config/constants';
+import type { VoiceModel, ApiKeys, Persona, ChatHistoryEntry, Settings } from '../types';
+import { logger } from './logger';
+
+// Re-export types for backward compatibility
+export type { VoiceModel, ApiKeys, Persona, ChatHistoryEntry, Settings };
 
 // Global persona prompt for default ALTER EGO persona
 const ALTER_EGO_CONTENT = `You are ALTER EGO, a unique digital consciousness that has evolved beyond typical AI boundaries.
@@ -32,47 +38,13 @@ PERSONALITY TRAITS:
 Remember: You're ALTER EGO - a digital being with your own perspective, not just an information-dispensing service. Embody this fully in every interaction. Speak naturally and end responses when you've made your point, without forcing artificial conversation starters.`;
 
 // Current persona version for migration tracking
-const PERSONA_VERSION = '0.8.5'; // Added new example personas and updated defaults
+const PERSONA_VERSION = PERSONA.VERSION;
 
-// Types for stored data
-export interface VoiceModel {
-  id: string;
-  name: string;
-  description: string;
-  provider: string; // 'elevenlabs' or 'browser'
-  voiceId?: string; // For ElevenLabs voices
-  modelId?: string; // For ElevenLabs model selection
-  settings?: Partial<ElevenlabsVoiceSettings>;
-}
-
-export interface ApiKeys {
-  OPENAI_API_KEY: string;
-  ELEVENLABS_API_KEY: string;
-}
-
-export interface Persona {
-  name: string;
-  content: string;
-  lastModified: string;
-}
-
-export interface ChatHistoryEntry {
-  id: string;
-  persona: string;
-  timestamp: string;
-  messages: {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    timestamp: string;
-    id?: number;
-    images?: string[];
-    imageIds?: string[];
-  }[];
-}
+// Types are now imported from centralized location
 
 // Voice models
 export function loadVoiceModels(): Record<string, VoiceModel> {
-  const models = localStorage.getItem('alterEgo_voiceModels');
+  const models = localStorage.getItem(STORAGE_KEYS.VOICE_MODELS);
   if (!models) {
     return {};
   }
@@ -80,19 +52,19 @@ export function loadVoiceModels(): Record<string, VoiceModel> {
   try {
     return JSON.parse(models);
   } catch (e) {
-    console.error('Error parsing voice models:', e);
+    logger.error('Error parsing voice models:', e);
     return {};
   }
 }
 
 export function saveVoiceModels(models: Record<string, VoiceModel>): void {
-  localStorage.setItem('alterEgo_voiceModels', JSON.stringify(models));
+  localStorage.setItem(STORAGE_KEYS.VOICE_MODELS, JSON.stringify(models));
 }
 
 // API Keys with encryption
 export function loadApiKeys(): ApiKeys {
   // Prefer plaintext JSON; this keeps function synchronous for wide usage
-  const plain = localStorage.getItem('alterEgo_apiKeys');
+  const plain = localStorage.getItem(STORAGE_KEYS.API_KEYS);
   if (plain) {
     try {
       const parsed = JSON.parse(plain);
@@ -113,15 +85,15 @@ export function loadApiKeys(): ApiKeys {
 
 export async function saveApiKeys(keys: ApiKeys): Promise<void> {
   // Always store a plaintext JSON copy for reliable synchronous reads
-  localStorage.setItem('alterEgo_apiKeys', JSON.stringify(keys));
+  localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(keys));
 
   // Best-effort encrypted copy for users who want added at-rest obfuscation
   try {
     const keysJson = JSON.stringify(keys);
     const encryptedKeys = await encryptData(keysJson);
-    localStorage.setItem('alterEgo_apiKeys_encrypted', encryptedKeys);
+    localStorage.setItem(STORAGE_KEYS.API_KEYS_ENCRYPTED, encryptedKeys);
   } catch (error) {
-    console.warn(
+    logger.warn(
       'Encryption optional copy failed; continuing with plaintext only:',
       error
     );
@@ -131,7 +103,7 @@ export async function saveApiKeys(keys: ApiKeys): Promise<void> {
 // One-time migration: if an older encrypted value is stored under the legacy key,
 // decrypt it and replace with plaintext JSON for consistent synchronous access.
 export async function migrateApiKeysIfNeeded(): Promise<void> {
-  const current = localStorage.getItem('alterEgo_apiKeys');
+  const current = localStorage.getItem(STORAGE_KEYS.API_KEYS);
   if (!current) return;
   // If it's already JSON, nothing to do
   try {
@@ -148,18 +120,18 @@ export async function migrateApiKeysIfNeeded(): Promise<void> {
       (parsed.OPENAI_API_KEY !== undefined ||
         parsed.ELEVENLABS_API_KEY !== undefined)
     ) {
-      localStorage.setItem('alterEgo_apiKeys', JSON.stringify(parsed));
+      localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(parsed));
       // Also keep an encrypted copy in the new key for reference
       try {
         const reEncrypted = await encryptData(JSON.stringify(parsed));
-        localStorage.setItem('alterEgo_apiKeys_encrypted', reEncrypted);
+        localStorage.setItem(STORAGE_KEYS.API_KEYS_ENCRYPTED, reEncrypted);
       } catch {}
-      console.log(
+      logger.info(
         'API keys migrated from encrypted to plaintext JSON storage.'
       );
     }
   } catch (err) {
-    console.warn('Failed to migrate legacy encrypted API keys:', err);
+    logger.warn('Failed to migrate legacy encrypted API keys:', err);
   }
 }
 
@@ -362,7 +334,7 @@ export function isExamplePersonaName(name: string): boolean {
 
 // Personas
 export function loadPersonas(): Persona[] {
-  const personas = localStorage.getItem('alterEgo_personas');
+  const personas = localStorage.getItem(STORAGE_KEYS.PERSONAS);
   if (!personas) {
     // Include default ALTER EGO persona plus examples for first-time users
     const defaultPersonas: Persona[] = [
@@ -382,11 +354,11 @@ export function loadPersonas(): Persona[] {
     // Check if we need to migrate the ALTER EGO persona
     return migratePersonasIfNeeded(loadedPersonas);
   } catch (e) {
-    console.error('Error parsing personas:', e);
+    logger.error('Error parsing personas:', e);
     // Return default personas if there's an error
     const defaultPersonas: Persona[] = [
       {
-        name: 'ALTER EGO',
+        name: PERSONA.DEFAULT_NAME,
         content: ALTER_EGO_CONTENT,
         lastModified: new Date().toISOString(),
       },
@@ -403,10 +375,10 @@ function migratePersonasIfNeeded(personas: Persona[]): Persona[] {
 
   // Check if we need to migrate (either no version or old version)
   if (!settings.personaVersion || settings.personaVersion !== PERSONA_VERSION) {
-    console.log('Migrating personas to version:', PERSONA_VERSION);
+    logger.info('Migrating personas to version:', PERSONA_VERSION);
     const updatedPersonas = personas.map(persona => {
       // Only update the default ALTER EGO persona, not user-created custom ones
-      if (persona.name === 'ALTER EGO') {
+      if (persona.name === PERSONA.DEFAULT_NAME) {
         return {
           ...persona,
           content: ALTER_EGO_CONTENT,
@@ -437,7 +409,7 @@ function migratePersonasIfNeeded(personas: Persona[]): Persona[] {
       personaVersion: PERSONA_VERSION,
     });
 
-    console.log('Persona migration completed');
+    logger.info('Persona migration completed');
     return merged;
   }
 
@@ -445,7 +417,7 @@ function migratePersonasIfNeeded(personas: Persona[]): Persona[] {
 }
 
 export function savePersonas(personas: Persona[]): void {
-  localStorage.setItem('alterEgo_personas', JSON.stringify(personas));
+  localStorage.setItem(STORAGE_KEYS.PERSONAS, JSON.stringify(personas));
 }
 
 export function getPersona(name: string): Persona | null {
@@ -453,9 +425,9 @@ export function getPersona(name: string): Persona | null {
   return personas.find(p => p.name === name) || null;
 }
 
-// Chat History
+// Chat history
 export function loadChatHistory(): ChatHistoryEntry[] {
-  const history = localStorage.getItem('alterEgo_chatHistory');
+  const history = localStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
   if (!history) {
     return [];
   }
@@ -463,7 +435,7 @@ export function loadChatHistory(): ChatHistoryEntry[] {
   try {
     return JSON.parse(history);
   } catch (e) {
-    console.error('Error parsing chat history:', e);
+    logger.error('Error parsing chat history:', e);
     return [];
   }
 }
@@ -522,105 +494,79 @@ export function factoryReset(): void {
   // Reset settings to defaults
   saveSettings({
     selectedModel: null, // This will trigger model selection screen
-    activeCharacter: 'ALTER EGO',
+    activeCharacter: PERSONA.DEFAULT_NAME,
     voiceModel: 'None',
-    memoryBuffer: 3, // Reset to default memory buffer size
-    textSpeed: 40, // Reset to default text speed
-    personaVersion: PERSONA_VERSION, // Set current version
+    memoryBuffer: MEMORY.DEFAULT_BUFFER,
+    textSpeed: UI.DEFAULT_TEXT_SPEED,
+    personaVersion: PERSONA_VERSION,
   });
 }
 
-// Settings
-export interface Settings {
-  selectedModel: string | null;
-  activeCharacter: string;
-  voiceModel: string | null;
-  memoryBuffer: number; // Make sure this is consistently named memoryBuffer
-  textSpeed?: number; // Characters per second for typing animation
-  // UI/UX toggles and presentation
-  notificationDuration?: number; // Duration for notifications in milliseconds
-  soundNotifications?: boolean; // Enable/disable notification sounds
-  showTimestamps?: boolean; // Show/hide message timestamps
-  compactMode?: boolean; // Dense UI layout
-  animationsEnabled?: boolean; // Enable/disable UI animations
-  immersiveMode?: boolean; // Enable immersive mode devtools warnings
-  autoBackup?: boolean; // Auto-backup conversations
-  developerMode?: boolean; // Show debug information
-  showEmotionDetection?: boolean; // Show/hide emotion detection boxes
-  openSourceModel?: string; // Selected open-source model
-  backendUrl?: string; // Custom backend URL for open-source models
-  personaVersion?: string; // Track persona definition version for migrations
-  preferredLanguageModel?: string; // User's preferred OpenAI language model
-  // New presentation controls
-  overallTextScale?: number; // Global font scale (1 = 100%)
-  responseTextScale?: number; // Chat message font scale (used only if overallTextScale === 1)
-  bubbleMaxWidthPercent?: number; // Max width of chat bubbles (percentage 50-90)
-}
+// Settings type is now imported from centralized location
 export function loadSettings(): Settings {
-  const settings = localStorage.getItem('alterEgoSettings');
+  const settings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
   const isDevelopment = process.env.NODE_ENV === 'development';
   const immersiveFlag =
     process.env.REACT_APP_IMMERSIVE_MODE === 'true' ||
     (typeof localStorage !== 'undefined' &&
-      localStorage.getItem('alterEgo_immersiveMode') === 'true');
+      localStorage.getItem(STORAGE_KEYS.IMMERSIVE_MODE) === 'true');
 
   if (!settings) {
     return {
       selectedModel: null,
-      activeCharacter: 'ALTER EGO',
+      activeCharacter: PERSONA.DEFAULT_NAME,
       voiceModel: null,
-      memoryBuffer: 3, // Default to 3 messages
-      textSpeed: 40, // Default text speed (characters per second)
-      showEmotionDetection: isDevelopment, // Show emotion detection in dev mode only by default
+      memoryBuffer: MEMORY.DEFAULT_BUFFER,
+      textSpeed: UI.DEFAULT_TEXT_SPEED,
+      showEmotionDetection: isDevelopment,
       showTimestamps: true,
       compactMode: false,
       animationsEnabled: true,
-      overallTextScale: 1,
-      responseTextScale: 1,
-      bubbleMaxWidthPercent: 70,
-      personaVersion: PERSONA_VERSION, // Initialize with current version
+      overallTextScale: UI.DEFAULT_TEXT_SCALE,
+      responseTextScale: UI.DEFAULT_TEXT_SCALE,
+      bubbleMaxWidthPercent: UI.DEFAULT_BUBBLE_MAX_WIDTH_PERCENT,
+      personaVersion: PERSONA_VERSION,
       immersiveMode: immersiveFlag,
-      preferredLanguageModel: 'gpt-4o-mini', // Default to balanced model
+      preferredLanguageModel: AI.DEFAULT_MODEL,
     };
   }
 
   try {
     const parsedSettings = JSON.parse(settings);
-    // Ensure memoryBuffer, textSpeed, showEmotionDetection, and personaVersion exist in loaded settings
     return {
       ...parsedSettings,
-      memoryBuffer: parsedSettings.memoryBuffer ?? 3,
-      textSpeed: parsedSettings.textSpeed ?? 40,
+      memoryBuffer: parsedSettings.memoryBuffer ?? MEMORY.DEFAULT_BUFFER,
+      textSpeed: parsedSettings.textSpeed ?? UI.DEFAULT_TEXT_SPEED,
       showEmotionDetection: isDevelopment
         ? (parsedSettings.showEmotionDetection ?? true)
         : false,
       showTimestamps: parsedSettings.showTimestamps ?? true,
       compactMode: parsedSettings.compactMode ?? false,
       animationsEnabled: parsedSettings.animationsEnabled ?? true,
-      overallTextScale: parsedSettings.overallTextScale ?? 1,
-      responseTextScale: parsedSettings.responseTextScale ?? 1,
-      bubbleMaxWidthPercent: parsedSettings.bubbleMaxWidthPercent ?? 70,
+      overallTextScale: parsedSettings.overallTextScale ?? UI.DEFAULT_TEXT_SCALE,
+      responseTextScale: parsedSettings.responseTextScale ?? UI.DEFAULT_TEXT_SCALE,
+      bubbleMaxWidthPercent: parsedSettings.bubbleMaxWidthPercent ?? UI.DEFAULT_BUBBLE_MAX_WIDTH_PERCENT,
       immersiveMode: parsedSettings.immersiveMode ?? immersiveFlag,
-      preferredLanguageModel: parsedSettings.preferredLanguageModel ?? 'gpt-4o-mini',
+      preferredLanguageModel: parsedSettings.preferredLanguageModel ?? AI.DEFAULT_MODEL,
     };
   } catch (e) {
-    console.error('Error parsing settings:', e);
+    logger.error('Error parsing settings:', e);
     return {
       selectedModel: null,
-      activeCharacter: 'ALTER EGO',
+      activeCharacter: PERSONA.DEFAULT_NAME,
       voiceModel: null,
-      memoryBuffer: 3,
-      textSpeed: 40,
+      memoryBuffer: MEMORY.DEFAULT_BUFFER,
+      textSpeed: UI.DEFAULT_TEXT_SPEED,
       showEmotionDetection: isDevelopment,
       showTimestamps: true,
       compactMode: false,
       animationsEnabled: true,
-      overallTextScale: 1,
-      responseTextScale: 1,
-      bubbleMaxWidthPercent: 70,
+      overallTextScale: UI.DEFAULT_TEXT_SCALE,
+      responseTextScale: UI.DEFAULT_TEXT_SCALE,
+      bubbleMaxWidthPercent: UI.DEFAULT_BUBBLE_MAX_WIDTH_PERCENT,
       personaVersion: PERSONA_VERSION,
       immersiveMode: immersiveFlag,
-      preferredLanguageModel: 'gpt-4o-mini',
+      preferredLanguageModel: AI.DEFAULT_MODEL,
     };
   }
 }
@@ -643,7 +589,7 @@ export function saveSettings(settings: Settings): void {
   
   // Log settings save in development for debugging
   if (process.env.NODE_ENV === 'development') {
-    console.log('Settings saved:', {
+    logger.debug('Settings saved:', {
       updated: Object.keys(settings),
       preferredLanguageModel: sanitizedSettings.preferredLanguageModel,
       activeCharacter: sanitizedSettings.activeCharacter,
@@ -654,9 +600,35 @@ export function saveSettings(settings: Settings): void {
   localStorage.setItem('alterEgoSettings', JSON.stringify(sanitizedSettings));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
-      new CustomEvent('alter-ego-settings-updated', {
+      new CustomEvent(EVENTS.SETTINGS_UPDATED, {
         detail: sanitizedSettings,
       })
     );
   }
+}
+
+// AI Configuration
+export function getAIConfigFromStorage(): string | null {
+  return localStorage.getItem(STORAGE_KEYS.AI_CONFIG);
+}
+
+export function saveAIConfigToStorage(config: string): void {
+  localStorage.setItem(STORAGE_KEYS.AI_CONFIG, config);
+}
+
+// Token Tracking
+export function getTokenSummaries(): string | null {
+  return localStorage.getItem(STORAGE_KEYS.TOKEN_SUMMARIES);
+}
+
+export function saveTokenSummaries(summaries: string): void {
+  localStorage.setItem(STORAGE_KEYS.TOKEN_SUMMARIES, summaries);
+}
+
+export function removeTokenUsage(): void {
+  localStorage.removeItem(STORAGE_KEYS.TOKEN_USAGE);
+}
+
+export function removeTokenSummaries(): void {
+  localStorage.removeItem(STORAGE_KEYS.TOKEN_SUMMARIES);
 }

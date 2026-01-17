@@ -2,6 +2,8 @@
  * Centralized token tracking system for clear cost visibility
  */
 
+import { getTokenSummaries, saveTokenSummaries } from './storageUtils';
+
 interface TokenUsage {
   prompt: number;
   completion: number;
@@ -148,8 +150,7 @@ class TokenTracker {
         },
       };
 
-      const storageKey = 'alterEgo_tokenSummaries';
-      const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const existing = JSON.parse(getTokenSummaries() || '[]');
       existing.push(entry);
 
       // Keep only last 100 entries
@@ -157,7 +158,7 @@ class TokenTracker {
         existing.splice(0, existing.length - 100);
       }
 
-      localStorage.setItem(storageKey, JSON.stringify(existing));
+      saveTokenSummaries(JSON.stringify(existing));
     } catch (error) {
       console.error('Error storing token summary:', error);
     }
@@ -172,9 +173,7 @@ class TokenTracker {
     queriesCount: number;
   } {
     try {
-      const entries = JSON.parse(
-        localStorage.getItem('alterEgo_tokenSummaries') || '[]'
-      );
+      const entries = JSON.parse(getTokenSummaries() || '[]');
       const today = new Date().toDateString();
       const todayEntries = entries.filter(
         (entry: any) => new Date(entry.timestamp).toDateString() === today

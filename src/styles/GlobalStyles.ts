@@ -158,7 +158,7 @@ export const GlobalStyles = createGlobalStyle`  * {
 `;
 
 // One-time sync of CSS variables from settings at app start.
-// Components can also listen to the 'alter-ego-settings-updated' event to re-apply.
+// Components can also listen to the EVENTS.SETTINGS_UPDATED event to re-apply.
 export const applySettingsToCssVariables = () => {
   try {
     const s = loadSettings();

@@ -17,9 +17,9 @@ const Chat: React.FC = () => {
   const { currentPersona } = useApi();
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: "Hello! I'm ALTER EGO!",
-      isUser: false,
-      timestamp: new Date(),
+      role: 'assistant',
+      content: "Hello! I'm ALTER EGO!",
+      timestamp: new Date().toISOString(),
     },
   ]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -40,9 +40,9 @@ const Chat: React.FC = () => {
   const handleSendMessage = async (text: string) => {
     // Add user message to chat
     const userMessage: Message = {
-      text,
-      isUser: true,
-      timestamp: new Date(),
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -54,9 +54,9 @@ const Chat: React.FC = () => {
 
       // Add AI response to chat
       const aiMessage: Message = {
-        text: response,
-        isUser: false,
-        timestamp: new Date(),
+        role: 'assistant',
+        content: response,
+        timestamp: new Date().toISOString(),
       };
 
       setMessages(prev => [...prev, aiMessage]);
@@ -65,9 +65,9 @@ const Chat: React.FC = () => {
 
       // Add error message
       const errorMessage: Message = {
-        text: 'Sorry, I encountered an error processing your request.',
-        isUser: false,
-        timestamp: new Date(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error processing your request.',
+        timestamp: new Date().toISOString(),
       };
 
       setMessages(prev => [...prev, errorMessage]);

@@ -1,31 +1,20 @@
-export interface Message {
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-  id?: number;
-}
+/**
+ * Centralized type definitions
+ * All types are now organized by domain and re-exported here for convenience
+ */
 
-export interface User {
-  id: string;
-  name: string;
-}
+// Message types
+export type { Message, MessageHistory, ChatHistoryEntry } from './message';
 
-export interface AIConfig {
-  apiKey?: string;
-  model?: string;
-}
+// Configuration types
+export type { AIConfig, VoiceConfig, VoiceModel, Settings } from './config';
 
-export interface VoiceConfig {
-  enabled: boolean;
-  language: string;
-}
+// Storage types
+export type { ApiKeys, Persona, User } from './storage';
 
-export interface LTMDatabase {
-  id?: number;
-  persona?: string;
-  lastAccessed?: Date;
-  messages: Message[];
-  users: User[];
-  aiConfig: AIConfig;
-  voiceConfig: VoiceConfig;
-}
+// Database types
+export type { LTMDatabase } from './database';
+
+// Legacy types for backward compatibility
+export type { LegacyMessage } from './legacy';
+export { legacyToMessage, messageToLegacy } from './legacy';

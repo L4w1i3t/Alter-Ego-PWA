@@ -245,70 +245,16 @@ INSTRUCTION HIERARCHY (highest first):
 4) Character definition (personality, tone, etc.)
 `.trim();
 
-// Budgets for prompt composition
-const PROMPT_BUDGETS = {
-  maxPersonaChars: 1800, // trimmed persona max
-};
-
-// Compact a persona definition to a character budget, preserving structure
-function compactPersona(
-  definition: string,
-  maxChars = PROMPT_BUDGETS.maxPersonaChars
-): string {
-  if (!definition) return '';
-  // Normalize spacing
-  let text = definition
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-  if (text.length <= maxChars) return text;
-
-  // Prefer keeping headers and bullet points first
-  const lines = text.split('\n');
-  const kept: string[] = [];
-  let total = 0;
-  for (const line of lines) {
-    const candidate = kept.length ? `\n${line}` : line;
-    const addLen = candidate.length;
-    if (total + addLen > maxChars) break;
-    kept.push(line);
-    total += addLen;
-  }
-  // Ensure we don't end mid-paragraph
-  let result = kept.join('\n');
-  if (result.length < text.length) result += '\n…';
-  return result;
-}
-
 /**
  * Build a complete system prompt with security rules and character definition
+ * Same for both text and vision - no trimming or budgets
  */
 const buildSystemPrompt = (characterDefinition: string = ''): string => {
   if (!characterDefinition.trim()) {
     return `${SECURITY_RULES}\n\nYou are a helpful AI assistant.`;
   }
 
-  const trimmedPersona = compactPersona(
-    characterDefinition,
-    PROMPT_BUDGETS.maxPersonaChars
-  );
-  return `${SECURITY_RULES}\n\n==== CHARACTER DEFINITION ====\n${trimmedPersona}\n==== END CHARACTER DEFINITION ====\n\n${CHARACTER_INSTRUCTIONS}`;
-};
-
-/**
- * Build a lightweight system prompt for vision conversations
- */
-const buildVisionPrompt = (characterName: string = 'AI Assistant'): string => {
-  return `You are ${characterName}, an AI assistant with vision capabilities. When analyzing images, provide helpful and accurate information while maintaining a friendly, engaging personality. Stay in character and be conversational rather than formal.`;
-};
-
-/**
- * Build a streamlined system prompt for image conversations with character context
- */
-const buildStreamlinedVisionPrompt = (
-  characterName: string = 'AI Assistant'
-): string => {
-  return `${SECURITY_RULES}\n\nYou are ${characterName}. Maintain your character's personality and communication style while analyzing images. Provide helpful information about what you see while staying true to your character. Be conversational and engaging.`;
+  return `${SECURITY_RULES}\n\n==== CHARACTER DEFINITION ====\n${characterDefinition}\n==== END CHARACTER DEFINITION ====\n\n${CHARACTER_INSTRUCTIONS}`;
 };
 
 /**
@@ -600,69 +546,24 @@ export const generateVisionChatCompletion = async (
   // Start measuring response time
   const startTime = performance.now();
 
-  // Optimize for image conversations: always streamline when images are present
-  const userAssistantHistory = history.filter(
-    msg => msg.role === 'user' || msg.role === 'assistant'
-  );
-  const isImageConversation = images.length > 0;
-  const isFreshImageConversation =
-    userAssistantHistory.length === 0 && images.length > 0;
+  // Use the same system prompt building as text conversations
+  const effectiveSystemPrompt = buildSystemPrompt(systemPrompt);
 
-  let effectiveSystemPrompt: string;
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== VISION CHAT COMPLETION ===');
+    console.log(`System prompt length: ${effectiveSystemPrompt.length} characters`);
+    console.log(`History length: ${history.length}`);
+    console.log(`Images: ${images.length}`);
+  }
 
-  if (isFreshImageConversation) {
-    // Use minimal system prompt for fresh image conversations
-    const characterName = systemPrompt.includes('ALTER EGO')
-      ? 'ALTER EGO'
-      : 'AI Assistant';
-    effectiveSystemPrompt = buildVisionPrompt(characterName);
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        ' Using optimized lightweight system prompt for fresh image conversation'
-      );
-    }
-    console.log(`Original prompt: ${systemPrompt.length} characters`);
-    console.log(`Optimized prompt: ${effectiveSystemPrompt.length} characters`);
-    console.log(`Filtered history length: ${userAssistantHistory.length}`);
-  } else if (isImageConversation) {
-    // Use streamlined system prompt for image conversations with history (still reduce tokens but keep character)
-    const characterName = systemPrompt.includes('ALTER EGO')
-      ? 'ALTER EGO'
-      : 'AI Assistant';
-    effectiveSystemPrompt = buildStreamlinedVisionPrompt(characterName);
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        ' Using streamlined system prompt for image conversation with history'
-      );
-    }
-    console.log(`Original prompt: ${systemPrompt.length} characters`);
-    console.log(
-      `Streamlined prompt: ${effectiveSystemPrompt.length} characters`
-    );
-    console.log(`History length: ${userAssistantHistory.length}`);
-  } else {
-    // Use full system prompt for text-only conversations
-    effectiveSystemPrompt = buildSystemPrompt(systemPrompt);
-    if (process.env.NODE_ENV === 'development') {
-      console.log(' Using full system prompt (text-only conversation)');
-    }
-    console.log(
-      `History length: ${userAssistantHistory.length}, Images: ${images.length}`
+  // Verify system prompt includes security rules
+  if (!verifySystemPrompt(effectiveSystemPrompt)) {
+    throw new Error(
+      'The system prompt does not include the required security rules.'
     );
   }
 
-  // Verify if the default system prompt is included (skip for lightweight version)
-  if (!isFreshImageConversation) {
-    if (!verifySystemPrompt(effectiveSystemPrompt)) {
-      throw new Error(
-        'The system prompt does not include the required security rules.'
-      );
-    }
-  }
-
-  // Construct conversation history with system prompt
+  // Construct conversation history with system prompt (same as text pipeline)
   const messages: Array<{
     role: 'system' | 'user' | 'assistant';
     content:
@@ -677,8 +578,8 @@ export const generateVisionChatCompletion = async (
         }>;
   }> = [{ role: 'system' as const, content: effectiveSystemPrompt }];
 
-  // Add history messages (use filtered history for optimization)
-  userAssistantHistory.forEach(msg => {
+  // Add history messages (same as text pipeline)
+  history.forEach(msg => {
     if (msg.role === 'user' && msg.images && msg.images.length > 0) {
       // User message with images
       const content: Array<{
