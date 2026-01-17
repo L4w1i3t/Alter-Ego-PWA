@@ -4,6 +4,8 @@ import App from './components/App';
 import { ApiProvider } from './context/ApiContext';
 import { initializePWA } from './utils/pwaUtils';
 import { devToolsBlocker } from './utils/devToolsBlocker';
+import { initializeMemorySystem } from './memory';
+import { loadSettings } from './utils/storageUtils';
 // advancedSecurity is intentionally not imported by default to avoid UX harm
 
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -18,6 +20,14 @@ const immersiveModeEnabled = immersiveEnvFlag || immersiveLocalFlag;
 
 // Initialize PWA installation capabilities
 initializePWA();
+
+// Initialize memory system (non-blocking)
+// This triggers migration from localStorage and warms caches
+const settings = loadSettings();
+const activePersona = settings.activeCharacter || 'ALTER EGO';
+initializeMemorySystem([activePersona]).catch(error => {
+  console.error('Memory system initialization failed:', error);
+});
 
 // Initialize optional immersive mode in production (disabled by default)
 if (isProduction && immersiveModeEnabled) {

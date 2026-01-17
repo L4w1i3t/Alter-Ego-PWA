@@ -1,9 +1,31 @@
 // Uses dexie for long-term storage
+// This module maintains the legacy LongTermMemoryDB for backward compatibility
+// while the new consolidated AlterEgoMemoryDB handles associations.
 import Dexie from 'dexie';
 import type { Message, User, AIConfig, VoiceConfig, LTMDatabase } from '../types';
 import type { LegacyMessage } from '../types/legacy';
 import { legacyToMessage, messageToLegacy } from '../types/legacy';
 import { logger } from '../utils/logger';
+
+// ============================================================================
+// PAGINATION TYPES
+// ============================================================================
+
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export interface MessageQueryOptions {
+  offset?: number;
+  limit?: number;
+  startDate?: Date;
+  endDate?: Date;
+  role?: 'user' | 'assistant' | 'system';
+}
 
 // Create a new Dexie database instance
 const db = new Dexie('LongTermMemoryDB');
@@ -74,15 +96,63 @@ const getMessageKey = (message: Message, index: number): string => {
 
 const RECENCY_WINDOW_DAYS = 30;
 
-// Message operations
+// ============================================================================
+// MESSAGE OPERATIONS WITH PAGINATION
+// ============================================================================
+
 // Function to add a message to the database
 export async function addMessage(message: Message): Promise<number> {
   const id = await messagesTable.add(message);
   return id as number;
 }
 
+/**
+ * Get all messages (legacy function - use getMessagesPaginated for large datasets).
+ * @deprecated Prefer getMessagesPaginated for large message histories.
+ */
 export async function getMessages(): Promise<Message[]> {
   return (await messagesTable.toArray()) as Message[];
+}
+
+/**
+ * Get messages with pagination support.
+ * More efficient for large message histories.
+ */
+export async function getMessagesPaginated(
+  options: MessageQueryOptions = {}
+): Promise<PaginatedResult<Message>> {
+  const { offset = 0, limit = 50, startDate, endDate, role } = options;
+  
+  let collection = messagesTable.orderBy('timestamp');
+  
+  // Get total count
+  const total = await messagesTable.count();
+  
+  // Apply pagination
+  let items = await collection
+    .reverse() // Most recent first
+    .offset(offset)
+    .limit(limit)
+    .toArray();
+  
+  // Apply filters in memory (Dexie limitations on compound queries)
+  if (startDate || endDate || role) {
+    items = items.filter(msg => {
+      if (role && msg.role !== role) return false;
+      const msgDate = toDate(msg.timestamp);
+      if (startDate && msgDate && msgDate < startDate) return false;
+      if (endDate && msgDate && msgDate > endDate) return false;
+      return true;
+    });
+  }
+  
+  return {
+    items,
+    total,
+    offset,
+    limit,
+    hasMore: offset + items.length < total,
+  };
 }
 
 export async function getMessageById(id: number): Promise<Message | undefined> {
@@ -179,6 +249,72 @@ export async function updateVoiceConfig(
 
 export async function clearVoiceConfig(): Promise<void> {
   await voiceConfigTable.clear();
+}
+
+// ============================================================================
+// PAGINATED PERSONA MEMORY RETRIEVAL
+// ============================================================================
+
+/**
+ * Get paginated messages for a persona.
+ * More memory-efficient than loading all messages at once.
+ */
+export async function getPersonaMessagesPaginated(
+  personaName: string,
+  options: MessageQueryOptions = {}
+): Promise<PaginatedResult<Message>> {
+  const { offset = 0, limit = 50, startDate, endDate, role } = options;
+  
+  try {
+    const ltm = await getPersonaMemory(personaName);
+    if (!ltm || !ltm.messages || ltm.messages.length === 0) {
+      return { items: [], total: 0, offset, limit, hasMore: false };
+    }
+    
+    // Sort messages by timestamp (most recent first)
+    let messages = [...ltm.messages].sort((a, b) => {
+      const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return dateB - dateA;
+    });
+    
+    // Apply filters
+    if (startDate || endDate || role) {
+      messages = messages.filter(msg => {
+        if (role && msg.role !== role) return false;
+        const msgDate = msg.timestamp ? new Date(msg.timestamp) : null;
+        if (startDate && msgDate && msgDate < startDate) return false;
+        if (endDate && msgDate && msgDate > endDate) return false;
+        return true;
+      });
+    }
+    
+    const total = messages.length;
+    const items = messages.slice(offset, offset + limit);
+    
+    return {
+      items,
+      total,
+      offset,
+      limit,
+      hasMore: offset + items.length < total,
+    };
+  } catch (error) {
+    logger.error('Error in paginated persona messages:', error);
+    return { items: [], total: 0, offset, limit, hasMore: false };
+  }
+}
+
+/**
+ * Get the total message count for a persona without loading all messages.
+ */
+export async function getPersonaMessageCount(personaName: string): Promise<number> {
+  try {
+    const ltm = await getPersonaMemory(personaName);
+    return ltm?.messages?.length ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 // Memory retrieval operations

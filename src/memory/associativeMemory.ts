@@ -1,278 +1,164 @@
 /**
- * Lightweight associative memory for per‑persona facts like "box = red".
- * Stores in localStorage to avoid Dexie schema migrations.
+ * Associative Memory - Consolidated Dexie-backed Implementation
+ * 
+ * This module provides semantic memory for per-persona facts like "box = red".
+ * Data is now stored in IndexedDB via the consolidated memoryDatabase for
+ * improved reliability, indexing, and capacity.
+ * 
+ * Architecture:
+ * - In-memory cache provides fast synchronous reads
+ * - Background sync ensures durability in IndexedDB
+ * - Automatic migration from legacy localStorage data
+ * - Ebbinghaus-inspired decay for cognitive realism
+ * 
+ * @module associativeMemory
  */
 
+import {
+  addAssociations as dbAddAssociations,
+  getAssociations as dbGetAssociations,
+  touchAssociations as dbTouchAssociations,
+  buildFactsLine as dbBuildFactsLine,
+  parseAssociationsFromText as dbParseAssociationsFromText,
+  clearPersonaAssociations as dbClearPersonaAssociations,
+  migrateFromLocalStorage,
+  clearAllAssociationsData as dbClearAllAssociations,
+  type StoredAssociation,
+} from './memoryDatabase';
+import { logger } from '../utils/logger';
+
+// ============================================================================
+// TYPES (Preserved for backward compatibility)
+// ============================================================================
+
 export interface Association {
-  left: string; // e.g., object: "box"
-  right: string; // e.g., color: "red"
-  strength: number; // reinforcement score (base strength)
-  exposures?: number; // number of times reinforced/seen
+  left: string;
+  right: string;
+  strength: number;
+  exposures?: number;
   createdAt: string;
   lastUsed?: string;
   lastReinforcedAt?: string;
 }
 
-interface AssocStore {
-  [persona: string]: Association[];
+// ============================================================================
+// IN-MEMORY CACHE FOR SYNCHRONOUS ACCESS
+// ============================================================================
+
+interface CacheEntry {
+  associations: Association[];
+  lastSync: number;
+  dirty: boolean;
 }
 
-const STORAGE_KEY = 'alterEgo_assocMemory';
+const cache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 5000; // 5 seconds
+const pendingSyncs = new Map<string, NodeJS.Timeout>();
 
-function loadStore(): AssocStore {
+let migrationComplete = false;
+let migrationPromise: Promise<void> | null = null;
+
+/**
+ * Ensure migration from localStorage has been attempted.
+ */
+async function ensureMigration(): Promise<void> {
+  if (migrationComplete) return;
+  
+  if (!migrationPromise) {
+    migrationPromise = (async () => {
+      try {
+        const result = await migrateFromLocalStorage();
+        if (result.migrated) {
+          logger.info('Associative memory migration:', result.details);
+        }
+      } catch (error) {
+        logger.error('Failed to migrate associative memory:', error);
+      } finally {
+        migrationComplete = true;
+      }
+    })();
+  }
+  
+  await migrationPromise;
+}
+
+// Trigger migration on module load
+ensureMigration().catch(() => {});
+
+/**
+ * Convert StoredAssociation to legacy Association format.
+ */
+function toAssociation(stored: StoredAssociation): Association {
+  return {
+    left: stored.left,
+    right: stored.right,
+    strength: stored.strength,
+    exposures: stored.exposures,
+    createdAt: stored.createdAt,
+    lastUsed: stored.lastUsed,
+    lastReinforcedAt: stored.lastReinforcedAt,
+  };
+}
+
+/**
+ * Get cached associations or fetch from database.
+ */
+async function refreshCache(persona: string): Promise<Association[]> {
+  await ensureMigration();
+  
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveStore(store: AssocStore): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-}
-
-export function addAssociations(
-  persona: string,
-  pairs: Array<{ left: string; right: string }>
-): void {
-  const store = loadStore();
-  const list: Association[] = store[persona] || [];
-  const now = new Date().toISOString();
-
-  pairs.forEach(({ left, right }) => {
-    const l = left.trim().toLowerCase();
-    const r = right.trim().toLowerCase();
-    if (!l || !r) return;
-    if (!isAssociationToken(l) || !isAssociationToken(r)) return;
-    const idx = list.findIndex(a => a.left === l && a.right === r);
-    if (idx >= 0) {
-      list[idx].strength = Math.min(1e6, (list[idx].strength || 1) + 1);
-      list[idx].exposures = (list[idx].exposures || 0) + 1;
-      list[idx].lastUsed = now;
-      list[idx].lastReinforcedAt = now;
-    } else {
-      list.push({
-        left: l,
-        right: r,
-        strength: 1,
-        exposures: 1,
-        createdAt: now,
-        lastUsed: now,
-        lastReinforcedAt: now,
-      });
-    }
-  });
-
-  // Apply decay/prune before saving
-  store[persona] = pruneAndDecay(list);
-  saveStore(store);
-}
-
-export function getAssociations(persona: string): Association[] {
-  const store = loadStore();
-  return (store[persona] || []).slice();
-}
-
-export function touchAssociations(
-  persona: string,
-  used: Array<{ left: string; right: string }>
-): void {
-  const store = loadStore();
-  const list: Association[] = store[persona] || [];
-  const now = new Date().toISOString();
-  used.forEach(({ left, right }) => {
-    const l = left.trim().toLowerCase();
-    const r = right.trim().toLowerCase();
-    const idx = list.findIndex(a => a.left === l && a.right === r);
-    if (idx >= 0) {
-      list[idx].lastUsed = now;
-      list[idx].strength = Math.min(1e6, (list[idx].strength || 1) + 0.5);
-      list[idx].exposures = (list[idx].exposures || 0) + 1;
-      list[idx].lastReinforcedAt = now;
-    }
-  });
-  store[persona] = pruneAndDecay(list);
-  saveStore(store);
-}
-
-/**
- * Parse simple association statements from text.
- * Supports patterns like:
- *  - "remember ...: box = red, barrel = green"
- *  - "box = red"
- *  - "box is red" / "box equals red"
- */
-export function parseAssociationsFromText(
-  text: string
-): Array<{ left: string; right: string }> {
-  const result: Array<{ left: string; right: string }> = [];
-  if (!text) return result;
-  const lc = text.toLowerCase();
-  const trainingMode =
-    /(\bremember\b|\bassociate\b|\bassociations\b|\bmap\b|\bmapping\b|\bdefine\b|\bset\b|\bmeans\b)/.test(
-      lc
-    );
-  const normalized = lc.replace(/\s+/g, ' ');
-
-  // Split by commas and semicolons to find potential pairs
-  const chunks = normalized.split(/[;,]/);
-  // Only accept '=' always; accept 'is|equals' only in explicit training mode
-  const eqRe = trainingMode
-    ? /\b([a-z0-9_\-]{3,})\s*(=|is|equals)\s*([a-z0-9_\-]{3,})\b/
-    : /\b([a-z0-9_\-]{3,})\s*(=)\s*([a-z0-9_\-]{3,})\b/;
-  for (const chunk of chunks) {
-    const m = chunk.match(eqRe);
-    if (m) {
-      const left = m[1];
-      const right = m[3];
-      if (
-        left &&
-        right &&
-        isAssociationToken(left) &&
-        isAssociationToken(right)
-      )
-        result.push({ left, right });
-    }
-  }
-  return result;
-}
-
-/**
- * Given a sequence like ["red","green"], translate using known pairs.
- * Returns array of left-side translations.
- */
-export function translateRightSequence(
-  persona: string,
-  rights: string[]
-): string[] {
-  const map = new Map<string, string>(); // right -> left
-  getAssociations(persona)
-    .sort((a, b) => salience(b) - salience(a))
-    .forEach(a => {
-      if (!map.has(a.right)) map.set(a.right, a.left);
+    const stored = await dbGetAssociations(persona);
+    const associations = stored.map(toAssociation);
+    
+    cache.set(persona, {
+      associations,
+      lastSync: Date.now(),
+      dirty: false,
     });
-  return rights.map(r => map.get(r.toLowerCase()) || r);
-}
-
-/**
- * Build a compact "facts" string for system prompt injection.
- */
-export function buildFactsLine(
-  persona: string,
-  charBudget: number = 160
-): string | null {
-  const assocs = pruneAndDecay(getAssociations(persona));
-  if (!assocs.length) return null;
-  // Deduplicate by right value, rank by salience
-  const seen = new Set<string>();
-  const ordered = assocs.sort((a, b) => salience(b) - salience(a));
-  const parts: string[] = [];
-  let total = 'Facts: '.length;
-  for (const a of ordered) {
-    if (!isAssociationToken(a.left) || !isAssociationToken(a.right)) continue;
-    if (seen.has(a.right)) continue;
-    const frag = `${a.left}=${a.right}`;
-    const addLen = (parts.length ? 2 : 0) + frag.length; // account for '; '
-    if (total + addLen > charBudget) break;
-    parts.push(frag);
-    total += addLen;
-    seen.add(a.right);
-  }
-  return parts.length ? `Facts: ${parts.join('; ')}` : null;
-}
-
-/**
- * Scan text for right-side tokens that match known associations and
- * return the concrete pairs encountered (for reinforcement).
- */
-export function getRightsUsedInText(
-  persona: string,
-  text: string
-): Array<{ left: string; right: string }> {
-  const assocs = getAssociations(persona);
-  if (!assocs.length || !text) return [];
-  const rightsSet = new Set(assocs.map(a => a.right.toLowerCase()));
-  const tokens = text
-    .toLowerCase()
-    .replace(/[^a-z0-9_,\s-]/g, ' ')
-    .split(/[\s,]+/)
-    .filter(Boolean);
-  const used: Array<{ left: string; right: string }> = [];
-  tokens.forEach(t => {
-    if (rightsSet.has(t)) {
-      // choose strongest association for this right token
-      const best = assocs
-        .filter(a => a.right === t)
-        .sort((a, b) => salience(b) - salience(a))[0];
-      if (best) used.push({ left: best.left, right: best.right });
-    }
-  });
-  // Deduplicate
-  const uniq: Array<{ left: string; right: string }> = [];
-  const seen = new Set<string>();
-  for (const u of used) {
-    const k = `${u.left}|${u.right}`;
-    if (!seen.has(k)) {
-      seen.add(k);
-      uniq.push(u);
-    }
-  }
-  return uniq;
-}
-
-/**
- * Clear all associations for a persona.
- */
-export function clearPersonaAssociations(persona: string): void {
-  const store = loadStore();
-  if (store[persona]) {
-    delete store[persona];
-    saveStore(store);
+    
+    return associations;
+  } catch (error) {
+    logger.error('Failed to fetch associations from database:', error);
+    const cached = cache.get(persona);
+    return cached?.associations || [];
   }
 }
 
 /**
- * Clear the entire associative memory store.
+ * Schedule a cache refresh for a persona.
  */
-export function clearAllAssociations(): void {
-  localStorage.removeItem(STORAGE_KEY);
+function scheduleRefresh(persona: string): void {
+  // Clear any pending sync
+  const existing = pendingSyncs.get(persona);
+  if (existing) {
+    clearTimeout(existing);
+  }
+  
+  // Schedule new sync
+  const timeout = setTimeout(() => {
+    refreshCache(persona).catch(error => {
+      logger.error('Scheduled cache refresh failed:', error);
+    });
+    pendingSyncs.delete(persona);
+  }, 100); // Short delay to batch rapid operations
+  
+  pendingSyncs.set(persona, timeout);
 }
 
-// ===== Internals: salience, decay, pruning =====
+// ============================================================================
+// INTERNAL HELPERS
+// ============================================================================
 
 const STOP_WORDS = new Set([
-  'the',
-  'this',
-  'that',
-  'there',
-  'here',
-  'and',
-  'but',
-  'with',
-  'then',
-  'when',
-  'what',
-  'why',
-  'are',
-  'you',
-  'your',
-  'have',
-  'has',
-  'was',
-  'all',
-  'any',
-  'each',
-  'every',
+  'the', 'this', 'that', 'there', 'here', 'and', 'but', 'with', 'then',
+  'when', 'what', 'why', 'are', 'you', 'your', 'have', 'has', 'was',
+  'all', 'any', 'each', 'every',
 ]);
 
 function isAssociationToken(tok: string): boolean {
   if (!tok) return false;
   if (tok.length < 3) return false;
   if (STOP_WORDS.has(tok)) return false;
-  // Must contain at least one letter
   if (!/[a-z]/.test(tok)) return false;
   return true;
 }
@@ -283,7 +169,6 @@ function daysSince(iso?: string): number {
   return Math.max(0, dt / (1000 * 60 * 60 * 24));
 }
 
-// Ebbinghaus-like decay: strength * exp(-ln(2) * days / halfLife)
 function decayedStrength(a: Association, halfLifeDays = 14): number {
   const base = a.strength || 0;
   const days = daysSince(a.lastReinforcedAt || a.lastUsed || a.createdAt);
@@ -293,31 +178,266 @@ function decayedStrength(a: Association, halfLifeDays = 14): number {
 
 function recencyBoost(a: Association): number {
   const d = daysSince(a.lastUsed || a.createdAt);
-  // Recent use gets up to 50% boost, decaying over ~3 days
   return 1 + Math.exp(-d / 3) * 0.5;
 }
 
 function salience(a: Association): number {
   const ds = decayedStrength(a);
   const rb = recencyBoost(a);
-  const exp = (a.exposures || 1) ** 0.25; // diminishing returns
+  const exp = (a.exposures || 1) ** 0.25;
   return ds * rb * exp;
 }
 
-function pruneAndDecay(list: Association[]): Association[] {
-  // Apply decay and prune weak/ancient entries
-  const now = Date.now();
-  const kept = list
-    .filter(a => {
-      if (!isAssociationToken(a.left) || !isAssociationToken(a.right))
-        return false;
-      const s = salience(a);
-      const tooOld = daysSince(a.createdAt) > 120 && s < 0.2;
-      return s >= 0.05 && !tooOld;
-    })
-    .sort((a, b) => salience(b) - salience(a));
+// ============================================================================
+// PUBLIC API
+// ============================================================================
 
-  // Cap per persona to avoid runaway growth
-  const MAX = 200;
-  return kept.slice(0, MAX);
+/**
+ * Add associations for a persona.
+ * Synchronous with background persistence.
+ */
+export function addAssociations(
+  persona: string,
+  pairs: Array<{ left: string; right: string }>
+): void {
+  if (!pairs.length) return;
+  
+  // Optimistically update cache
+  const cached = cache.get(persona);
+  const now = new Date().toISOString();
+  
+  if (cached) {
+    for (const { left, right } of pairs) {
+      const l = left.trim().toLowerCase();
+      const r = right.trim().toLowerCase();
+      if (!isAssociationToken(l) || !isAssociationToken(r)) continue;
+      
+      const idx = cached.associations.findIndex(a => a.left === l && a.right === r);
+      if (idx >= 0) {
+        cached.associations[idx].strength = Math.min(1e6, (cached.associations[idx].strength || 1) + 1);
+        cached.associations[idx].exposures = (cached.associations[idx].exposures || 0) + 1;
+        cached.associations[idx].lastUsed = now;
+        cached.associations[idx].lastReinforcedAt = now;
+      } else {
+        cached.associations.push({
+          left: l,
+          right: r,
+          strength: 1,
+          exposures: 1,
+          createdAt: now,
+          lastUsed: now,
+          lastReinforcedAt: now,
+        });
+      }
+    }
+    cached.dirty = true;
+  }
+  
+  // Persist to database
+  dbAddAssociations(persona, pairs).catch(error => {
+    logger.error('Failed to persist associations:', error);
+  });
+  
+  scheduleRefresh(persona);
+}
+
+/**
+ * Get associations for a persona, sorted by salience.
+ * Returns cached data synchronously.
+ */
+export function getAssociations(persona: string): Association[] {
+  const cached = cache.get(persona);
+  const now = Date.now();
+  
+  // If cache is stale or missing, trigger refresh
+  if (!cached || (now - cached.lastSync) > CACHE_TTL_MS || cached.dirty) {
+    scheduleRefresh(persona);
+  }
+  
+  // Sort by salience
+  const associations = cached?.associations || [];
+  return associations.slice().sort((a, b) => salience(b) - salience(a));
+}
+
+/**
+ * Async version for contexts where async is acceptable.
+ */
+export async function getAssociationsAsync(persona: string): Promise<Association[]> {
+  const associations = await refreshCache(persona);
+  return associations.slice().sort((a, b) => salience(b) - salience(a));
+}
+
+/**
+ * Touch associations that appear in text (mark as used).
+ */
+export function touchAssociations(
+  persona: string,
+  used: Array<{ left: string; right: string }>
+): void {
+  if (!used.length) return;
+  
+  // Optimistically update cache
+  const cached = cache.get(persona);
+  const now = new Date().toISOString();
+  
+  if (cached) {
+    for (const { left, right } of used) {
+      const l = left.trim().toLowerCase();
+      const r = right.trim().toLowerCase();
+      const idx = cached.associations.findIndex(a => a.left === l && a.right === r);
+      if (idx >= 0) {
+        cached.associations[idx].lastUsed = now;
+        cached.associations[idx].strength = Math.min(1e6, (cached.associations[idx].strength || 1) + 0.5);
+        cached.associations[idx].exposures = (cached.associations[idx].exposures || 0) + 1;
+        cached.associations[idx].lastReinforcedAt = now;
+      }
+    }
+    cached.dirty = true;
+  }
+  
+  // Persist to database
+  dbTouchAssociations(persona, used).catch(error => {
+    logger.error('Failed to touch associations:', error);
+  });
+  
+  scheduleRefresh(persona);
+}
+
+/**
+ * Parse association statements from text.
+ */
+export function parseAssociationsFromText(
+  text: string
+): Array<{ left: string; right: string }> {
+  return dbParseAssociationsFromText(text);
+}
+
+/**
+ * Translate right-side tokens using known associations.
+ */
+export function translateRightSequence(
+  persona: string,
+  rights: string[]
+): string[] {
+  const associations = getAssociations(persona);
+  const map = new Map<string, string>();
+  
+  for (const a of associations) {
+    if (!map.has(a.right)) {
+      map.set(a.right, a.left);
+    }
+  }
+  
+  return rights.map(r => map.get(r.toLowerCase()) || r);
+}
+
+/**
+ * Build a compact facts line for system prompt injection.
+ */
+export function buildFactsLine(
+  persona: string,
+  charBudget: number = 160
+): string | null {
+  const associations = getAssociations(persona);
+  if (!associations.length) return null;
+  
+  const parts: string[] = [];
+  let total = 'Facts: '.length;
+  const seen = new Set<string>();
+  
+  for (const a of associations) {
+    if (!isAssociationToken(a.left) || !isAssociationToken(a.right)) continue;
+    if (seen.has(a.right)) continue;
+    
+    const frag = `${a.left}=${a.right}`;
+    const addLen = (parts.length ? 2 : 0) + frag.length;
+    if (total + addLen > charBudget) break;
+    
+    parts.push(frag);
+    total += addLen;
+    seen.add(a.right);
+  }
+  
+  return parts.length ? `Facts: ${parts.join('; ')}` : null;
+}
+
+/**
+ * Async version of buildFactsLine.
+ */
+export async function buildFactsLineAsync(
+  persona: string,
+  charBudget: number = 160
+): Promise<string | null> {
+  return await dbBuildFactsLine(persona, charBudget);
+}
+
+/**
+ * Find associations where right-side tokens appear in text.
+ */
+export function getRightsUsedInText(
+  persona: string,
+  text: string
+): Array<{ left: string; right: string }> {
+  const associations = getAssociations(persona);
+  if (!associations.length || !text) return [];
+  
+  const rightsSet = new Set(associations.map(a => a.right.toLowerCase()));
+  const tokens = text
+    .toLowerCase()
+    .replace(/[^a-z0-9_,\s-]/g, ' ')
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  
+  const used: Array<{ left: string; right: string }> = [];
+  const seen = new Set<string>();
+  
+  for (const t of tokens) {
+    if (rightsSet.has(t)) {
+      const best = associations.find(a => a.right === t);
+      if (best) {
+        const key = `${best.left}|${best.right}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          used.push({ left: best.left, right: best.right });
+        }
+      }
+    }
+  }
+  
+  return used;
+}
+
+/**
+ * Clear all associations for a persona.
+ */
+export function clearPersonaAssociations(persona: string): void {
+  cache.delete(persona);
+  
+  dbClearPersonaAssociations(persona).catch(error => {
+    logger.error('Failed to clear persona associations:', error);
+  });
+}
+
+/**
+ * Clear all associations (entire memory store).
+ */
+export function clearAllAssociations(): void {
+  cache.clear();
+  
+  dbClearAllAssociations().catch(error => {
+    logger.error('Failed to clear all associations:', error);
+  });
+}
+
+/**
+ * Initialize associative memory system.
+ * Call on app startup for migration and cache warming.
+ */
+export async function initializeAssociativeMemory(personas: string[]): Promise<void> {
+  await ensureMigration();
+  
+  // Warm cache for active personas
+  for (const persona of personas) {
+    await refreshCache(persona);
+  }
 }
