@@ -1,3 +1,5 @@
-make an option to render ALTER EGO as a desktop overlay that can actually see what you're doing on your computer (basically let it be an e-friend). of course, no data collection for AI training will be done
+make an option to render ALTER EGO as a desktop overlay that can actually see what you're doing on your computer (basically let it be an e-friend like bonzi buddy or clippy). of course, no data collection for AI training will be done
 
 make it easier for people to install AE as a desktop app (for those who have no idea how progressive web apps work)
+
+(for me specifically) add a build option for alter ego to be a native desktop app that i can run with an exe

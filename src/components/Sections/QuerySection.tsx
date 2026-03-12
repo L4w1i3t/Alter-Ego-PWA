@@ -6,15 +6,15 @@ import { ImageIcon } from '../Common/Icons';
 
 const QuerySectionContainer = styled.section`
   display: flex;
-  align-items: flex-start; /* Change from center to flex-start to handle height changes */
+  align-items: flex-start;
   padding: 1vh 2vw;
   gap: 1vw;
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem;
     gap: 0.5rem;
-    flex-wrap: wrap;
-    min-height: 50px;
+    align-items: center;
   }
 `;
 
@@ -22,11 +22,7 @@ const QueryInputWrapper = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-
-  @media (max-width: 768px) {
-    min-width: 100%;
-    order: 1;
-  }
+  min-width: 0;
 `;
 
 const InputRow = styled.div`
@@ -43,11 +39,10 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 1vw;
   align-items: center;
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
-    gap: 0.5rem;
-    width: 100%;
-    order: 2;
+    gap: 0.4rem;
   }
 `;
 
@@ -99,10 +94,9 @@ const SendQueryButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    padding: 1rem 1.5rem;
-    font-size: 16px;
-    min-height: 44px;
-    flex: 1; /* Take equal space with image button */
+    padding: 0.6rem 0.9rem;
+    font-size: 14px;
+    min-height: 40px;
     touch-action: manipulation;
   }
 `;
@@ -127,10 +121,11 @@ const ImageUploadButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    padding: 1rem;
-    font-size: 16px;
-    min-height: 44px;
-    flex: 1; /* Take equal space with send button */
+    padding: 0;
+    min-height: 40px;
+    min-width: 40px;
+    width: 40px;
+    flex: none;
     touch-action: manipulation;
   }
 `;

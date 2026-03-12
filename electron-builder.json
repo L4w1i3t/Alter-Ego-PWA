@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.l4w1i3t.alterego",
+  "productName": "ALTER EGO",
+  "directories": {
+    "output": "electron-dist"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*"
+  ],
+  "extraMetadata": {
+    "main": "electron/main.js"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/assets/icons/icon-512x512.png"
+  },
+  "portable": {
+    "artifactName": "${productName} Portable ${version}.${ext}"
+  },
+  "mac": {
+    "target": ["dmg"],
+    "icon": "public/assets/icons/icon-512x512.png",
+    "category": "public.app-category.productivity"
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "icon": "public/assets/icons/icon-512x512.png",
+    "category": "Utility"
+  }
+}

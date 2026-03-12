@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { loadSettings, Settings } from '../../utils/storageUtils'; // Assuming this is defined in your constants file
-import { EVENTS } from '../../config/constants';
+import { loadSettings, Settings, getPersonaChatHistory } from '../../utils/storageUtils';
+import { EVENTS, UI } from '../../config/constants';
 import TypingAnimation from '../Common/TypingAnimation';
 import { openImageInNewTab } from '../../utils/imageUtils';
 import { UserIcon } from '../Common/Icons';
+import { useApi } from '../../context/ApiContext';
 
 const MainContentContainer = styled.main`
   display: flex;
@@ -13,24 +14,17 @@ const MainContentContainer = styled.main`
   padding: 2vh 2vw;
   gap: 2vw;
   overflow: auto;
+  min-height: 0;
 
   @media (max-width: 768px) {
-    /* Use CSS Grid for better mobile layout control */
-    display: grid;
-    grid-template-rows: auto auto 1fr; /* response, emotions, avatar */
+    flex-direction: column;
+    flex-wrap: nowrap;
     padding: 0.75rem;
-    gap: 0.75rem;
-    height: calc(100vh - 150px);
-    min-height: 500px; /* Ensure minimum height for avatar */
-    width: 100%;
-    max-width: 100vw;
-    box-sizing: border-box;
+    gap: 0.5rem;
+    min-height: 0;
+    overflow-y: auto;
     overflow-x: hidden;
-    /* Ensure grid items don't overflow */
-    grid-template-areas:
-      'response'
-      'emotions'
-      'avatar';
+    width: 100%;
   }
 `;
 
@@ -40,12 +34,14 @@ const ResponseArea = styled.div`
   flex: 2;
   gap: 2vh;
   min-width: 40vw;
+  min-height: 0;
 
   @media (max-width: 768px) {
-    grid-area: response;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    flex: 1;
+    min-height: 0;
+    gap: 0.5rem;
     width: 100%;
   }
 `;
@@ -61,19 +57,15 @@ const ResponseBox = styled.div<{ $showEmotions: boolean }>`
   word-wrap: break-word;
 
   @media (max-width: 768px) {
-    height: ${props =>
-      props.$showEmotions
-        ? '150px'
-        : '200px'}; /* Use fixed heights instead of vh */
-    min-height: 120px;
-    max-height: ${props => (props.$showEmotions ? '150px' : '200px')};
+    flex: 1;
+    min-height: 100px;
+    height: auto;
+    max-height: none;
     padding: 0.75rem;
     font-size: 0.9rem;
     line-height: 1.4;
     width: 100%;
     box-sizing: border-box;
-    /* Ensure it doesn't take all available space */
-    flex-shrink: 1;
   }
 `;
 
@@ -124,13 +116,12 @@ const DetectedEmotionsSection = styled.div<{ $show: boolean }>`
   display: ${props => (props.$show ? 'flex' : 'none')};
   gap: 1vh;
   @media (max-width: 768px) {
-    grid-area: emotions;
     display: ${props => (props.$show ? 'flex' : 'none')};
     flex-direction: column;
+    flex-shrink: 0;
     gap: 0.5rem;
     width: 100%;
-    /* Limit the height so it doesn't take up too much space */
-    max-height: 120px;
+    max-height: 110px;
     overflow-y: auto;
   }
 `;
@@ -189,50 +180,34 @@ const AvatarArea = styled.div<{ $showEmotions: boolean }>`
   overflow: hidden;
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Align to top since we're showing top half */
+  align-items: flex-start;
   position: relative;
 
   @media (max-width: 768px) {
-    grid-area: avatar;
-    display: flex !important;
     width: 100%;
-    height: 250px; /* Fixed height for consistency */
-    min-height: 200px;
-    max-height: 300px;
+    height: 220px;
+    min-height: 160px;
+    max-height: 260px;
+    flex-shrink: 0;
     padding: 0.5rem;
-    margin-bottom: 0.5rem;
     box-sizing: border-box;
     align-items: flex-start;
     justify-content: center;
-    /* Force visibility */
-    visibility: visible !important;
-    opacity: 1 !important;
-    /* Enhanced border for debugging */
-    border-width: 3px;
-    border-color: #0f0;
-    border-style: solid;
-    /* Ensure it takes the remaining space */
-    flex: 1;
   }
 `;
 
 const AvatarImage = styled.img`
   width: 100%;
-  height: 200%; /* Make image twice the container height */
+  height: 200%;
   object-fit: cover;
-  object-position: center top; /* Show top half of the image */
+  object-position: center top;
   filter: hue-rotate(90deg) saturate(3) brightness(1.2);
 
   @media (max-width: 768px) {
-    width: 80%; /* Increase width for better visibility */
-    height: 200%; /* Consistent behavior on mobile */
+    width: 80%;
+    height: 200%;
     object-fit: cover;
-    object-position: center top; /* Always show top half */
-    margin-top: -10%;
-    /* Ensure image is visible */
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    object-position: center top;
   }
 `;
 
@@ -255,6 +230,7 @@ interface Message {
   isUser: boolean;
   text: string;
   images?: string[]; // Array of image URLs for display
+  instant?: boolean; // When true, bypass typing animation (e.g. restored history)
 }
 
 interface MainContentProps {
@@ -266,6 +242,7 @@ const MainContent: React.FC<MainContentProps> = ({
   personaContent = '',
   activeCharacter = 'ALTER EGO',
 }) => {
+  const { conversationHistory } = useApi();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [userEmotions, setUserEmotions] = useState<string[]>([]);
@@ -277,6 +254,15 @@ const MainContent: React.FC<MainContentProps> = ({
     const initialSettings = loadSettings();
     return !isProduction && (initialSettings.showEmotionDetection ?? false);
   });
+
+  // Track the last persona so we can detect persona changes vs. normal re-mounts
+  const prevCharacterRef = useRef<string>(activeCharacter);
+
+  // Caps the display messages array to the configured limit
+  const capMessages = (msgs: Message[]): Message[] => {
+    if (msgs.length <= UI.DISPLAY_MESSAGE_CAP) return msgs;
+    return msgs.slice(msgs.length - UI.DISPLAY_MESSAGE_CAP);
+  };
 
   useEffect(() => {
     const handleSettingsUpdated = (event: Event) => {
@@ -315,40 +301,43 @@ const MainContent: React.FC<MainContentProps> = ({
       window.removeEventListener('storage', handleStorageUpdate);
     };
   }, [isProduction]);
-  // Debug mobile layout issues
+  // Hydrate display messages from persisted conversation history.
+  // On mount: restore prior messages so mode switches preserve the chat.
+  // On persona change: clear and show welcome for the new persona.
   useEffect(() => {
-    const checkMobileLayout = () => {
-      const isMobile = window.innerWidth <= 768;
-      if (isMobile) {
-        console.log('Mobile layout active:', {
-          screenWidth: window.innerWidth,
-          screenHeight: window.innerHeight,
-          showEmotionDetection: showEmotionDetection,
-          availableHeight: window.innerHeight - 150, // approximate
-        });
-      }
-    };
+    const personaChanged = prevCharacterRef.current !== activeCharacter;
+    prevCharacterRef.current = activeCharacter;
 
-    checkMobileLayout();
-    window.addEventListener('resize', checkMobileLayout);
-
-    return () => window.removeEventListener('resize', checkMobileLayout);
-  }, [showEmotionDetection]);
-
-  // Initialize with welcome message only when component first mounts
-  useEffect(() => {
-    const welcomeMessage = `Hello, and welcome to ${activeCharacter}!`;
-    setMessages([{ isUser: false, text: welcomeMessage }]);
-    // This effect should only run once when the component mounts
-  }, []);
-
-  // Update character name in messages if it changes
-  useEffect(() => {
-    // This only updates the display name in messages without adding a new welcome message
-    if (activeCharacter) {
-      // Force a re-render to update character name in displayed messages
-      setMessages(prevMessages => [...prevMessages]);
+    // If the user switched personas, start fresh with a welcome message
+    if (personaChanged) {
+      setMessages([
+        { isUser: false, text: `Hello, and welcome to ${activeCharacter}!`, instant: true },
+      ]);
+      return;
     }
+
+    // Try to restore from ApiContext first, then fall back to localStorage
+    let source = conversationHistory;
+    if (!source.length) {
+      const stored = getPersonaChatHistory(activeCharacter);
+      if (stored?.messages?.length) {
+        source = stored.messages;
+      }
+    }
+
+    if (source.length) {
+      const restored: Message[] = source
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({ isUser: m.role === 'user', text: m.content, instant: true }));
+      setMessages(capMessages(restored));
+    } else {
+      // No history at all, show the welcome message
+      setMessages([
+        { isUser: false, text: `Hello, and welcome to ${activeCharacter}!`, instant: true },
+      ]);
+    }
+    // Only run on mount and when the active character changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCharacter]);
 
   // Scroll to bottom when messages change
@@ -406,16 +395,16 @@ const MainContent: React.FC<MainContentProps> = ({
         });
       }
 
-      // Add user message to history (keep all messages visible)
+      // Add user message to history, capped to prevent unbounded growth
       setMessages(prev => {
-        return [
+        return capMessages([
           ...prev,
           {
             isUser: true,
             text: query,
             ...(images && images.length > 0 && { images: [] }), // Will be updated by reader above
           },
-        ];
+        ]);
       });
 
       // Show thinking state
@@ -442,9 +431,9 @@ const MainContent: React.FC<MainContentProps> = ({
       // Hide thinking state
       setIsThinking(false);
 
-      // Add AI response to history (keep all messages visible)
+      // Add AI response to history, capped to prevent unbounded growth
       setMessages(prev => {
-        return [...prev, { isUser: false, text: response }];
+        return capMessages([...prev, { isUser: false, text: response }]);
       });
     };
 
@@ -518,8 +507,8 @@ const MainContent: React.FC<MainContentProps> = ({
                   {activeCharacter}:{' '}
                   <TypingAnimation
                     text={message.text}
-                    speed={loadSettings().textSpeed || 40} // Use text speed from settings
-                    showCursor={true}
+                    speed={message.instant ? 1000 : (loadSettings().textSpeed || 40)}
+                    showCursor={!message.instant}
                   >
                     {(displayText: string, isComplete: boolean) => (
                       <span>{displayText}</span>
@@ -555,7 +544,7 @@ const MainContent: React.FC<MainContentProps> = ({
       <AvatarArea $showEmotions={showEmotionDetection}>
         {!avatarLoadError ? (
           <AvatarImage
-            src={`/assets/avatar/ALTER EGO/${currentEmotion}.png`}
+            src={`${process.env.PUBLIC_URL}/assets/avatar/ALTER EGO/${currentEmotion}.png`}
             alt={`Avatar showing ${currentEmotion}`}
             onError={e => {
               console.error('Failed to load avatar image:', e);

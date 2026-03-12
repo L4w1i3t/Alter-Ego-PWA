@@ -628,8 +628,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     personaName?: string,
     images?: File[]
   ) => {
-    // If a specific persona is provided and it's different from current,
-    // switch to that persona first (useful for direct API calls)
+    // Capture the intended persona up-front. React state updates (setCurrentPersona)
+    // are batched and won't reflect until after this async function yields, so we
+    // use a local variable throughout to guarantee we query the right persona's data.
+    const effectivePersona = personaName ?? currentPersona;
     if (personaName && personaName !== currentPersona) {
       handleSetCurrentPersona(personaName);
     }
@@ -730,7 +732,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       try {
         const pairs = parseAssociationsFromText(query);
         if (pairs.length) {
-          addAssociations(currentPersona, pairs);
+          addAssociations(effectivePersona, pairs);
         }
       } catch (e) {
         logger.warn('Association parse failed:', e);
@@ -739,11 +741,11 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       try {
         const { getRightsUsedInText, touchAssociations, getAssociations } =
           await import('../memory/associativeMemory');
-        const used = getRightsUsedInText(currentPersona, query);
+        const used = getRightsUsedInText(effectivePersona, query);
         if (used.length) {
-          touchAssociations(currentPersona, used);
+          touchAssociations(effectivePersona, used);
         }
-        const allAssociations = getAssociations(currentPersona);
+        const allAssociations = getAssociations(effectivePersona);
         const prioritized = used.length
           ? used
           : allAssociations.slice(0, Math.min(4, allAssociations.length));
@@ -753,7 +755,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
             .join('; ');
           associationContext.push({
             role: 'system' as const,
-            content: `Associative memory recall (${currentPersona}): ${summary}`,
+            content: `Associative memory recall (${effectivePersona}): ${summary}`,
           });
         }
       } catch (assocErr) {
@@ -769,18 +771,22 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       // Try to retrieve relevant context from long-term memory using semantic search
       let relevantMemories: Message[] = [];
       try {
-        // Use semantic search to find memories related to the query
-        // Pass in short-term memory IDs to exclude those messages
-        const searchResults = await semanticSearchLongTermMemory(
+        // Use effectivePersona directly to avoid the stale-closure issue that
+        // semanticSearchLongTermMemory had (it captured currentPersona at render time).
+        const searchResults = await semanticSearchMessages(
           query,
-          shortTermMemoryIds
+          effectivePersona,
+          shortTermMemoryIds,
+          5
         );
 
-        // Only include if we found something meaningful
-        if (searchResults.length > 0) {
-          // Format memories properly for RAG
-          relevantMemories = formatMemoriesForRAG(searchResults);
+        // Register IDs so future calls within this session can exclude them.
+        searchResults.forEach(msg => {
+          if (typeof msg.id === 'number') registerExistingMessageId(msg.id);
+        });
 
+        if (searchResults.length > 0) {
+          relevantMemories = formatMemoriesForRAG(searchResults);
           logger.debug(
             `Retrieved ${searchResults.length} semantically relevant memories from long-term storage`
           );
@@ -832,19 +838,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       // Build an enhanced system prompt with associative facts (compact)
       let effectiveSystemPrompt = systemPrompt;
       try {
-        const factsLine = buildFactsLine(currentPersona);
+        const factsLine = buildFactsLine(effectivePersona);
         if (factsLine) {
           effectiveSystemPrompt = `${systemPrompt}\n\n${factsLine}`;
         }
-      } catch {}
-
-      // Reinforce associations if the current query uses any right-side tokens
-      try {
-        const { getRightsUsedInText, touchAssociations } = await import(
-          '../memory/associativeMemory'
-        );
-        const used = getRightsUsedInText(currentPersona, query);
-        if (used.length) touchAssociations(currentPersona, used);
       } catch {}
 
       // Call the AI service with the combined context (including images)
@@ -867,12 +864,16 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
             .replace(/(:\)|;\)|:\(|:D|XD|xD|:\]|;\]|:\}|<3|:\/|:\\\(|\^_\^|¯\\_\(ツ\)_\/¯)/g, '');
         const stripStockClosers = (s: string) => {
           const patterns = [
-            // placeholder text to keep the list valid and not have a red line
-            /\b(Bingus McWingus (Surely nobody will end their sentence with this, right?)\.)/gi,
+            /\b(is there anything else (i can|you'?d like me to) (help|assist)( you)? with\??\s*)/gi,
+            /\b(let me know if (you have|there are) any (other )?questions?\.?\s*)/gi,
+            /\b(i hope (this|that) helps?[!.]?\s*)/gi,
+            /\b(feel free to (ask|reach out)( if you need anything)?\.?\s*)/gi,
+            /\b(don'?t hesitate to (ask|reach out)\.?\s*)/gi,
+            /\b(as an (ai|artificial intelligence|language model)[,.]?\s*)/gi,
+            /\b(i'?m (just )?an (ai|artificial intelligence|language model)[,.]?\s*)/gi,
           ];
           let out = s;
           for (const p of patterns) out = out.replace(p, '');
-          // Clean extra spaces/lines introduced
           return out.replace(/\s{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
         };
         response = stripStockClosers(stripEmojis(response));

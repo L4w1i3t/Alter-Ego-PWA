@@ -11,6 +11,7 @@ import MemoryAndHistory from './MemoryAndHistory';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
 import OpenSourceSettings from './OpenSourceSettings';
+import DataManagement from './DataManagement';
 import {
   handleOpenSourceSelection,
   getOpenSourceStatus,
@@ -24,6 +25,7 @@ import {
   DownloadIcon,
   InfoIcon,
   WarningIcon,
+  ShieldIcon,
 } from '../Common/Icons';
 
 const SettingsOverlay = styled.div`
@@ -472,6 +474,8 @@ const Settings: React.FC<SettingsProps> = ({
         return <OpenSourceSettings onBack={handleBack} />;
       case 'Miscellaneous':
         return <MiscellaneousSettings onBack={handleBack} />;
+      case 'Data Management':
+        return <DataManagement onBack={handleBack} />;
       case 'Desktop Install':
         return <DesktopInstall onBack={handleBack} />;
       case 'Software Details':
@@ -562,6 +566,17 @@ const Settings: React.FC<SettingsProps> = ({
                 <CategoryTitle>Miscellaneous</CategoryTitle>
                 <CategoryDescription>
                   Customize text speed and other preferences
+                </CategoryDescription>
+              </SettingsCategory>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Data Management')}
+              >
+                <CategoryIcon>
+                  <ShieldIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
+                <CategoryTitle>Data Management</CategoryTitle>
+                <CategoryDescription>
+                  Export, import, and back up all app data
                 </CategoryDescription>
               </SettingsCategory>
               <SettingsCategory

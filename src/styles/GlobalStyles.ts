@@ -38,18 +38,18 @@ export const GlobalStyles = createGlobalStyle`  * {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* Improve mobile touch targets */
     -webkit-tap-highlight-color: rgba(0, 255, 0, 0.1);
     -webkit-text-size-adjust: 100%;
   }
+  @supports (height: 100dvh) {
+    html {
+      height: 100dvh;
+    }
+  }
   @media (max-width: 768px) {
     html, body {
-      height: 100vh;
-      height: -webkit-fill-available; /* iOS Safari fix */
       overflow-x: hidden;
-      overflow-y: auto;
       width: 100%;
-      max-width: 100vw;
     }
   }
 
@@ -95,33 +95,16 @@ export const GlobalStyles = createGlobalStyle`  * {
       -webkit-appearance: none;
       -webkit-border-radius: 0;
       border-radius: 0.2em;
-      /* Ensure virtual keyboard works */
       -webkit-user-select: text !important;
       user-select: text !important;
-      /* Prevent auto-capitalization issues */
-      autocapitalize: sentences;
-      autocomplete: on;
-      autocorrect: on;
-      spellcheck: true;
     }
-    
+
     select {
       font-size: 16px; /* Prevent zoom on iOS */
     }
-    
-    /* Better touch targets and spacing */
+
     * {
       -webkit-tap-highlight-color: rgba(0, 255, 0, 0.2);
-    }
-    
-    /* Prevent horizontal scrolling */
-    body {
-      overflow-x: hidden;
-    }
-    
-    /* Improve touch scrolling */
-    * {
-      -webkit-overflow-scrolling: touch;
     }
   }
 

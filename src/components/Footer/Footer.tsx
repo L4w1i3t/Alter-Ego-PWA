@@ -7,34 +7,39 @@ import { HeadphonesIcon, WaveIcon } from '../Common/Icons';
 const FooterContainer = styled.footer`
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 0.5em 1em;
   background-color: #000;
   border-top: 1px solid #0f0;
   font-size: 0.8em;
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.75rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
     font-size: 0.75rem;
-    min-height: 50px;
   }
 `;
 
 const FooterLeft = styled.div`
   display: flex;
   align-items: center;
-
-  @media (max-width: 768px) {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+  min-width: 0;
+  flex: 1;
 `;
 
 const FooterRight = styled.div`
+  flex-shrink: 0;
+
   @media (max-width: 768px) {
-    text-align: center;
     font-size: 0.9em;
+    max-width: 40%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 `;
 
@@ -58,10 +63,11 @@ const VoiceModelSelector = styled.select`
     color: #0f0;
   }
   @media (max-width: 768px) {
-    padding: 0.4em;
-    margin: 0.2em;
-    font-size: 16px; /* Prevent zoom on iOS */
-    min-height: 40px;
+    padding: 0.25em;
+    margin-left: 0.35em;
+    font-size: 14px;
+    min-height: 36px;
+    max-width: 120px;
     touch-action: manipulation;
   }
 `;
@@ -80,6 +86,10 @@ const VoiceInfo = styled.span.withConfig({
   color: ${props => (props.provider === 'elevenlabs' ? '#0af' : '#0f0')};
   margin-left: 0.5em;
   font-size: 0.8em;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 interface FooterProps {

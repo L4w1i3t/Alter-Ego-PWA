@@ -11,8 +11,11 @@ const Settings = lazy(() => import('./Settings/Settings'));
 const ModelSelection = lazy(() => import('./Sections/ModelSelection'));
 const WarmingUp = lazy(() => import('./Sections/WarmingUp'));
 const CharacterSelector = lazy(() => import('./Sections/CharacterSelector'));
+const OverlayCompanion = lazy(() => import('./Overlay/OverlayCompanion'));
 import NotificationManager from './Common/NotificationManager';
+import InstallBanner from './Common/InstallBanner';
 import { useApi } from '../context/ApiContext';
+import { isOverlayMode } from '../utils/electronUtils';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import { applySettingsToCssVariables } from '../styles/GlobalStyles';
 import '../styles/mobile.css';
@@ -51,11 +54,12 @@ const AppContainer = styled.div`
   font-family: monospace, 'Courier New', Courier;
   overflow: hidden;
 
+  @supports (height: 100dvh) {
+    height: 100dvh;
+  }
+
   @media (max-width: 768px) {
-    min-height: 100vh;
-    min-height: -webkit-fill-available; /* iOS Safari fix */
     overflow-x: hidden;
-    overflow-y: auto;
     width: 100%;
     max-width: 100vw;
   }
@@ -574,9 +578,22 @@ const App: React.FC = () => {
     setTimeout(() => URL.revokeObjectURL(url), 100);
   };
 
+  // If running as the Electron overlay widget, render the compact companion instead
+  if (isOverlayMode()) {
+    return (
+      <>
+        <GlobalStyles />
+        <Suspense fallback={null}>
+          <OverlayCompanion />
+        </Suspense>
+      </>
+    );
+  }
+
   return (
     <AppContainer>
       <GlobalStyles />
+      <InstallBanner />
       <Suspense fallback={null}>
         {showModelSelection && (
           <ModelSelection

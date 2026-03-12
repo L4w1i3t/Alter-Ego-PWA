@@ -22,6 +22,7 @@ export const APP_CONSTANTS = {
     DEFAULT_NOTIFICATION_DURATION: 3000, // milliseconds
     DEFAULT_TEXT_SCALE: 1, // 100%
     DEFAULT_BUBBLE_MAX_WIDTH_PERCENT: 70,
+    DISPLAY_MESSAGE_CAP: 50, // Max messages kept in the chat display for RAM safety
   },
 
   // Storage Keys

@@ -388,6 +388,25 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
         </Instructions>
       )}
 
+      {/* Native Desktop App */}
+      <Instructions>
+        <InstructionsTitle>
+          Native Desktop App (Portable .exe)
+        </InstructionsTitle>
+        <StatusText>
+          ALTER EGO can also be built as a standalone portable desktop application.
+          No installer required -- just run the .exe from any folder. All data
+          (settings, memory, conversations) is stored next to the executable so
+          the entire folder can be copied between machines.
+        </StatusText>
+        <StatusText style={{ marginTop: '0.5em', color: '#0ff' }}>
+          To build the portable app, clone the repository and run:{' '}
+          <code style={{ background: '#111', padding: '0.15em 0.4em', borderRadius: '3px' }}>
+            npm run electron:build
+          </code>
+        </StatusText>
+      </Instructions>
+
       {/* Debug Information */}
       <DebugInfo>
         <DebugSummary> Debug Information</DebugSummary>
