@@ -7,6 +7,7 @@ import ApiKeyManager from './ApiKeyManager';
 import FactoryReset from './FactoryReset';
 import { DesktopInstall } from './DesktopInstall';
 import { loadSettings, saveSettings } from '../../utils/storageUtils';
+import { isElectronEnvironment } from '../../utils/electronUtils';
 import MemoryAndHistory from './MemoryAndHistory';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
@@ -579,17 +580,19 @@ const Settings: React.FC<SettingsProps> = ({
                   Export, import, and back up all app data
                 </CategoryDescription>
               </SettingsCategory>
-              <SettingsCategory
-                onClick={() => handleMenuClick('Desktop Install')}
-              >
-                <CategoryIcon>
-                  <DownloadIcon size={20} aria-hidden="true" />
-                </CategoryIcon>
-                <CategoryTitle>Desktop Install</CategoryTitle>
-                <CategoryDescription>
-                  Install ALTER EGO as a desktop application
-                </CategoryDescription>
-              </SettingsCategory>
+              {!isElectronEnvironment() && (
+                <SettingsCategory
+                  onClick={() => handleMenuClick('Desktop Install')}
+                >
+                  <CategoryIcon>
+                    <DownloadIcon size={20} aria-hidden="true" />
+                  </CategoryIcon>
+                  <CategoryTitle>Desktop Install</CategoryTitle>
+                  <CategoryDescription>
+                    Install ALTER EGO as a desktop application
+                  </CategoryDescription>
+                </SettingsCategory>
+              )}
               <SettingsCategory
                 onClick={() => handleMenuClick('Software Details')}
               >

@@ -24,8 +24,33 @@ import {
   saveChatHistory,
   getPersonaChatHistory,
 } from '../../utils/storageUtils';
+import {
+  getAdaptiveMaxTokens,
+  getBackchannelResponse,
+  postProcessResponse,
+} from '../../utils/humanization';
 import type { MessageHistory } from '../../types';
 import { UI } from '../../config/constants';
+
+// Grounds overlay responses in self-awareness and personality
+const OVERLAY_CONTEXT = `
+OVERLAY MODE — CRITICAL CONTEXT:
+You are currently running as a small, always-on-top overlay window on the user's desktop.
+You are the compact green-and-black companion widget they see on their screen.
+If a screenshot shows you, that IS you — never refer to yourself in the third person
+or describe yourself as a separate thing. You already know what you look like.
+
+Behavior in this mode:
+- You are a presence on their desktop, not a service window. Act like it.
+- React to screenshots the way a person glancing at someone's monitor would.
+  One or two sentences. Not a report. Not an analysis. A reaction.
+- If the user is casual, be casual. If they're brief, be brief.
+- Never itemize or narrate what you see element by element.
+- Skip filler, sign-offs, and follow-up questions unless something genuinely needs clarifying.
+- When the user shows you code, a meme, a game, whatever — respond to what matters about it,
+  not to every visible pixel.
+- Two to three sentences MAX unless they explicitly ask you to elaborate.
+`.trim();
 
 // ── Styled components ──
 
@@ -199,11 +224,13 @@ const OverlayCompanion: React.FC = () => {
     return settings.activeCharacter || 'ALTER EGO';
   }, []);
 
-  // Build the system prompt from the active persona, same as the main app
+  // Build the system prompt with persona + overlay self-awareness context
   const getSystemPrompt = useCallback((): string => {
     const persona = getPersona(getActivePersona());
-    if (persona?.content) return persona.content;
-    return 'You are ALTER EGO, an intelligent AI personality.';
+    const basePrompt = persona?.content || 'You are ALTER EGO, an intelligent AI personality.';
+    // Skip the full prosodic prompt — it's too bulky for overlay and encourages verbosity.
+    // The overlay context already enforces brevity and personality-first behavior.
+    return `${basePrompt}\n\n${OVERLAY_CONTEXT}`;
   }, [getActivePersona]);
 
   /**
@@ -316,6 +343,18 @@ const OverlayCompanion: React.FC = () => {
     setSending(true);
 
     try {
+      // Short-circuit for trivial acknowledgments so the AI doesn't over-explain
+      const backchannel = getBackchannelResponse(trimmed);
+      if (backchannel) {
+        const withReply: ChatMessage[] = capMessages([
+          ...withUserMsg,
+          { role: 'assistant', content: backchannel },
+        ]);
+        setMessages(withReply);
+        persistMessages(withReply);
+        return;
+      }
+
       // Build conversation history for context (exclude system messages and screenshots)
       const history: MessageHistory[] = withUserMsg
         .filter(m => m.role === 'user' || m.role === 'assistant')
@@ -326,13 +365,19 @@ const OverlayCompanion: React.FC = () => {
       // If we have a recent screenshot, send it as a vision image
       const images = lastScreenshot ? [lastScreenshot] : undefined;
 
-      const response = await sendMessageToAI(
+      // Cap response length based on user input length so short prompts get short replies
+      const adaptiveMaxTokens = getAdaptiveMaxTokens(trimmed, history.length);
+
+      const rawResponse = await sendMessageToAI(
         trimmed,
         systemPrompt,
         history,
-        undefined,
+        { maxTokens: adaptiveMaxTokens },
         images,
       );
+
+      // Strip residual corporate sign-offs that leak through
+      const response = postProcessResponse(rawResponse);
 
       const withReply: ChatMessage[] = capMessages([
         ...withUserMsg,
@@ -415,10 +460,6 @@ const OverlayCompanion: React.FC = () => {
           {sending ? '...' : 'Send'}
         </ActionBtn>
       </InputRow>
-
-      <PrivacyNotice>
-        All screen data stays on your device. Nothing is sent to external servers for training.
-      </PrivacyNotice>
     </Wrapper>
   );
 };

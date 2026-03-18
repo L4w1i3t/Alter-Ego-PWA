@@ -6,6 +6,7 @@ import { initializePWA } from './utils/pwaUtils';
 import { devToolsBlocker } from './utils/devToolsBlocker';
 import { initializeMemorySystem } from './memory';
 import { loadSettings } from './utils/storageUtils';
+import { isElectronEnvironment } from './utils/electronUtils';
 // advancedSecurity is intentionally not imported by default to avoid UX harm
 
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -18,8 +19,10 @@ const immersiveLocalFlag =
   localStorage.getItem('alterEgo_immersiveMode') === 'true';
 const immersiveModeEnabled = immersiveEnvFlag || immersiveLocalFlag;
 
-// Initialize PWA installation capabilities
-initializePWA();
+// Initialize PWA installation capabilities (web only -- Electron never fires beforeinstallprompt)
+if (!isElectronEnvironment()) {
+  initializePWA();
+}
 
 // Initialize memory system (non-blocking)
 // This triggers migration from localStorage and warms caches
@@ -43,8 +46,8 @@ if (isProduction && immersiveModeEnabled) {
   console.log('Security features disabled (no immersive mode)');
 }
 
-// Register service worker with proper error handling
-if ('serviceWorker' in navigator) {
+// Register service worker with proper error handling (web only -- Electron's file:// doesn't support SWs)
+if ('serviceWorker' in navigator && !isElectronEnvironment()) {
   window.addEventListener('load', () => {
     const swUrl = '/service-worker.js';
 

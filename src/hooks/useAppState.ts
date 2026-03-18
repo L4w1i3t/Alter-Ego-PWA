@@ -44,34 +44,36 @@ export function useAppState() {
   const [showWarmingUp, setShowWarmingUp] = useState(false);
   const [showCharacterSelector, setShowCharacterSelector] = useState(false);
 
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [activeCharacter, setActiveCharacter] = useState('ALTER EGO');
+  // Read settings once synchronously so the initial render already has the
+  // correct persona/model — avoids a two-phase settle that downstream
+  // components (MainContent) would misinterpret as a persona change.
+  const [initialSettings] = useState(() => loadSettings());
+
+  const [selectedModel, setSelectedModel] = useState<string | null>(
+    initialSettings.selectedModel || null,
+  );
+  const [activeCharacter, setActiveCharacter] = useState(
+    initialSettings.activeCharacter || 'ALTER EGO',
+  );
   const [currentPersonaContent, setCurrentPersonaContent] = useState('');
-  const [voiceModel, setVoiceModel] = useState('None');
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [voiceModel, setVoiceModel] = useState(
+    initialSettings.voiceModel || 'None',
+  );
+  const [isFirstLoad, setIsFirstLoad] = useState(!initialSettings.selectedModel);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
-  // Initialize state from settings on mount
+  // The heavy state (selectedModel, activeCharacter, voiceModel) is already
+  // seeded from initialSettings above, so these setters are no-ops on the
+  // first render.  We still run the effect for side-effects like showing the
+  // model-selection dialog and applying CSS vars.
   useEffect(() => {
-    const settings = loadSettings();
-    
-    if (settings.selectedModel) {
-      setSelectedModel(settings.selectedModel);
-    } else {
+    if (!initialSettings.selectedModel) {
       setShowModelSelection(true);
-    }
-    
-    if (settings.activeCharacter) {
-      setActiveCharacter(settings.activeCharacter);
-    }
-    
-    if (settings.voiceModel) {
-      setVoiceModel(settings.voiceModel);
     }
 
     // Apply CSS variables from settings
     applySettingsToCssVariables();
-  }, []);
+  }, [initialSettings]);
 
   // Save settings whenever relevant state changes
   useEffect(() => {

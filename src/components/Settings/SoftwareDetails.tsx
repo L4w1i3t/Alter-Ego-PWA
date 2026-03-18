@@ -292,6 +292,48 @@ const TechBadge = styled.span`
   }
 `;
 
+const DonationSection = styled.div`
+  text-align: center;
+  margin-top: 1.5em;
+  padding: 1.2em 1.5em;
+  background: rgba(0, 255, 0, 0.03);
+  border: 1px dashed rgba(0, 255, 0, 0.2);
+  border-radius: 8px;
+  animation: ${fadeIn} 0.8s ease-out 0.9s both;
+`;
+
+const DonationText = styled.p`
+  margin: 0 0 0.6em 0;
+  font-size: 0.85em;
+  color: rgba(0, 255, 0, 0.6);
+  line-height: 1.5;
+`;
+
+const KofiLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  color: #0f0;
+  font-size: 0.9em;
+  text-decoration: none;
+  padding: 0.5em 1.2em;
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 255, 0, 0.05);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(0, 255, 0, 0.12);
+    border-color: #0f0;
+    box-shadow: 0 0 12px rgba(0, 255, 0, 0.2);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
 const BackButton = styled.button`
   margin-top: 2em;
   background: linear-gradient(135deg, #000, #001100);
@@ -698,6 +740,21 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
           </CardContent>
         </InfoCard>
       </InfoGrid>
+
+      <DonationSection>
+        <DonationText>
+          If you enjoy ALTER EGO and want to support its development, consider buying us a coffee.
+        </DonationText>
+        <KofiLink
+          href="https://ko-fi.com/l4w1i3t"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Support ALTER EGO on Ko-fi"
+        >
+          <HeartIcon size={16} aria-hidden="true" />
+          Support on Ko-fi
+        </KofiLink>
+      </DonationSection>
 
       <BackButton onClick={onBack}>
         <span

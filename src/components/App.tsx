@@ -14,6 +14,7 @@ const CharacterSelector = lazy(() => import('./Sections/CharacterSelector'));
 const OverlayCompanion = lazy(() => import('./Overlay/OverlayCompanion'));
 import NotificationManager from './Common/NotificationManager';
 import InstallBanner from './Common/InstallBanner';
+import DonationBanner from './Common/DonationBanner';
 import { useApi } from '../context/ApiContext';
 import { isOverlayMode } from '../utils/electronUtils';
 import { GlobalStyles } from '../styles/GlobalStyles';
@@ -648,6 +649,7 @@ const App: React.FC = () => {
         />
       )}
       <NotificationManager />
+      <DonationBanner />
     </AppContainer>
   );
 };

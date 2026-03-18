@@ -14,6 +14,7 @@ import { STORAGE_KEYS } from '../config/constants';
 import { exportAllData as exportConsolidatedDB, importData as importConsolidatedDB } from '../memory/memoryDatabase';
 import { exportDatabaseContent as exportLegacyDB, importMemory as importLegacyMemories, exportAllMemory } from '../memory/longTermDB';
 import { logger } from './logger';
+import { isElectronEnvironment } from './electronUtils';
 
 // ── Types ──
 
@@ -61,10 +62,6 @@ export interface DataStats {
 
 // ── Helpers ──
 
-function isElectron(): boolean {
-  return typeof window !== 'undefined' && !!window.electronAPI;
-}
-
 // ── Export ──
 
 /**
@@ -105,7 +102,7 @@ export async function exportAllAppData(): Promise<BackupPayload> {
   return {
     formatVersion: BACKUP_FORMAT_VERSION,
     exportedAt: new Date().toISOString(),
-    source: isElectron() ? 'electron' : 'web',
+    source: isElectronEnvironment() ? 'electron' : 'web',
     localStorage: lsData,
     consolidatedDB: consolidatedData,
     legacyDB: legacyData,

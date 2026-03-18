@@ -255,8 +255,11 @@ const MainContent: React.FC<MainContentProps> = ({
     return !isProduction && (initialSettings.showEmotionDetection ?? false);
   });
 
-  // Track the last persona so we can detect persona changes vs. normal re-mounts
-  const prevCharacterRef = useRef<string>(activeCharacter);
+  // Track the last persona so we can detect genuine user-initiated persona
+  // switches vs. normal mounts / mode transitions.  Initialised to null so
+  // the very first effect run always attempts to restore history rather than
+  // showing the welcome message.
+  const prevCharacterRef = useRef<string | null>(null);
 
   // Caps the display messages array to the configured limit
   const capMessages = (msgs: Message[]): Message[] => {
@@ -305,10 +308,12 @@ const MainContent: React.FC<MainContentProps> = ({
   // On mount: restore prior messages so mode switches preserve the chat.
   // On persona change: clear and show welcome for the new persona.
   useEffect(() => {
-    const personaChanged = prevCharacterRef.current !== activeCharacter;
+    const isFirstMount = prevCharacterRef.current === null;
+    const personaChanged = !isFirstMount && prevCharacterRef.current !== activeCharacter;
     prevCharacterRef.current = activeCharacter;
 
-    // If the user switched personas, start fresh with a welcome message
+    // Only show welcome when the user actively switches personas mid-session,
+    // NOT on the initial mount or when returning from overlay mode.
     if (personaChanged) {
       setMessages([
         { isUser: false, text: `Hello, and welcome to ${activeCharacter}!`, instant: true },

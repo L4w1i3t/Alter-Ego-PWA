@@ -9,6 +9,7 @@ import {
   getBrowserInfo,
   getPWABenefits,
 } from '../../utils/pwaUtils';
+import { isElectronEnvironment } from '../../utils/electronUtils';
 
 const Container = styled.div`
   padding: 1em;
@@ -260,6 +261,19 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
   const [installError, setInstallError] = useState<string | null>(null);
   const [browserInfo, setBrowserInfo] = useState<any>(null);
 
+  // PWA install is web-only; if we're somehow rendered in Electron, bail early
+  if (isElectronEnvironment()) {
+    return (
+      <Container>
+        <Title>
+          <BackButton onClick={onBack}> Back</BackButton>
+          Desktop Install
+        </Title>
+        <p>You are already running the Electron desktop app.</p>
+      </Container>
+    );
+  }
+
   useEffect(() => {
     // Check initial states
     setIsInstalled(isPWAInstalled());
@@ -400,10 +414,14 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
           the entire folder can be copied between machines.
         </StatusText>
         <StatusText style={{ marginTop: '0.5em', color: '#0ff' }}>
-          To build the portable app, clone the repository and run:{' '}
+          To build the portable app yourself, clone the repository and run:{' '}
           <code style={{ background: '#111', padding: '0.15em 0.4em', borderRadius: '3px' }}>
             npm run electron:build
           </code>
+        </StatusText>
+        <StatusText style={{ marginTop: '0.5em', color: '#0ff' }}>
+          If you just want an easy download, the releases page on GitHub will have the program already bundled.
+          Simply install the latest release and you're good to go!
         </StatusText>
       </Instructions>
 

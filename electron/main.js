@@ -24,7 +24,7 @@ const fs = require('fs');
 // entire folder is self-contained and transferrable.
 const portableDir = process.env.PORTABLE_EXECUTABLE_DIR;
 if (portableDir) {
-  const portableDataPath = path.join(portableDir, 'ALTER EGO Data');
+  const portableDataPath = path.join(portableDir, 'Data');
   if (!fs.existsSync(portableDataPath)) {
     fs.mkdirSync(portableDataPath, { recursive: true });
   }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.l4w1i3t.alterego",
-  "productName": "ALTER EGO",
+  "productName": "ALTEREGO",
   "directories": {
     "output": "electron-dist"
   },
@@ -22,7 +22,7 @@
     "icon": "public/assets/icons/icon-512x512.png"
   },
   "portable": {
-    "artifactName": "${productName} Portable ${version}.${ext}"
+    "artifactName": "${productName}.${ext}"
   },
   "mac": {
     "target": ["dmg"],

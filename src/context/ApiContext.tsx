@@ -205,7 +205,16 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [currentPersona, setCurrentPersona] = useState<string>('ALTER EGO');
+  // Initialise from settings so the first loadPersonaHistory targets the
+  // correct persona (avoids loading 'ALTER EGO' then immediately reloading).
+  const [currentPersona, setCurrentPersona] = useState<string>(() => {
+    try {
+      const s = loadSettings();
+      return s.activeCharacter || 'ALTER EGO';
+    } catch {
+      return 'ALTER EGO';
+    }
+  });
   const [activeSessionId, setActiveSessionId] = useState<string>('');
 
   // Create an LTM-safe representation of a message, enriching with image refs (not shown in chat UI)
