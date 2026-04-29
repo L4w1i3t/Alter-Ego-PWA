@@ -4,19 +4,14 @@ import SoftwareDetails from './SoftwareDetails';
 import PersonaManager from './PersonaManager';
 import VoiceModelManager from './VoiceModelManager';
 import ApiKeyManager from './ApiKeyManager';
+import ModelSettings from './ModelSettings';
 import FactoryReset from './FactoryReset';
 import { DesktopInstall } from './DesktopInstall';
-import { loadSettings, saveSettings } from '../../utils/storageUtils';
 import { isElectronEnvironment } from '../../utils/electronUtils';
 import MemoryAndHistory from './MemoryAndHistory';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
-import OpenSourceSettings from './OpenSourceSettings';
 import DataManagement from './DataManagement';
-import {
-  handleOpenSourceSelection,
-  getOpenSourceStatus,
-} from '../../utils/openSourceWip';
 import {
   KeyIcon,
   HeadphonesIcon,
@@ -27,6 +22,7 @@ import {
   InfoIcon,
   WarningIcon,
   ShieldIcon,
+  StarIcon,
 } from '../Common/Icons';
 
 const SettingsOverlay = styled.div`
@@ -54,7 +50,16 @@ const SettingsPanel = styled.div`
   overflow-y: auto;
 
   @media (max-width: 768px) {
-    width: 90vw; /* Fixed width for larger screens */
+    width: 90vw;
+    padding: 1.2em;
+  }
+
+  @media (max-width: 480px) {
+    width: 95vw;
+    max-width: 95vw;
+    padding: 1em 0.8em;
+    border-radius: 0.3em;
+  }
 `;
 
 const SettingsGrid = styled.div`
@@ -62,21 +67,44 @@ const SettingsGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 1em;
   margin-bottom: 1.5em;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 0.75em;
+  }
 `;
 
-const SettingsCategory = styled.div`
+const SettingsCategory = styled.button.attrs({ type: 'button' })`
   border: 1px solid #0f03;
   padding: 1em;
   border-radius: 0.3em;
+  background: #000;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  width: 100%;
   transition: all 0.2s ease;
   cursor: pointer;
 
   &:hover {
     background-color: #0f01;
     border-color: #0f0;
+    /* Ensure text/icon color stays visible on hover (override global button:hover)
+       so only background and border change. Inline styles (e.g. danger) still win. */
+    color: #0f0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #0ff;
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.8em;
   }
 `;
-
+// category title and icon should not disappear when hovered over, only the background and border should change color. The text color should remain the same to ensure readability and consistency across the UI.
+// so fix that
 const CategoryTitle = styled.h3`
   margin: 0;
   margin-bottom: 0.5em;
@@ -92,12 +120,22 @@ const CategoryDescription = styled.p`
 const CategoryIcon = styled.div`
   font-size: 1.5em;
   margin-bottom: 0.5em;
+
+  @media (max-width: 480px) {
+    font-size: 1.3em;
+    margin-bottom: 0.3em;
+  }
 `;
 
 const SettingsTitle = styled.h2`
   margin-top: 0;
   margin-bottom: 1em;
   font-size: 1.2em;
+
+  @media (max-width: 480px) {
+    font-size: 1.1em;
+    margin-bottom: 0.75em;
+  }
 `;
 
 const SettingsList = styled.ul`
@@ -198,206 +236,19 @@ const CloseButton = styled.button`
   }
 `;
 
-const ModelSelection = styled.div`
-  margin-top: 1.5em;
-  padding-top: 1em;
-  border-top: 1px solid #0f03;
-
-  @media (min-width: 769px) {
-    margin-top: 2em;
-    padding-top: 1.5em;
-    border-top: 2px solid #0f03;
-  }
-
-  @media (max-width: 768px) {
-    margin-top: 2em;
-    padding-top: 1.5em;
-    border-top: 2px solid #0f03;
-  }
-`;
-
-const ModelTitle = styled.h3`
-  font-size: 1em;
-  margin-bottom: 0.5em;
-`;
-
-const ModelOptions = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5em;
-  align-items: center;
-
-  @media (min-width: 769px) {
-    gap: 1em;
-    flex-wrap: wrap;
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 1.5em;
-    align-items: stretch;
-  }
-`;
-
-const WipInfoButton = styled.button`
-  background: transparent;
-  border: 1px solid #ff8800;
-  color: #ff8800;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  font-size: 0.7em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 0.3em;
-  flex-shrink: 0;
-
-  &:hover {
-    background: #ff8800;
-    color: #000;
-  }
-
-  @media (min-width: 769px) {
-    width: 32px;
-    height: 32px;
-    font-size: 0.85em;
-    margin-left: 0.5em;
-    border-width: 2px;
-    font-weight: bold;
-  }
-
-  @media (max-width: 768px) {
-    width: 2.5em;
-    height: 2.5em;
-    font-size: 1em;
-    margin-left: 0.8em;
-    border-width: 2px;
-    touch-action: manipulation;
-  }
-`;
-
-// Fix the ModelButton styled component using shouldForwardProp
-const ModelButton = styled.button.withConfig({
-  shouldForwardProp: prop => !['isActive', 'isWip'].includes(prop),
-})<{ isActive?: boolean; isWip?: boolean }>`
-  padding: 0.5em 1em;
-  margin: 0 0.5em;
-  background: ${props => {
-    if (props.isWip) return props.isActive ? '#ff8800' : 'transparent';
-    return props.isActive ? '#0f0' : 'transparent';
-  }};
-  color: ${props => {
-    if (props.isWip) return props.isActive ? '#000' : '#ff8800';
-    return props.isActive ? '#000' : '#0f0';
-  }};
-  border: 1px solid ${props => (props.isWip ? '#ff8800' : '#0f0')};
-  cursor: pointer;
-  position: relative;
-  border-radius: 0.3em;
-  flex-shrink: 0;
-
-  &:hover {
-    background: ${props => {
-      if (props.isWip) return '#ff8800';
-      return props.isActive ? '#0f0' : '#0a0';
-    }};
-    color: #000;
-  }
-
-  ${props =>
-    props.isWip &&
-    `
-    &::after {
-      content: 'WIP';
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #ff8800;
-      color: #000;
-      font-size: 0.6em;
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-weight: bold;
-    }
-  `}
-
-  @media (min-width: 769px) {
-    padding: 0.8em 1.6em;
-    margin: 0 0.4em;
-    font-size: 1em;
-    min-width: 120px;
-    border-width: 2px;
-    font-weight: 500;
-
-    ${props =>
-      props.isWip &&
-      `
-      &::after {
-        top: -10px;
-        right: -10px;
-        font-size: 0.65em;
-        padding: 3px 5px;
-      }
-    `}
-  }
-
-  @media (max-width: 768px) {
-    padding: 1em 1.5em;
-    margin: 0;
-    font-size: 1.1em;
-    border-radius: 0.3em;
-    border-width: 2px;
-    min-height: 3em;
-    flex: 1;
-    touch-action: manipulation;
-
-    ${props =>
-      props.isWip &&
-      `
-      &::after {
-        top: -12px;
-        right: -12px;
-        font-size: 0.8em;
-        padding: 4px 6px;
-        border-radius: 4px;
-      }
-    `}
-  }
-`;
-
-const StatusMessage = styled.p`
-  margin-top: 1em;
-  text-align: center;
-  font-style: italic;
-  color: #0f0;
-`;
-
 interface SettingsProps {
   onClose: () => void;
-  onModelChange?: (model: string) => void;
   initialView?: string;
 }
 
 const Settings: React.FC<SettingsProps> = ({
   onClose,
-  onModelChange,
   initialView,
 }) => {
   const [currentView, setCurrentView] = useState<string | null>(
     initialView || null
   );
-  const [selectedModel, setSelectedModel] = useState<string>('Open Source');
-  const [status, setStatus] = useState<string | null>(null);
 
-  // Load the currently selected model
-  useEffect(() => {
-    const settings = loadSettings();
-    if (settings.selectedModel) {
-      setSelectedModel(settings.selectedModel);
-    }
-  }, []);
   // Scroll to top when view changes (fixes mobile scroll position issue)
   useEffect(() => {
     const settingsPanel = document.querySelector(
@@ -425,54 +276,19 @@ const Settings: React.FC<SettingsProps> = ({
   const handleBack = () => {
     setCurrentView(null);
   };
-  const handleModelSelect = (model: string) => {
-    if (model === selectedModel) return;
-
-    // Handle Open Source selection with WIP check
-    if (model === 'Open Source') {
-      const wipStatus = getOpenSourceStatus();
-      if (wipStatus.isWip) {
-        handleOpenSourceSelection();
-        return;
-      }
-    }
-
-    setSelectedModel(model);
-
-    // Save the new model selection
-    const settings = loadSettings();
-    saveSettings({
-      ...settings,
-      selectedModel: model,
-    });
-
-    setStatus('Model changed to ' + model + '. Reloading...');
-
-    // Trigger the model change in the parent
-    if (onModelChange) {
-      onModelChange(model);
-    }
-
-    // Reload the app after a short delay
-    // This reload won't show the warming up screen because we've saved the model selection
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
-  };
-
   // Render the appropriate component based on the current view
   const renderContent = () => {
     switch (currentView) {
       case 'Manage API Keys':
         return <ApiKeyManager onBack={handleBack} />;
+      case 'AI Models':
+        return <ModelSettings onBack={handleBack} />;
       case 'Manage Voice Models':
         return <VoiceModelManager onBack={handleBack} />;
       case 'Manage Personas':
         return <PersonaManager onBack={handleBack} />;
       case 'Memory & History':
         return <MemoryAndHistory onBack={handleBack} />;
-      case 'Open Source Setup':
-        return <OpenSourceSettings onBack={handleBack} />;
       case 'Miscellaneous':
         return <MiscellaneousSettings onBack={handleBack} />;
       case 'Data Management':
@@ -498,7 +314,16 @@ const Settings: React.FC<SettingsProps> = ({
                 </CategoryIcon>
                 <CategoryTitle>API Keys</CategoryTitle>
                 <CategoryDescription>
-                  Configure OpenAI and ElevenLabs API keys
+                  Configure provider and voice API keys
+                </CategoryDescription>
+              </SettingsCategory>
+              <SettingsCategory onClick={() => handleMenuClick('AI Models')}>
+                <CategoryIcon>
+                  <StarIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
+                <CategoryTitle>AI Models</CategoryTitle>
+                <CategoryDescription>
+                  Choose OpenAI, OpenRouter, or Ollama models
                 </CategoryDescription>
               </SettingsCategory>
               <SettingsCategory
@@ -532,30 +357,6 @@ const Settings: React.FC<SettingsProps> = ({
                 <CategoryTitle>Memory & History</CategoryTitle>
                 <CategoryDescription>
                   Review history, adjust memory limits, and clear stored data
-                </CategoryDescription>
-              </SettingsCategory>
-              <SettingsCategory
-                onClick={
-                  process.env.NODE_ENV === 'production'
-                    ? undefined
-                    : () => handleMenuClick('Open Source Setup')
-                }
-                style={{
-                  cursor:
-                    process.env.NODE_ENV === 'production'
-                      ? 'not-allowed'
-                      : 'pointer',
-                  opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1,
-                }}
-              >
-                <CategoryIcon>
-                  <WrenchIcon size={20} aria-hidden="true" />
-                </CategoryIcon>
-                <CategoryTitle>Open Source Setup</CategoryTitle>
-                <CategoryDescription>
-                  {process.env.NODE_ENV === 'production'
-                    ? 'Backend not ready in production'
-                    : 'Configure local AI models and backend'}
                 </CategoryDescription>
               </SettingsCategory>
               <SettingsCategory
@@ -617,51 +418,7 @@ const Settings: React.FC<SettingsProps> = ({
               <CategoryDescription style={{ color: '#f007' }}>
                 Delete all data and restore default settings
               </CategoryDescription>
-            </SettingsCategory>{' '}
-            <ModelSelection>
-              <ModelTitle>AI Provider:</ModelTitle>
-              <ModelOptions>
-                {' '}
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <ModelButton
-                    isActive={selectedModel === 'Open Source'}
-                    isWip={getOpenSourceStatus().isWip}
-                    onClick={
-                      process.env.NODE_ENV === 'production'
-                        ? undefined
-                        : () => handleModelSelect('Open Source')
-                    }
-                    style={{
-                      cursor:
-                        process.env.NODE_ENV === 'production'
-                          ? 'not-allowed'
-                          : 'pointer',
-                      opacity: process.env.NODE_ENV === 'production' ? 0.5 : 1,
-                    }}
-                  >
-                    Open Source
-                  </ModelButton>
-                  {getOpenSourceStatus().isWip && (
-                    <WipInfoButton
-                      onClick={e => {
-                        e.stopPropagation();
-                        setCurrentView('OpenSourceWipInfo');
-                      }}
-                      title="Click for more information about Open Source WIP status"
-                    >
-                      i
-                    </WipInfoButton>
-                  )}
-                </div>
-                <ModelButton
-                  isActive={selectedModel === 'openai'}
-                  onClick={() => handleModelSelect('openai')}
-                >
-                  OpenAI
-                </ModelButton>
-              </ModelOptions>
-            </ModelSelection>
-            {status && <StatusMessage>{status}</StatusMessage>}
+            </SettingsCategory>
           </>
         );
     }

@@ -401,6 +401,11 @@ const SectionCard = styled.div`
   border-radius: 0.4em;
   padding: 1.5em;
   background: #001000;
+  box-sizing: border-box;
+
+  @media (max-width: 480px) {
+    padding: 1em;
+  }
 `;
 
 const SectionTitle = styled.h3`
@@ -429,6 +434,7 @@ const ManageButtonRow = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
+    gap: 0.8em;
   }
 `;
 

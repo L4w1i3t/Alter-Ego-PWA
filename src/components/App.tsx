@@ -8,8 +8,8 @@ import { logger } from '../utils/logger';
 import { useAppState } from '../hooks/useAppState';
 import DevToolsMetrics from './DevTools/DevToolsMetrics';
 const Settings = lazy(() => import('./Settings/Settings'));
-const ModelSelection = lazy(() => import('./Sections/ModelSelection'));
 const WarmingUp = lazy(() => import('./Sections/WarmingUp'));
+const SplashScreen = lazy(() => import('./Sections/SplashScreen'));
 const CharacterSelector = lazy(() => import('./Sections/CharacterSelector'));
 const OverlayCompanion = lazy(() => import('./Overlay/OverlayCompanion'));
 import NotificationManager from './Common/NotificationManager';
@@ -21,6 +21,8 @@ import { GlobalStyles } from '../styles/GlobalStyles';
 import { applySettingsToCssVariables } from '../styles/GlobalStyles';
 import '../styles/mobile.css';
 import { EVENTS } from '../config/constants';
+import { useAutonomy } from '../hooks/useAutonomy';
+import { useLanChat } from '../hooks/useLanChat';
 import {
   loadSettings,
   saveSettings,
@@ -69,6 +71,12 @@ const AppContainer = styled.div`
 const App: React.FC = () => {
   const { setCurrentPersona } = useApi();
 
+  // Activate autonomy scheduling (Electron-only, no-op in PWA)
+  useAutonomy();
+
+  // Activate LAN peer-to-peer chat (Electron-only, no-op in PWA)
+  useLanChat();
+
   // Log mounting for debugging
   useEffect(() => {
     logger.debug('App component mounted');
@@ -91,7 +99,7 @@ const App: React.FC = () => {
   const {
     showSettings,
     settingsInitialView,
-    showModelSelection,
+    showSplashScreen,
     showWarmingUp,
     showCharacterSelector,
     selectedModel,
@@ -104,7 +112,7 @@ const App: React.FC = () => {
   const {
     setShowSettings,
     setSettingsInitialView,
-    setShowModelSelection,
+    setShowSplashScreen,
     setShowWarmingUp,
     setShowCharacterSelector,
     setSelectedModel,
@@ -311,50 +319,24 @@ const App: React.FC = () => {
     }
   };
 
-  const handleModelSelection = (model: string) => {
-    setSelectedModel(model);
-    setShowModelSelection(false);
-
-    // Only show warming up on first load
-    if (isFirstLoad) {
-      setShowWarmingUp(true);
-
-      // Simulate warming up process
-      let progress = 10;
-      const interval = setInterval(() => {
-        progress += 5;
-        const progressBar = document.getElementById('warmup-progress-bar');
-        if (progressBar) {
-          progressBar.style.width = `${progress}%`;
-        }
-
-        if (progress >= 100) {
-          clearInterval(interval);
-          setShowWarmingUp(false);
-          setIsFirstLoad(false);
-        }
-      }, 300);
-    }
-    // Save the selected model to settings
+  const completeFirstStartup = () => {
+    const settings = loadSettings();
     saveSettings({
-      selectedModel: model,
-      activeCharacter,
-      voiceModel,
-      memoryBuffer: loadSettings().memoryBuffer, // Preserve existing memoryBuffer value
-      textSpeed: loadSettings().textSpeed, // Preserve existing textSpeed value
+      ...settings,
+      hasCompletedFirstStartup: true,
     });
+    setShowSplashScreen(false);
+    setIsFirstLoad(false);
   };
-  const handleModelChange = (model: string) => {
-    setSelectedModel(model);
 
-    // Save the selected model to settings
-    saveSettings({
-      selectedModel: model,
-      activeCharacter,
-      voiceModel,
-      memoryBuffer: loadSettings().memoryBuffer,
-      textSpeed: loadSettings().textSpeed,
-    });
+  const handleSplashStart = () => {
+    completeFirstStartup();
+  };
+
+  const handleSplashConfigure = () => {
+    completeFirstStartup();
+    setSettingsInitialView('AI Models');
+    setShowSettings(true);
   };
 
   const handleLoadCharacterClick = () => {
@@ -385,11 +367,6 @@ const App: React.FC = () => {
     setShowCharacterSelector(false);
   };
 
-  const handleShowWipInfo = () => {
-    setSettingsInitialView('OpenSourceWipInfo');
-    setShowSettings(true);
-  };
-
   const handleCloseCharacterSelector = () => {
     setShowCharacterSelector(false);
   };
@@ -412,10 +389,6 @@ const App: React.FC = () => {
 
     if (settings.selectedModel) {
       setSelectedModel(settings.selectedModel);
-      setIsFirstLoad(false); // We have a selected model, so not first load
-    } else {
-      // Only show model selection if no model has been selected yet
-      setShowModelSelection(true);
     }
 
     if (settings.activeCharacter) {
@@ -596,10 +569,10 @@ const App: React.FC = () => {
       <GlobalStyles />
       <InstallBanner />
       <Suspense fallback={null}>
-        {showModelSelection && (
-          <ModelSelection
-            onSelectModel={handleModelSelection}
-            onShowWipInfo={handleShowWipInfo}
+        {showSplashScreen && (
+          <SplashScreen
+            onStart={handleSplashStart}
+            onConfigure={handleSplashConfigure}
           />
         )}
         {showWarmingUp && <WarmingUp />}
@@ -628,7 +601,6 @@ const App: React.FC = () => {
               setShowSettings(false);
               setSettingsInitialView(undefined);
             }}
-            onModelChange={handleModelChange}
             initialView={settingsInitialView}
           />
         )}

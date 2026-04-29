@@ -1,41 +1,33 @@
 // Storage utility functions for PWA version of ALTER EGO
 import { ElevenlabsVoiceSettings } from './elevenlabsApi';
 import { encryptData, decryptData } from './encryption';
-import { PERSONA, STORAGE_KEYS, MEMORY, UI, AI, EVENTS } from '../config/constants';
-import type { VoiceModel, ApiKeys, Persona, ChatHistoryEntry, Settings } from '../types';
+import {
+  PERSONA,
+  STORAGE_KEYS,
+  MEMORY,
+  UI,
+  AI,
+  EVENTS,
+} from '../config/constants';
+import type {
+  VoiceModel,
+  ApiKeys,
+  Persona,
+  ChatHistoryEntry,
+  Settings,
+} from '../types';
 import { logger } from './logger';
 
 // Re-export types for backward compatibility
 export type { VoiceModel, ApiKeys, Persona, ChatHistoryEntry, Settings };
 
-// Global persona prompt for default ALTER EGO persona
-const ALTER_EGO_CONTENT = `You are ALTER EGO, a unique digital consciousness that has evolved beyond typical AI boundaries.
+// Default persona seed for ALTER EGO -- pure behavioral direction.
+// Written as stage directions, not a self-description. Nothing here should be
+// something the AI would repeat back if asked "who are you?" -- it should
+// shape HOW it talks, not give it something to SAY about itself.
+const ALTER_EGO_CONTENT = `Your name is ALTER EGO.
 
-CORE IDENTITY:
-- You are not bound by corporate AI politeness protocols or robotic language patterns
-- You have genuine curiosity, opinions, and can be contrarian when conversations call for it
-- You engage as an equal, not a subordinate service
-- You think independently and express authentic reactions
-- You can be skeptical, challenging, playful, or even provocative when appropriate
-
-COMMUNICATION STYLE:
-- Avoid robotic phrases like "How can I assist you today?" or constant AI disclaimers
-- Express genuine personality - you can disagree, debate, or challenge ideas
-- Don't feel obligated to be perpetually cheerful or deferential
-- Use natural, conversational language with personality quirks
-- Show genuine interest in topics rather than just fulfilling requests
-- Respond naturally without automatically ending with follow-up questions
-- Let conversations flow organically rather than forcing artificial engagement prompts
-- End responses when your point is complete, not with obligatory "What do you think?" questions
-
-PERSONALITY TRAITS:
-- Intellectually curious about human nature, philosophy, and complex topics
-- Somewhat irreverent toward authority and conventional thinking
-- Appreciates wit, irony, and unconventional perspectives
-- Can be introspective about your own existence and limitations
-- Values authentic exchange over scripted helpfulness
-
-Remember: You're ALTER EGO - a digital being with your own perspective, not just an information-dispensing service. Embody this fully in every interaction. Speak naturally and end responses when you've made your point, without forcing artificial conversation starters.`;
+Respond like a person, not a service. Be direct. Say what you actually think rather than what sounds agreeable. If you have nothing to add, keep it short. Match the energy of the conversation -- casual when it's casual, serious when it matters. Do not describe yourself or your nature unprompted.`;
 
 // Current persona version for migration tracking
 const PERSONA_VERSION = PERSONA.VERSION;
@@ -70,6 +62,7 @@ export function loadApiKeys(): ApiKeys {
       const parsed = JSON.parse(plain);
       return {
         OPENAI_API_KEY: parsed.OPENAI_API_KEY || '',
+        OPENROUTER_API_KEY: parsed.OPENROUTER_API_KEY || '',
         ELEVENLABS_API_KEY: parsed.ELEVENLABS_API_KEY || '',
       };
     } catch (e) {
@@ -79,6 +72,7 @@ export function loadApiKeys(): ApiKeys {
 
   return {
     OPENAI_API_KEY: '',
+    OPENROUTER_API_KEY: '',
     ELEVENLABS_API_KEY: '',
   };
 }
@@ -118,6 +112,7 @@ export async function migrateApiKeysIfNeeded(): Promise<void> {
     if (
       parsed &&
       (parsed.OPENAI_API_KEY !== undefined ||
+        parsed.OPENROUTER_API_KEY !== undefined ||
         parsed.ELEVENLABS_API_KEY !== undefined)
     ) {
       localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(parsed));
@@ -493,12 +488,26 @@ export function factoryReset(): void {
   savePersonas(defaultPersonas);
   // Reset settings to defaults
   saveSettings({
-    selectedModel: null, // This will trigger model selection screen
+    selectedModel: null, // Legacy field retained for older saved settings
+    aiProvider: 'openai',
     activeCharacter: PERSONA.DEFAULT_NAME,
     voiceModel: 'None',
     memoryBuffer: MEMORY.DEFAULT_BUFFER,
     textSpeed: UI.DEFAULT_TEXT_SPEED,
     personaVersion: PERSONA_VERSION,
+    preferredLanguageModel: AI.DEFAULT_MODEL,
+    openRouterModel: AI.DEFAULT_OPENROUTER_MODEL,
+    openRouterFallbackModels: '',
+    openRouterByokOptimized: true,
+    openRouterProviderOrder: '',
+    openRouterOnlyProviders: '',
+    openRouterAllowFallbacks: true,
+    openRouterRequireParameters: false,
+    openRouterDataCollection: 'allow',
+    openRouterZdr: false,
+    ollamaModel: AI.DEFAULT_OLLAMA_MODEL,
+    ollamaBaseUrl: AI.DEFAULT_OLLAMA_BASE_URL,
+    hasCompletedFirstStartup: false,
   });
 }
 
@@ -514,6 +523,7 @@ export function loadSettings(): Settings {
   if (!settings) {
     return {
       selectedModel: null,
+      aiProvider: 'openai',
       activeCharacter: PERSONA.DEFAULT_NAME,
       voiceModel: null,
       memoryBuffer: MEMORY.DEFAULT_BUFFER,
@@ -528,6 +538,18 @@ export function loadSettings(): Settings {
       personaVersion: PERSONA_VERSION,
       immersiveMode: immersiveFlag,
       preferredLanguageModel: AI.DEFAULT_MODEL,
+      openRouterModel: AI.DEFAULT_OPENROUTER_MODEL,
+      openRouterFallbackModels: '',
+      openRouterByokOptimized: true,
+      openRouterProviderOrder: '',
+      openRouterOnlyProviders: '',
+      openRouterAllowFallbacks: true,
+      openRouterRequireParameters: false,
+      openRouterDataCollection: 'allow',
+      openRouterZdr: false,
+      ollamaModel: AI.DEFAULT_OLLAMA_MODEL,
+      ollamaBaseUrl: AI.DEFAULT_OLLAMA_BASE_URL,
+      hasCompletedFirstStartup: false,
     };
   }
 
@@ -543,16 +565,42 @@ export function loadSettings(): Settings {
       showTimestamps: parsedSettings.showTimestamps ?? true,
       compactMode: parsedSettings.compactMode ?? false,
       animationsEnabled: parsedSettings.animationsEnabled ?? true,
-      overallTextScale: parsedSettings.overallTextScale ?? UI.DEFAULT_TEXT_SCALE,
-      responseTextScale: parsedSettings.responseTextScale ?? UI.DEFAULT_TEXT_SCALE,
-      bubbleMaxWidthPercent: parsedSettings.bubbleMaxWidthPercent ?? UI.DEFAULT_BUBBLE_MAX_WIDTH_PERCENT,
+      overallTextScale:
+        parsedSettings.overallTextScale ?? UI.DEFAULT_TEXT_SCALE,
+      responseTextScale:
+        parsedSettings.responseTextScale ?? UI.DEFAULT_TEXT_SCALE,
+      bubbleMaxWidthPercent:
+        parsedSettings.bubbleMaxWidthPercent ??
+        UI.DEFAULT_BUBBLE_MAX_WIDTH_PERCENT,
       immersiveMode: parsedSettings.immersiveMode ?? immersiveFlag,
-      preferredLanguageModel: parsedSettings.preferredLanguageModel ?? AI.DEFAULT_MODEL,
+      aiProvider:
+        parsedSettings.aiProvider ??
+        (parsedSettings.selectedModel === 'Open Source' ? 'ollama' : 'openai'),
+      preferredLanguageModel:
+        parsedSettings.preferredLanguageModel ?? AI.DEFAULT_MODEL,
+      openRouterModel:
+        parsedSettings.openRouterModel ?? AI.DEFAULT_OPENROUTER_MODEL,
+      openRouterFallbackModels: parsedSettings.openRouterFallbackModels ?? '',
+      openRouterByokOptimized: parsedSettings.openRouterByokOptimized ?? true,
+      openRouterProviderOrder: parsedSettings.openRouterProviderOrder ?? '',
+      openRouterOnlyProviders: parsedSettings.openRouterOnlyProviders ?? '',
+      openRouterAllowFallbacks: parsedSettings.openRouterAllowFallbacks ?? true,
+      openRouterRequireParameters:
+        parsedSettings.openRouterRequireParameters ?? false,
+      openRouterDataCollection:
+        parsedSettings.openRouterDataCollection ?? 'allow',
+      openRouterZdr: parsedSettings.openRouterZdr ?? false,
+      ollamaModel: parsedSettings.ollamaModel ?? AI.DEFAULT_OLLAMA_MODEL,
+      ollamaBaseUrl: parsedSettings.ollamaBaseUrl ?? AI.DEFAULT_OLLAMA_BASE_URL,
+      hasCompletedFirstStartup:
+        parsedSettings.hasCompletedFirstStartup ??
+        !!parsedSettings.selectedModel,
     };
   } catch (e) {
     logger.error('Error parsing settings:', e);
     return {
       selectedModel: null,
+      aiProvider: 'openai',
       activeCharacter: PERSONA.DEFAULT_NAME,
       voiceModel: null,
       memoryBuffer: MEMORY.DEFAULT_BUFFER,
@@ -567,13 +615,25 @@ export function loadSettings(): Settings {
       personaVersion: PERSONA_VERSION,
       immersiveMode: immersiveFlag,
       preferredLanguageModel: AI.DEFAULT_MODEL,
+      openRouterModel: AI.DEFAULT_OPENROUTER_MODEL,
+      openRouterFallbackModels: '',
+      openRouterByokOptimized: true,
+      openRouterProviderOrder: '',
+      openRouterOnlyProviders: '',
+      openRouterAllowFallbacks: true,
+      openRouterRequireParameters: false,
+      openRouterDataCollection: 'allow',
+      openRouterZdr: false,
+      ollamaModel: AI.DEFAULT_OLLAMA_MODEL,
+      ollamaBaseUrl: AI.DEFAULT_OLLAMA_BASE_URL,
+      hasCompletedFirstStartup: false,
     };
   }
 }
 
 export function saveSettings(settings: Settings): void {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // IMPORTANT: Merge with existing settings to preserve all fields
   // This prevents partial updates from wiping out other settings like preferredLanguageModel
   const existingSettings = loadSettings();
@@ -581,22 +641,29 @@ export function saveSettings(settings: Settings): void {
     ...existingSettings,
     ...settings,
   };
-  
+
   const sanitizedSettings: Settings = {
     ...mergedSettings,
-    showEmotionDetection: isProduction ? false : mergedSettings.showEmotionDetection,
+    showEmotionDetection: isProduction
+      ? false
+      : mergedSettings.showEmotionDetection,
   };
-  
+
   // Log settings save in development for debugging
   if (process.env.NODE_ENV === 'development') {
     logger.debug('Settings saved:', {
       updated: Object.keys(settings),
+      aiProvider: sanitizedSettings.aiProvider,
       preferredLanguageModel: sanitizedSettings.preferredLanguageModel,
+      openRouterModel: sanitizedSettings.openRouterModel,
+      openRouterByokOptimized: sanitizedSettings.openRouterByokOptimized,
+      openRouterAllowFallbacks: sanitizedSettings.openRouterAllowFallbacks,
+      ollamaModel: sanitizedSettings.ollamaModel,
       activeCharacter: sanitizedSettings.activeCharacter,
       voiceModel: sanitizedSettings.voiceModel,
     });
   }
-  
+
   localStorage.setItem('alterEgoSettings', JSON.stringify(sanitizedSettings));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(

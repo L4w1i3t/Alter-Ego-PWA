@@ -387,6 +387,13 @@ const TabContainer = styled.div`
   display: flex;
   border-bottom: 1px solid #0f03;
   margin-bottom: 1.5em;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @media (max-width: 480px) {
+    gap: 0;
+    margin-bottom: 1em;
+  }
 `;
 
 const Tab = styled.div.withConfig({
@@ -401,9 +408,18 @@ const Tab = styled.div.withConfig({
   border-top-left-radius: 0.3em;
   border-top-right-radius: 0.3em;
   margin-right: 0.5em;
+  white-space: nowrap;
+  flex-shrink: 0;
+
   &:hover {
     color: #0f0;
     background: ${props => (props.active ? '#001500' : '#000500')};
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.5em 0.7em;
+    font-size: 0.9em;
+    margin-right: 0.3em;
   }
 `;
 
@@ -446,12 +462,23 @@ const PersonaInfoContainer = styled.div`
 const PersonaInfoRow = styled.div`
   display: flex;
   gap: 1em;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.2em;
+  }
 `;
 
 const PersonaInfoLabel = styled.div`
   font-weight: bold;
   color: #0f09;
   width: 100px;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: auto;
+    min-width: 70px;
+  }
 `;
 
 const PersonaInfoValue = styled.div`
@@ -482,6 +509,7 @@ const TemplateGrid = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 0.75em;
   }
 `;
 

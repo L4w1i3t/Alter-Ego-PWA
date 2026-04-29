@@ -150,6 +150,73 @@ export const validateElevenLabsKey = async (
   }
 };
 
+export const validateOpenRouterKey = async (
+  key: string
+): Promise<KeyValidationResult> => {
+  if (!key) {
+    return { valid: true };
+  }
+
+  if (!key.startsWith('sk-or-')) {
+    return {
+      valid: false,
+      error: 'OpenRouter API key should start with "sk-or-"',
+    };
+  }
+
+  if (!/^sk-or-[a-zA-Z0-9_-]+$/.test(key)) {
+    return {
+      valid: false,
+      error: 'OpenRouter API key contains invalid characters',
+    };
+  }
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/models', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (response.status === 401) {
+      return { valid: false, error: 'OpenRouter API key is invalid' };
+    }
+
+    if (response.status === 429) {
+      return {
+        valid: true,
+        warnings: ['OpenRouter API key appears valid but rate limited.'],
+      };
+    }
+
+    if (response.status === 403) {
+      return {
+        valid: true,
+        warnings: [
+          'OpenRouter key was accepted but may lack access to some models or account features.',
+        ],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        valid: false,
+        error: `OpenRouter validation failed: ${response.status}`,
+      };
+    }
+
+    return { valid: true };
+  } catch {
+    return {
+      valid: false,
+      error:
+        'Unable to validate OpenRouter API key - please check your internet connection',
+    };
+  }
+};
+
 /**
  * Check if API keys might be compromised (very basic patterns)
  */

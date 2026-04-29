@@ -1,0 +1,33 @@
+{
+  "name": "alter-ego-experiment-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "External experiment data collection and analysis pipeline for ALTER EGO research builds.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "collect": "node dist/index.js collect",
+    "status": "node dist/index.js status",
+    "export": "node dist/index.js export",
+    "analyze": "node dist/index.js analyze",
+    "dev": "ts-node src/index.ts",
+    "bench:affect": "ts-node src/benchmarkAffect.ts",
+    "sim:forgetting": "ts-node src/simForgettingCurve.ts",
+    "sim:wm": "ts-node src/simWmAblation.ts"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "csv-stringify": "^6.5.2",
+    "sql.js": "^1.11.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/sql.js": "^1.4.10",
+    "@types/ws": "^8.5.13",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  }
+}

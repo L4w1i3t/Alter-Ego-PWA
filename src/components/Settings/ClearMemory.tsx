@@ -50,7 +50,7 @@ const ButtonContainer = styled.div`
     flex-direction: column;
     margin-top: 2em;
     gap: 1.2em;
-    max-width: 300px;
+    max-width: 100%;
   }
 `;
 

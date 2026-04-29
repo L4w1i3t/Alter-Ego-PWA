@@ -231,6 +231,7 @@ interface Message {
   text: string;
   images?: string[]; // Array of image URLs for display
   instant?: boolean; // When true, bypass typing animation (e.g. restored history)
+  sender?: string;   // Display label override (e.g. peer name in LAN conversations)
 }
 
 interface MainContentProps {
@@ -333,7 +334,17 @@ const MainContent: React.FC<MainContentProps> = ({
     if (source.length) {
       const restored: Message[] = source
         .filter(m => m.role === 'user' || m.role === 'assistant')
-        .map(m => ({ isUser: m.role === 'user', text: m.content, instant: true }));
+        // Hide internal autonomy nudge messages from the display,
+        // but keep LAN peer messages (they have a sender name)
+        .filter(m => !(m.role === 'user' && m.autonomous && !m.lanPeer))
+        .map(m => ({
+          isUser: m.role === 'user',
+          text: m.content,
+          instant: true,
+          // Restore the peer's display name so it shows their persona label
+          // instead of the generic "You" / alter ego name
+          ...(m.lanPeer && m.sender && { sender: m.sender }),
+        }));
       setMessages(capMessages(restored));
     } else {
       // No history at all, show the welcome message
@@ -400,14 +411,16 @@ const MainContent: React.FC<MainContentProps> = ({
         });
       }
 
-      // Add user message to history, capped to prevent unbounded growth
+      // Add user message to history, capped to prevent unbounded growth.
+      // Mark all existing AI messages as instant so only the newest response animates.
       setMessages(prev => {
+        const settled = prev.map(m => m.isUser ? m : { ...m, instant: true });
         return capMessages([
-          ...prev,
+          ...settled,
           {
             isUser: true,
             text: query,
-            ...(images && images.length > 0 && { images: [] }), // Will be updated by reader above
+            ...(images && images.length > 0 && { images: [] }),
           },
         ]);
       });
@@ -426,20 +439,48 @@ const MainContent: React.FC<MainContentProps> = ({
         userEmotions = [],
         responseEmotions = [],
         emotion = 'neutral',
+        lanPeer = false,
       } = event.detail;
 
-      // Update emotions
-      setUserEmotions(userEmotions);
-      setResponseEmotions(responseEmotions);
-      setCurrentEmotion(emotion);
+      // Only update emotion display for non-LAN messages. LAN peer exchanges
+      // fire rapidly and would cause the avatar/emotion boxes to flicker with
+      // emotions from the peer conversation rather than the actual user's.
+      if (!lanPeer) {
+        setUserEmotions(userEmotions);
+        setResponseEmotions(responseEmotions);
+        setCurrentEmotion(emotion);
+      } else {
+        // Clear the THINKING state without adopting the LAN response's emotion
+        setCurrentEmotion('neutral');
+      }
 
       // Hide thinking state
       setIsThinking(false);
 
-      // Add AI response to history, capped to prevent unbounded growth
+      // Add AI response to history, capped to prevent unbounded growth.
+      // Mark all prior AI messages as instant so only the new one animates.
       setMessages(prev => {
-        return capMessages([...prev, { isUser: false, text: response }]);
+        const settled = prev.map(m => m.isUser ? m : { ...m, instant: true });
+        return capMessages([...settled, { isUser: false, text: response }]);
       });
+    };
+
+    // Listen for LAN peer messages (display the remote peer's words in the chat)
+    const handleLanPeerMessage = (event: CustomEvent<any>) => {
+      if (!event.detail) return;
+      const { peerName, content } = event.detail;
+
+      setMessages(prev => {
+        const settled = prev.map(m => m.isUser ? m : { ...m, instant: true });
+        return capMessages([
+          ...settled,
+          { isUser: true, text: content, sender: peerName || 'PEER' },
+        ]);
+      });
+
+      // Show thinking state while our AI processes the peer's message
+      setIsThinking(true);
+      setCurrentEmotion('THINKING');
     };
 
     // Listen for clear chat display event
@@ -459,6 +500,10 @@ const MainContent: React.FC<MainContentProps> = ({
       handleQueryResponse as EventListener
     );
     window.addEventListener(
+      'lan-peer-message',
+      handleLanPeerMessage as EventListener
+    );
+    window.addEventListener(
       'clear-chat-display',
       handleClearChatDisplay as EventListener
     );
@@ -472,6 +517,10 @@ const MainContent: React.FC<MainContentProps> = ({
       window.removeEventListener(
         'query-response',
         handleQueryResponse as EventListener
+      );
+      window.removeEventListener(
+        'lan-peer-message',
+        handleLanPeerMessage as EventListener
       );
       window.removeEventListener(
         'clear-chat-display',
@@ -491,7 +540,7 @@ const MainContent: React.FC<MainContentProps> = ({
             <MessageContainer key={index}>
               {message.isUser ? (
                 <>
-                  <UserMessage>YOU: {message.text}</UserMessage>
+                  <UserMessage>{message.sender || 'YOU'}: {message.text}</UserMessage>
                   {/* Display user images if present */}
                   {message.images && message.images.length > 0 && (
                     <ImageContainer>

@@ -580,6 +580,27 @@ export const EyeIcon: React.FC<IconProps> = ({ size = 16, ...rest }) => (
   </svg>
 );
 
+// Lightning bolt icon for the Autonomy feature
+export const BoltIcon: React.FC<IconProps> = ({ size = 18, ...rest }) => (
+  <svg
+    width={toPx(size)}
+    height={toPx(size)}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    {...rest}
+  >
+    <path
+      d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+      fill="none"
+    />
+  </svg>
+);
+
 export default {
   HamburgerIcon,
   ImageIcon,
@@ -609,4 +630,5 @@ export default {
   PauseIcon,
   PencilIcon,
   EyeIcon,
+  BoltIcon,
 };

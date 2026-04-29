@@ -48,8 +48,14 @@ import {
   buildFactsLine,
 } from '../memory/associativeMemory';
 import { buildShortTermContext } from '../utils/contextBuilder';
+import { buildIdentityContext, onUserMessage as onIdentityUserMessage } from '../services/identityEvolution';
 import { logger } from '../utils/logger';
+import { experimentTelemetry } from '../utils/experimentTelemetry';
 import type { Message } from '../types';
+import {
+  getActiveModelLabel,
+  getCognitiveContextProfile,
+} from '../utils/aiProviders';
 
 const DEFAULT_MEMORY_BUFFER = MEMORY.DEFAULT_BUFFER;
 const normalizeMemoryBuffer = (value?: number): number => {
@@ -147,6 +153,9 @@ const toHistoryRecord = (messages: Message[]) =>
       : {}),
     ...(msg.images && msg.images.length ? { images: msg.images } : {}),
     ...(msg.imageIds && msg.imageIds.length ? { imageIds: msg.imageIds } : {}),
+    ...(msg.autonomous ? { autonomous: true } : {}),
+    ...(msg.lanPeer ? { lanPeer: true } : {}),
+    ...(msg.sender ? { sender: msg.sender } : {}),
   }));
 
 // Define context types
@@ -156,7 +165,8 @@ interface ApiContextType {
     systemPrompt?: string,
     config?: Partial<AIConfig>,
     personaName?: string,
-    images?: File[] // Add support for image files
+    images?: File[],
+    options?: { autonomous?: boolean; lanPeer?: boolean; lanPeerName?: string }
   ) => Promise<{
     response: string;
     userEmotions: string[];
@@ -264,6 +274,18 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
         if (Array.isArray(anyMsg.imageIds) && anyMsg.imageIds.length) {
           base.imageIds = anyMsg.imageIds as string[];
+        }
+
+        if (anyMsg.autonomous) {
+          base.autonomous = true;
+        }
+
+        if (anyMsg.lanPeer) {
+          base.lanPeer = true;
+        }
+
+        if (anyMsg.sender) {
+          base.sender = anyMsg.sender;
         }
 
         return base;
@@ -585,13 +607,17 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   };
 
   // Function to format memories for RAG
-  const formatMemoriesForRAG = (memories: Message[]): Message[] => {
+  const formatMemoriesForRAG = (
+    memories: Message[],
+    personaName: string,
+    charBudgetPerMemory: number
+  ): Message[] => {
     if (memories.length === 0) return [];
 
     // Add a header to indicate these are from long-term memory
     const header: Message = {
       role: 'system',
-      content: `The following are relevant past conversations with ${currentPersona} retrieved from long-term memory:`,
+      content: `Relevant long-term memories for ${personaName}:`,
       timestamp: new Date().toISOString(),
     };
 
@@ -602,10 +628,14 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           ? '(From past conversation) User asked: '
           : '(From past conversation) ALTER EGO replied: ';
       const { iso } = normalizeTimestamp(msg.timestamp);
+      const content =
+        msg.content.length > charBudgetPerMemory
+          ? `${msg.content.slice(0, Math.max(0, charBudgetPerMemory - 3))}...`
+          : msg.content;
 
       return {
         role: 'system' as const,
-        content: `${prefix}${msg.content}`,
+        content: `${prefix}${content}`,
         timestamp: iso,
       };
     });
@@ -635,12 +665,16 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     systemPrompt: string = 'You are ALTER EGO, an intelligent and helpful AI assistant. This is dummy text to fall back on.',
     config?: Partial<AIConfig>,
     personaName?: string,
-    images?: File[]
+    images?: File[],
+    options?: { autonomous?: boolean; lanPeer?: boolean; lanPeerName?: string }
   ) => {
     // Capture the intended persona up-front. React state updates (setCurrentPersona)
     // are batched and won't reflect until after this async function yields, so we
     // use a local variable throughout to guarantee we query the right persona's data.
     const effectivePersona = personaName ?? currentPersona;
+    const isAutonomous = !!options?.autonomous;
+    const isLanPeer = !!options?.lanPeer;
+    const lanPeerName = options?.lanPeerName;
     if (personaName && personaName !== currentPersona) {
       handleSetCurrentPersona(personaName);
     }
@@ -650,7 +684,27 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
     // Start token tracking for this query
     const sessionId = `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const queryStartMs = performance.now();
     tokenTracker.startQuery(sessionId);
+
+    // Capture settings at query time for telemetry
+    const settingsAtQuery = loadSettings();
+    const activeModel = config?.model || getActiveModelLabel(settingsAtQuery);
+    const activeTemp = config?.temperature ?? 0.9;
+    const activeMaxTok = config?.maxTokens ?? 1000;
+
+    experimentTelemetry.emitQueryStart(sessionId, effectivePersona, {
+      userInput: isAutonomous ? '[autonomous]' : query,
+      inputTokenEstimate: Math.ceil(query.length / 4),
+      inputCharCount: query.length,
+      inputWordCount: query.split(/\s+/).filter(Boolean).length,
+      imageCount: images?.length ?? 0,
+      memoryBufferSize: normalizeMemoryBuffer(settingsAtQuery.memoryBuffer),
+      model: activeModel,
+      temperature: activeTemp,
+      maxTokens: activeMaxTok,
+      autonomous: isAutonomous,
+    });
 
     try {
       let imageUrls: string[] = [];
@@ -707,44 +761,72 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         }
       }
 
-      // Add the new user message to history (with images if any)
+      // Add the new user message to history (with images if any).
+      // Autonomous nudges are transient -- they're sent to the API but
+      // never persisted, so consecutive autonomous messages appear as a
+      // natural AI monologue rather than interleaved ghost-user turns.
+
       const userMessageBase: Message = {
         role: 'user' as const,
         content: query,
         timestamp: new Date().toISOString(),
         ...(imageUrls.length > 0 && { images: imageUrls }),
         ...(imageIds.length > 0 && { imageIds }),
+        ...(isAutonomous && { autonomous: true }),
+        ...(isLanPeer && { lanPeer: true }),
+        ...(lanPeerName && { sender: lanPeerName }),
       };
 
       const { normalized: normalizedUserMessage } =
         normalizeMessageMetadata(userMessageBase);
 
-      const updatedFullHistory: Message[] = [
-        ...conversationHistory,
-        normalizedUserMessage,
-      ]; // Apply memory buffer limitation ONLY for the AI context
+      // For autonomous messages (except LAN peer messages): don't add the
+      // nudge to persisted history. LAN peer messages are real conversation
+      // turns from another persona and must be persisted. We use lanPeerName
+      // as the discriminator: it's only set when processing an actual peer
+      // message, not for our own opener nudge.
+      const updatedFullHistory: Message[] = (isAutonomous && !lanPeerName)
+        ? [...conversationHistory]
+        : [...conversationHistory, normalizedUserMessage];
+
+      // Notify identity evolution service of real user messages (not autonomous
+      // nudges). This increments the message counter and may trigger a
+      // background self-reflection when the threshold is reached.
+      if (!isAutonomous && !isLanPeer) {
+        onIdentityUserMessage(effectivePersona);
+      }
+
+      // Apply memory buffer limitation ONLY for the AI context
       const memoryBuffer = normalizeMemoryBuffer(loadSettings().memoryBuffer);
+      const cognitiveProfile = getCognitiveContextProfile(
+        activeModel,
+        memoryBuffer
+      );
       // Build a smart short‑term context (balanced, truncated, budget‑aware)
       const { pruned: limitedContextForAI, summary: shortSummary } =
         buildShortTermContext(conversationHistory, {
-          memoryPairs: memoryBuffer,
-          charBudget: 2000,
+          memoryPairs: cognitiveProfile.maxShortTermPairs,
+          charBudget: cognitiveProfile.shortTermCharBudget,
         });
 
       logger.debug(
-        `Memory buffer set to ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`
+        `Memory profile ${cognitiveProfile.name}: buffer ${memoryBuffer}, using ${limitedContextForAI.length} messages for context`
       );
 
       let associationContext: MessageHistory[] = [];
 
-      // Extract and store simple associations (semantic facts) from current user query
-      try {
-        const pairs = parseAssociationsFromText(query);
-        if (pairs.length) {
-          addAssociations(effectivePersona, pairs);
+      // Extract and store simple associations (semantic facts) from current user query.
+      // Skip for autonomous nudges (internal directives) and LAN peer messages
+      // (the peer's statements don't represent facts about *our* user).
+      if (!isAutonomous && !isLanPeer) {
+        try {
+          const pairs = parseAssociationsFromText(query);
+          if (pairs.length) {
+            addAssociations(effectivePersona, pairs);
+          }
+        } catch (e) {
+          logger.warn('Association parse failed:', e);
         }
-      } catch (e) {
-        logger.warn('Association parse failed:', e);
       }
 
       try {
@@ -757,7 +839,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         const allAssociations = getAssociations(effectivePersona);
         const prioritized = used.length
           ? used
-          : allAssociations.slice(0, Math.min(4, allAssociations.length));
+          : allAssociations.slice(
+              0,
+              Math.min(cognitiveProfile.associationLimit, allAssociations.length)
+            );
         if (prioritized.length) {
           const summary = prioritized
             .map(({ left, right }) => `${left}=${right}`)
@@ -786,7 +871,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
           query,
           effectivePersona,
           shortTermMemoryIds,
-          5
+          cognitiveProfile.semanticMemoryLimit
         );
 
         // Register IDs so future calls within this session can exclude them.
@@ -795,14 +880,56 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         });
 
         if (searchResults.length > 0) {
-          relevantMemories = formatMemoriesForRAG(searchResults);
+          relevantMemories = formatMemoriesForRAG(
+            searchResults,
+            effectivePersona,
+            cognitiveProfile.memoryCharBudget
+          );
           logger.debug(
             `Retrieved ${searchResults.length} semantically relevant memories from long-term storage`
           );
         }
       } catch (err) {
         logger.error('Error retrieving from long-term memory:', err);
-      } // Construct the full message history for the AI (excluding system prompt and current user message)
+      }
+
+      // ── Telemetry: memory retrieval snapshot ──────────────────────────
+      try {
+        const { getAssociations } = await import('../memory/associativeMemory');
+        const allAssoc = getAssociations(effectivePersona);
+        const now = new Date();
+        experimentTelemetry.emitMemoryRetrieval(sessionId, effectivePersona, {
+          query,
+          episodicResultCount: relevantMemories.length,
+          episodicTopScores: [], // scores not surfaced from semanticSearchMessages currently
+          associationCount: associationContext.length > 0
+            ? (associationContext[0].content.match(/;/g)?.length ?? 0) + 1
+            : 0,
+          associations: allAssoc.map((a: any) => ({
+            left: a.left,
+            right: a.right,
+            // Approximate salience using the same Ebbinghaus decay model (salience() is module-private)
+            salience: a.cachedSalience ?? (a.strength ?? 1) * Math.pow(a.exposures ?? 1, 0.25),
+            strength: a.strength ?? 0,
+            exposures: a.exposures ?? 1,
+            daysSinceCreated: (now.getTime() - new Date(a.createdAt).getTime()) / 86400000,
+            daysSinceLastUsed: a.lastUsed
+              ? (now.getTime() - new Date(a.lastUsed).getTime()) / 86400000
+              : -1,
+            daysSinceReinforced: a.lastReinforcedAt
+              ? (now.getTime() - new Date(a.lastReinforcedAt).getTime()) / 86400000
+              : -1,
+          })),
+          shortTermMessageCount: limitedContextForAI.length,
+          summaryInjected: !!shortSummary,
+          summaryText: shortSummary ?? '',
+          totalContextMessages: associationContext.length + relevantMemories.length + limitedContextForAI.length + (shortSummary ? 1 : 0),
+        });
+      } catch (telErr) {
+        logger.warn('[Telemetry] Memory retrieval snapshot failed:', telErr);
+      }
+
+      // Construct the full message history for the AI (excluding system prompt and current user message)
       const messagesForAI: MessageHistory[] = [
         // Associative context comes first so the model sees persona-specific facts
         ...associationContext,
@@ -844,14 +971,29 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         logger.debug('=== END MESSAGE DEBUG ===');
       }
 
-      // Build an enhanced system prompt with associative facts (compact)
+      // Build an enhanced system prompt with associative facts and evolved identity
       let effectiveSystemPrompt = systemPrompt;
       try {
-        const factsLine = buildFactsLine(effectivePersona);
+        const factsLine = buildFactsLine(
+          effectivePersona,
+          cognitiveProfile.factsCharBudget
+        );
         if (factsLine) {
           effectiveSystemPrompt = `${systemPrompt}\n\n${factsLine}`;
         }
       } catch {}
+
+      // Inject the AI's evolved identity context (built from accumulated memories)
+      try {
+        const identityBlock = await buildIdentityContext(effectivePersona, {
+          maxFragments: cognitiveProfile.identityFragmentLimit,
+        });
+        if (identityBlock) {
+          effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n${identityBlock}`;
+        }
+      } catch (idErr) {
+        logger.warn('Identity context build failed (non-fatal):', idErr);
+      }
 
       // Call the AI service with the combined context (including images)
       let response = await sendMessageToAI(
@@ -859,8 +1001,9 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         effectiveSystemPrompt,
         messagesForAI,
         config,
-        imageUrls, // Pass images to AI service
-        sessionId // Pass session ID for token tracking
+        imageUrls,
+        sessionId,
+        { autonomous: isAutonomous }
       );
 
       // Output sanitization: enforce no emojis and trim meaningless closers
@@ -905,11 +1048,58 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       setConversationHistory(persistedHistory);
       
       // Analyze emotions with full synchronization
-      // This ensures avatar emotion matches what's displayed in the emotion boxes
-      const emotionAnalysis = analyzeConversationEmotions(query, response);
+      // This ensures avatar emotion matches what's displayed in the emotion boxes.
+      // For LAN peer messages, only analyze our AI's response -- the "user input" is
+      // actually the peer's message, not our real user, so it should not influence
+      // the avatar or the emotion history tracker.
+      const emotionAnalysis = isLanPeer
+        ? analyzeConversationEmotions('', response)
+        : analyzeConversationEmotions(query, response);
+
+      // Capture per-query token data BEFORE completeQuery clears it
+      const queryTokens = tokenTracker.getQueryTokens(sessionId);
 
       // Complete token tracking and show summary
       tokenTracker.completeQuery(sessionId);
+
+      // ── Telemetry: query complete + emotion snapshot ─────────────────
+      const queryEndMs = performance.now();
+      experimentTelemetry.emitQueryComplete(sessionId, effectivePersona, {
+        userInput: isAutonomous ? '[autonomous]' : query,
+        aiResponse: response,
+        responseCharCount: response.length,
+        responseWordCount: response.split(/\s+/).filter(Boolean).length,
+        latencyMs: Math.round(queryEndMs - queryStartMs),
+        promptTokens: queryTokens.prompt,
+        completionTokens: queryTokens.completion,
+        totalTokens: queryTokens.total,
+        model: activeModel,
+        autonomous: isAutonomous,
+      });
+
+      // Parse confidence percentages from the emotion label strings
+      const parseEmotionScores = (labels: string[]): Record<string, number> => {
+        const scores: Record<string, number> = {};
+        for (const lbl of labels) {
+          const match = lbl.match(/^(\w+)\s*\((\d+)%\)$/);
+          if (match) scores[match[1].toLowerCase()] = parseInt(match[2], 10) / 100;
+        }
+        return scores;
+      };
+
+      experimentTelemetry.emitEmotionAnalysis(sessionId, effectivePersona, {
+        userInput: isAutonomous ? '[autonomous]' : query,
+        aiResponse: response,
+        avatarEmotion: emotionAnalysis.avatarEmotion,
+        userPrimaryEmotion: emotionAnalysis.userPrimaryEmotion ?? 'neutral',
+        responsePrimaryEmotion: emotionAnalysis.responsePrimaryEmotion ?? emotionAnalysis.avatarEmotion,
+        userEmotionScores: parseEmotionScores(emotionAnalysis.userEmotions),
+        responseEmotionScores: parseEmotionScores(emotionAnalysis.responseEmotions),
+        userEmotionLabels: emotionAnalysis.userEmotions,
+        responseEmotionLabels: emotionAnalysis.responseEmotions,
+        emotionalTrajectory: '',
+        autonomous: isAutonomous,
+      });
 
       setIsLoading(false);
       return {

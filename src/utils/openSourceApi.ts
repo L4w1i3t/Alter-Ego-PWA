@@ -1,4 +1,5 @@
 import { loadSettings } from './storageUtils';
+import { buildSystemPrompt, verifySystemPrompt } from './systemPrompt';
 
 // Backend configuration
 const BACKEND_CONFIG = {
@@ -156,11 +157,27 @@ export const generateOpenSourceCompletion = async (
 ): Promise<string> => {
   try {
     const baseUrl = getBackendUrl();
+    const systemContext = messages
+      .filter(msg => msg.role === 'system' && msg.content.trim())
+      .map(msg => msg.content)
+      .join('\n\n');
+    const fullSystemPrompt = buildSystemPrompt(systemContext);
+
+    if (!verifySystemPrompt(fullSystemPrompt)) {
+      throw new Error(
+        'The system prompt does not include the required universal rules.'
+      );
+    }
+
+    const requestMessages = [
+      { role: 'system' as const, content: fullSystemPrompt },
+      ...messages.filter(msg => msg.role !== 'system'),
+    ];
 
     // Prepare the request payload
     const requestPayload: BackendChatRequest = {
       model,
-      messages: messages.map(msg => ({
+      messages: requestMessages.map(msg => ({
         role: msg.role,
         content: msg.content,
       })),
@@ -171,7 +188,7 @@ export const generateOpenSourceCompletion = async (
 
     console.log(`Sending request to open-source backend: ${model}`);
     console.log(
-      `Messages: ${messages.length}, Temperature: ${temperature}, Max tokens: ${maxTokens}`
+      `Messages: ${requestMessages.length}, Temperature: ${temperature}, Max tokens: ${maxTokens}`
     );
 
     const controller = new AbortController();

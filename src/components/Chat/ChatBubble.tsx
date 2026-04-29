@@ -71,8 +71,9 @@ interface ChatBubbleProps {
   message: string;
   isUser: boolean;
   timestamp: Date;
-  images?: string[]; // Array of image URLs to display
+  images?: string[];
   showTimestamp?: boolean;
+  instant?: boolean; // When true, skip typing animation (e.g. older messages)
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({
@@ -81,15 +82,16 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   timestamp,
   images,
   showTimestamp,
+  instant,
 }) => {
   const formattedTime = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
   }).format(timestamp);
 
-  // Get text speed from settings
+  // Get text speed from settings. Instant messages bypass animation entirely.
   const settings = loadSettings();
-  const textSpeed = settings.animationsEnabled === false ? 1000 : settings.textSpeed || 40;
+  const textSpeed = instant ? 1000 : (settings.animationsEnabled === false ? 1000 : settings.textSpeed || 40);
 
   const handleImageClick = (imageUrl: string) => {
     // Open image in new tab for full size viewing
@@ -122,8 +124,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
         ) : (
           <TypingAnimation
             text={message}
-            speed={textSpeed} // Use text speed from settings
-            showCursor={true}
+            speed={textSpeed}
+            showCursor={!instant}
           >
             {(displayText: string, isComplete: boolean) => (
               <MessageText>

@@ -165,6 +165,23 @@ class TokenTracker {
   }
 
   /**
+   * Get per-query token breakdown for a still-active query.
+   * Must be called BEFORE completeQuery, which deletes the entry.
+   */
+  getQueryTokens(sessionId: string): { prompt: number; completion: number; total: number } {
+    const query = this.activeQueries.get(sessionId);
+    if (!query) return { prompt: 0, completion: 0, total: 0 };
+
+    let prompt = 0;
+    let completion = 0;
+    if (query.conversation) { prompt += query.conversation.prompt; completion += query.conversation.completion; }
+    if (query.imageAnalysis) { prompt += query.imageAnalysis.prompt; completion += query.imageAnalysis.completion; }
+    if (query.textGeneration) { prompt += query.textGeneration.prompt; completion += query.textGeneration.completion; }
+
+    return { prompt, completion, total: prompt + completion };
+  }
+
+  /**
    * Get token usage statistics
    */
   getStats(): {

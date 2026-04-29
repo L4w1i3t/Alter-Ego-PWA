@@ -992,7 +992,7 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
   };
 
   // Get provider icon for cards
-  const getProviderIcon = (provider: string): JSX.Element => {
+  const getProviderIcon = (provider: string): React.JSX.Element => {
     if (provider === 'elevenlabs') {
       return (
         <ProviderBadge provider="elevenlabs">

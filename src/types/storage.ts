@@ -4,6 +4,7 @@
 
 export interface ApiKeys {
   OPENAI_API_KEY: string;
+  OPENROUTER_API_KEY: string;
   ELEVENLABS_API_KEY: string;
 }
 

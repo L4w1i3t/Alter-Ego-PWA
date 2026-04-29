@@ -9,8 +9,8 @@ import { applySettingsToCssVariables } from '../styles/GlobalStyles';
 
 export interface AppState {
   showSettings: boolean;
-  settingsInitialView: 'default' | 'personas' | 'models' | 'voices' | 'memory' | 'apiKeys' | 'OpenSourceWipInfo' | null;
-  showModelSelection: boolean;
+  settingsInitialView: 'default' | 'personas' | 'models' | 'voices' | 'memory' | 'apiKeys' | 'AI Models' | 'Manage API Keys' | 'OpenSourceWipInfo' | null;
+  showSplashScreen: boolean;
   showWarmingUp: boolean;
   showCharacterSelector: boolean;
   selectedModel: string | null;
@@ -24,7 +24,7 @@ export interface AppState {
 export interface AppActions {
   setShowSettings: (show: boolean) => void;
   setSettingsInitialView: (view: AppState['settingsInitialView']) => void;
-  setShowModelSelection: (show: boolean) => void;
+  setShowSplashScreen: (show: boolean) => void;
   setShowWarmingUp: (show: boolean) => void;
   setShowCharacterSelector: (show: boolean) => void;
   setSelectedModel: (model: string | null) => void;
@@ -40,7 +40,7 @@ export function useAppState() {
   const [settingsInitialView, setSettingsInitialView] = useState<
     AppState['settingsInitialView']
   >(null);
-  const [showModelSelection, setShowModelSelection] = useState(false);
+  const [showSplashScreen, setShowSplashScreen] = useState(false);
   const [showWarmingUp, setShowWarmingUp] = useState(false);
   const [showCharacterSelector, setShowCharacterSelector] = useState(false);
 
@@ -59,7 +59,9 @@ export function useAppState() {
   const [voiceModel, setVoiceModel] = useState(
     initialSettings.voiceModel || 'None',
   );
-  const [isFirstLoad, setIsFirstLoad] = useState(!initialSettings.selectedModel);
+  const [isFirstLoad, setIsFirstLoad] = useState(
+    !initialSettings.hasCompletedFirstStartup,
+  );
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
   // The heavy state (selectedModel, activeCharacter, voiceModel) is already
@@ -67,8 +69,8 @@ export function useAppState() {
   // first render.  We still run the effect for side-effects like showing the
   // model-selection dialog and applying CSS vars.
   useEffect(() => {
-    if (!initialSettings.selectedModel) {
-      setShowModelSelection(true);
+    if (!initialSettings.hasCompletedFirstStartup) {
+      setShowSplashScreen(true);
     }
 
     // Apply CSS variables from settings
@@ -91,7 +93,7 @@ export function useAppState() {
   const state: AppState = {
     showSettings,
     settingsInitialView,
-    showModelSelection,
+    showSplashScreen,
     showWarmingUp,
     showCharacterSelector,
     selectedModel,
@@ -105,7 +107,7 @@ export function useAppState() {
   const actions: AppActions = {
     setShowSettings,
     setSettingsInitialView,
-    setShowModelSelection,
+    setShowSplashScreen,
     setShowWarmingUp,
     setShowCharacterSelector,
     setSelectedModel,

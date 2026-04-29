@@ -1,8 +1,6 @@
 // Enhanced Emotion Classification Service for ALTER EGO
 // Analyzes text to determine emotions using 28 predefined emotion labels with robust detection
 
-import { loadSettings } from '../utils/storageUtils';
-
 // 28 emotion labels matching avatar sprites (excluding THINKING which is handled separately)
 export const EMOTION_LABELS = [
   'admiration',
@@ -925,13 +923,14 @@ function detectNegationScopes(text: string): NegationScope[] {
  */
 function findKeywordOccurrences(text: string, keyword: string): number[] {
   const occurrences: number[] = [];
-  let index = text.indexOf(keyword);
-
-  while (index !== -1) {
-    occurrences.push(index);
-    index = text.indexOf(keyword, index + 1);
+  // Use word-boundary regex to prevent substring false positives
+  // (e.g., 'no' matching inside 'morning', 'afternoon', 'now')
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    occurrences.push(match.index);
   }
-
   return occurrences;
 }
 
@@ -1248,7 +1247,7 @@ function analyzePunctuationEmotions(
   // Multiple question marks suggest confusion or surprise
   const questionCount = (text.match(/\?/g) || []).length;
   if (questionCount > 1) {
-    emotionScores['confusion'] += questionCount * 0.25;
+    emotionScores['confusion'] += questionCount * 0.15;
     emotionScores['curiosity'] += questionCount * 0.2;
   }
 

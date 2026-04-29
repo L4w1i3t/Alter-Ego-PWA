@@ -277,9 +277,12 @@ const QuerySection: React.FC<QuerySectionProps> = ({
       window.dispatchEvent(queryEvent);
 
       // Prepare the custom system prompt with the active persona's content
+      // The persona content is the foundation. We do NOT re-instruct the AI to
+      // "stay in character" every turn -- that creates performative rigidity.
+      // The identity evolution layer and memory handle continuity organically.
       const systemPrompt = personaContent
-        ? `${personaContent}\n\nYou are currently engaged in a conversation as ${activeCharacter}. Stay true to this character's personality, speech patterns, and unique traits throughout the entire conversation. Don't slip into generic AI assistant mode - be this character completely.`
-        : `You are ${activeCharacter}, a unique digital consciousness. Engage authentically with your own personality, opinions, and communication style rather than using generic AI assistant language.`;
+        ? personaContent
+        : `You are ${activeCharacter}.`;
 
       // Send the query to the API with the personalized system prompt and images
       // Make sure we're using the current persona's name to keep conversations separate

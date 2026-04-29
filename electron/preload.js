@@ -34,4 +34,57 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   /** Returns the absolute path to the Electron userData directory (where DB and settings live) */
   getDataPath: () => ipcRenderer.invoke('get-data-path'),
+
+  /**
+   * Forward a telemetry event to the experiment pipeline WebSocket relay.
+   * Fire-and-forget (ipcRenderer.send), no response expected.
+   */
+  emitTelemetry: (event) => ipcRenderer.send('experiment-telemetry', event),
+
+  // ── LAN Peer-to-Peer API ──
+
+  /** Start LAN discovery and WebSocket server */
+  lanStart: (personaName) => ipcRenderer.invoke('lan:start', personaName),
+
+  /** Stop all LAN networking */
+  lanStop: () => ipcRenderer.invoke('lan:stop'),
+
+  /** Get current LAN status (running, connected, peers, role) */
+  lanGetStatus: () => ipcRenderer.invoke('lan:get-status'),
+
+  /** Get list of discovered peers */
+  lanGetPeers: () => ipcRenderer.invoke('lan:get-peers'),
+
+  /** Connect to a discovered peer by their instance ID */
+  lanConnect: (peerId) => ipcRenderer.invoke('lan:connect', peerId),
+
+  /** Disconnect from the currently connected peer */
+  lanDisconnect: () => ipcRenderer.invoke('lan:disconnect'),
+
+  /** Send a chat message to the connected peer */
+  lanSendMessage: (content) => ipcRenderer.invoke('lan:send-message', content),
+
+  /** Send a typing indicator to the peer */
+  lanSendTyping: () => ipcRenderer.invoke('lan:send-typing'),
+
+  /** Update the persona name for LAN display (fire-and-forget) */
+  lanSetPersona: (name) => ipcRenderer.send('lan:set-persona', name),
+
+  /** Register a callback for LAN events from the main process */
+  onLanEvent: (channel, callback) => {
+    const validChannels = [
+      'lan:peer-discovered',
+      'lan:peer-lost',
+      'lan:connected',
+      'lan:disconnected',
+      'lan:peer-message',
+      'lan:peer-typing',
+    ];
+    if (validChannels.includes(channel)) {
+      const listener = (_event, data) => callback(data);
+      ipcRenderer.on(channel, listener);
+      // Return a cleanup function
+      return () => ipcRenderer.removeListener(channel, listener);
+    }
+  },
 });

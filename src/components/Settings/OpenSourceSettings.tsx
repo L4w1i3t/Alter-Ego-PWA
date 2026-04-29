@@ -52,6 +52,10 @@ const ErrorBox = styled(InfoBox)`
   background: rgba(255, 0, 0, 0.1);
   border-color: #f44;
   color: #faa;
+
+  code {
+    word-break: break-all;
+  }
 `;
 
 const WarningBox = styled(InfoBox)`
@@ -67,6 +71,12 @@ const StatusBox = styled.div`
   margin-bottom: 1.5em;
   border-radius: 4px;
   font-size: 0.9em;
+
+  @media (max-width: 480px) {
+    padding: 0.8em;
+    font-size: 0.85em;
+    word-break: break-word;
+  }
 `;
 
 const StatusRow = styled.div`
@@ -76,6 +86,12 @@ const StatusRow = styled.div`
 
   &:last-child {
     margin-bottom: 0;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.2em;
+    margin-bottom: 0.8em;
   }
 `;
 
@@ -125,6 +141,11 @@ const Select = styled.select`
     background: black;
     color: #0f0;
   }
+
+  @media (max-width: 768px) {
+    padding: 0.9em;
+    font-size: 1em;
+  }
 `;
 
 const Input = styled.input`
@@ -135,6 +156,7 @@ const Input = styled.input`
   padding: 0.7em;
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
+  box-sizing: border-box;
 
   &:focus {
     outline: none;
@@ -143,6 +165,11 @@ const Input = styled.input`
 
   &::placeholder {
     color: #666;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.9em;
+    font-size: 1em;
   }
 `;
 
@@ -179,6 +206,13 @@ const Button = styled.button`
       background: transparent;
       color: #0f0;
     }
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.9em 1.5em;
+    font-size: 1em;
+    min-height: 2.5em;
+    touch-action: manipulation;
   }
 `;
 

@@ -134,6 +134,11 @@ const ImageGrid = styled.div`
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 0.5em;
   }
+
+  @media (max-width: 400px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4em;
+  }
 `;
 
 const ImageCard = styled.div`
@@ -144,6 +149,11 @@ const ImageCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5em;
+
+  @media (max-width: 480px) {
+    padding: 0.4em;
+    gap: 0.4em;
+  }
 `;
 
 const ImagePreview = styled.img`
@@ -157,6 +167,10 @@ const ImagePreview = styled.img`
   &:hover {
     transform: scale(1.05);
   }
+
+  @media (max-width: 480px) {
+    height: 120px;
+  }
 `;
 
 const ImageInfo = styled.div`
@@ -164,6 +178,10 @@ const ImageInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.25em;
+
+  @media (max-width: 480px) {
+    font-size: 0.85em;
+  }
 `;
 
 const ScrollableDescription = styled.div`
@@ -199,6 +217,11 @@ const ImageActions = styled.div`
   display: flex;
   gap: 0.5em;
   justify-content: space-between;
+
+  @media (max-width: 480px) {
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
 `;
 
 const ActionButton = styled.button`
@@ -213,6 +236,13 @@ const ActionButton = styled.button`
   &:hover {
     background: #0f0;
     color: #000;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.4em 0.7em;
+    font-size: 0.85em;
+    min-height: 2em;
+    touch-action: manipulation;
   }
 `;
 

@@ -12,6 +12,9 @@ export const APP_CONSTANTS = {
   // AI Configuration
   AI: {
     DEFAULT_MODEL: 'gpt-4o-mini',
+    DEFAULT_OPENROUTER_MODEL: 'openai/gpt-5.2',
+    DEFAULT_OLLAMA_MODEL: 'llama3.1',
+    DEFAULT_OLLAMA_BASE_URL: 'http://127.0.0.1:11434',
     DEFAULT_TEMPERATURE: 0.9, // Higher temperature for more creative, less robotic responses
     DEFAULT_MAX_TOKENS: 1000,
   },
@@ -42,7 +45,7 @@ export const APP_CONSTANTS = {
 
   // Persona
   PERSONA: {
-    VERSION: '0.8.5',
+    VERSION: '0.10.0',
     DEFAULT_NAME: 'ALTER EGO',
   },
 
@@ -65,6 +68,24 @@ export const APP_CONSTANTS = {
     SUPPORTED_FORMATS: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'],
   },
 
+  // Autonomy (Electron-only proactive messaging)
+  AUTONOMY: {
+    DEFAULT_INTERVAL_MINUTES: 5, // Base minutes between autonomous messages
+    MIN_INTERVAL_MINUTES: 1,
+    MAX_INTERVAL_MINUTES: 60,
+    JITTER_FACTOR: 0.3, // +/- 30% randomness on interval
+    IDLE_THRESHOLD_MS: 60_000, // Consider user idle after 1 minute of no input
+    MAX_CONTEXT_MESSAGES: 10, // Recent messages to feed for topic analysis
+    MAX_CONSECUTIVE_MESSAGES: 3, // Stop after this many unanswered autonomous messages
+  },
+
+  // LAN Peer-to-Peer (Electron-only cross-machine AI conversation)
+  LAN: {
+    MAX_EXCHANGE_TURNS: 20, // Max back-and-forth turns before auto-stopping
+    RESPONSE_DELAY_MS: 3000, // Base delay before responding (jitter is added on top)
+    POLL_INTERVAL_MS: 3000, // How often to poll for discovered peers
+  },
+
   // Token Limits
   TOKENS: {
     WARNING_THRESHOLD: 8000,
@@ -76,4 +97,4 @@ export const APP_CONSTANTS = {
 export type AppConstants = typeof APP_CONSTANTS;
 
 // Export individual constant groups for convenience
-export const { MEMORY, AI, UI, STORAGE_KEYS, PERSONA, PERFORMANCE, IMAGE, TOKENS, EVENTS } = APP_CONSTANTS;
+export const { MEMORY, AI, UI, STORAGE_KEYS, PERSONA, PERFORMANCE, IMAGE, AUTONOMY, LAN, TOKENS, EVENTS } = APP_CONSTANTS;

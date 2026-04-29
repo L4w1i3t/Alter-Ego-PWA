@@ -149,7 +149,7 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({
     <Overlay>
       <OverlayContent>
         <Title>Choose Language Model.</Title>
-        <Subtitle>If unsure, select OpenAI for full functionality.</Subtitle>
+        <Subtitle>NOTE: Only OpenAI is available at the moment.</Subtitle>
         <ButtonContainer>
           {' '}
           <div style={{ position: 'relative', display: 'inline-block' }}>

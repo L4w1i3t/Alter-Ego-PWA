@@ -14,15 +14,143 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, screen, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const crypto = require('crypto');
+const lanServer = require('./lanServer');
+
+// ──────────────────────────────────────────────
+// Experiment Telemetry WebSocket Relay
+// ──────────────────────────────────────────────
+// A minimal WebSocket server (no external deps) that relays telemetry events
+// from the renderer process to connected external experiment pipeline clients.
+// Protocol: RFC 6455 (basic frames, text only, no extensions).
+
+const TELEMETRY_PORT = 45677;
+let wsClients = new Set();
+let telemetryServer = null;
+
+function startTelemetryServer() {
+  telemetryServer = http.createServer((_req, res) => {
+    // Health-check endpoint at GET /
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', clients: wsClients.size }));
+  });
+
+  telemetryServer.on('upgrade', (req, socket) => {
+    // Minimal WebSocket handshake (RFC 6455 section 4.2.2)
+    const key = (req.headers['sec-websocket-key'] || '').trim();
+    if (!key) { socket.destroy(); return; }
+    const accept = crypto
+      .createHash('sha1')
+      .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
+      .digest('base64');
+
+    socket.write(
+      'HTTP/1.1 101 Switching Protocols\r\n' +
+      'Upgrade: websocket\r\n' +
+      'Connection: Upgrade\r\n' +
+      `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
+    );
+
+    wsClients.add(socket);
+    console.log(`[Telemetry] Pipeline client connected (${wsClients.size} total)`);
+
+    socket.on('data', (buf) => {
+      // Parse incoming WebSocket frames (for potential control messages)
+      try {
+        const frame = parseWsFrame(buf);
+        if (frame.opcode === 0x8) { // Close
+          socket.end();
+          wsClients.delete(socket);
+        }
+        // Ping/pong handled below
+        if (frame.opcode === 0x9) { // Ping
+          sendWsFrame(socket, frame.payload, 0xA); // Pong
+        }
+      } catch { /* ignore malformed frames */ }
+    });
+
+    socket.on('close', () => {
+      wsClients.delete(socket);
+      console.log(`[Telemetry] Pipeline client disconnected (${wsClients.size} remaining)`);
+    });
+    socket.on('error', () => { wsClients.delete(socket); });
+  });
+
+  telemetryServer.listen(TELEMETRY_PORT, '127.0.0.1', () => {
+    console.log(`[Telemetry] WebSocket relay listening on ws://127.0.0.1:${TELEMETRY_PORT}`);
+  });
+
+  telemetryServer.on('error', (err) => {
+    console.error('[Telemetry] Server error:', err.message);
+  });
+}
+
+/** Broadcast a JSON string to all connected WebSocket clients. */
+function broadcastTelemetry(jsonStr) {
+  const payload = Buffer.from(jsonStr, 'utf-8');
+  for (const socket of wsClients) {
+    try { sendWsFrame(socket, payload, 0x1); } // 0x1 = text frame
+    catch { wsClients.delete(socket); }
+  }
+}
+
+/** Build and write a minimal WebSocket frame (no masking, text/binary). */
+function sendWsFrame(socket, payload, opcode) {
+  const len = payload.length;
+  let header;
+  if (len < 126) {
+    header = Buffer.alloc(2);
+    header[0] = 0x80 | opcode; // FIN + opcode
+    header[1] = len;
+  } else if (len < 65536) {
+    header = Buffer.alloc(4);
+    header[0] = 0x80 | opcode;
+    header[1] = 126;
+    header.writeUInt16BE(len, 2);
+  } else {
+    header = Buffer.alloc(10);
+    header[0] = 0x80 | opcode;
+    header[1] = 127;
+    header.writeBigUInt64BE(BigInt(len), 2);
+  }
+  socket.write(Buffer.concat([header, payload]));
+}
+
+/** Parse a single WebSocket frame from a buffer (client-to-server, masked). */
+function parseWsFrame(buf) {
+  const opcode = buf[0] & 0x0f;
+  const masked = !!(buf[1] & 0x80);
+  let payloadLen = buf[1] & 0x7f;
+  let offset = 2;
+  if (payloadLen === 126) { payloadLen = buf.readUInt16BE(2); offset = 4; }
+  else if (payloadLen === 127) { payloadLen = Number(buf.readBigUInt64BE(2)); offset = 10; }
+  let maskKey = null;
+  if (masked) { maskKey = buf.slice(offset, offset + 4); offset += 4; }
+  const payload = Buffer.alloc(payloadLen);
+  for (let i = 0; i < payloadLen; i++) {
+    payload[i] = masked ? buf[offset + i] ^ maskKey[i % 4] : buf[offset + i];
+  }
+  return { opcode, payload };
+}
 
 // ──────────────────────────────────────────────
 // Portable Data Path (must run before app 'ready')
 // ──────────────────────────────────────────────
 
-// electron-builder portable sets PORTABLE_EXECUTABLE_DIR to the folder
-// containing the exe. We redirect all Chromium user data there so the
-// entire folder is self-contained and transferrable.
-const portableDir = process.env.PORTABLE_EXECUTABLE_DIR;
+// Resolve the portable directory for self-contained data storage.
+//   - Windows portable: electron-builder sets PORTABLE_EXECUTABLE_DIR
+//   - Linux AppImage:   APPIMAGE env points to the .AppImage file;
+//     we store data next to it so the whole folder is transferrable.
+// Set the app identity so Windows notifications show "ALTER EGO" instead of
+// the default Electron app name (e.g. "electron.app.Electron").
+app.setAppUserModelId('com.l4w1i3t.alterego');
+app.name = 'ALTER EGO';
+
+const portableDir =
+  process.env.PORTABLE_EXECUTABLE_DIR ||
+  (process.env.APPIMAGE ? path.dirname(process.env.APPIMAGE) : null);
+
 if (portableDir) {
   const portableDataPath = path.join(portableDir, 'Data');
   if (!fs.existsSync(portableDataPath)) {
@@ -237,6 +365,58 @@ function registerIpcHandlers() {
 
   // Return the current userData path so the renderer can display it
   ipcMain.handle('get-data-path', () => app.getPath('userData'));
+
+  // Experiment telemetry: renderer sends events, main process relays via WebSocket
+  ipcMain.on('experiment-telemetry', (_event, telemetryEvent) => {
+    try {
+      const json = typeof telemetryEvent === 'string'
+        ? telemetryEvent
+        : JSON.stringify(telemetryEvent);
+      broadcastTelemetry(json);
+    } catch (err) {
+      console.error('[Telemetry] Failed to relay event:', err.message);
+    }
+  });
+
+  // ── LAN Peer-to-Peer IPC Handlers ──
+
+  ipcMain.handle('lan:start', (event, personaName) => {
+    return lanServer.startLan(event.sender, personaName);
+  });
+
+  ipcMain.handle('lan:stop', () => {
+    lanServer.stopLan();
+    return true;
+  });
+
+  ipcMain.handle('lan:get-status', () => {
+    return lanServer.getStatus();
+  });
+
+  ipcMain.handle('lan:get-peers', () => {
+    return lanServer.getDiscoveredPeers();
+  });
+
+  ipcMain.handle('lan:connect', (_event, peerId) => {
+    return lanServer.connectPeer(peerId);
+  });
+
+  ipcMain.handle('lan:disconnect', () => {
+    lanServer.disconnectPeer();
+    return true;
+  });
+
+  ipcMain.handle('lan:send-message', (_event, content) => {
+    return lanServer.sendChatMessage(content);
+  });
+
+  ipcMain.handle('lan:send-typing', () => {
+    return lanServer.sendTypingIndicator();
+  });
+
+  ipcMain.on('lan:set-persona', (_event, name) => {
+    lanServer.setPersonaName(name);
+  });
 }
 
 // ──────────────────────────────────────────────
@@ -245,6 +425,7 @@ function registerIpcHandlers() {
 
 app.whenReady().then(() => {
   registerIpcHandlers();
+  startTelemetryServer();
 
   if (launchInOverlay) {
     createOverlayWindow();
@@ -259,6 +440,19 @@ app.on('window-all-closed', () => {
   // On macOS apps typically stay active until explicit quit
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  // Shut down LAN networking before exit
+  lanServer.stopLan();
+
+  // Shut down the telemetry relay when the app exits
+  if (telemetryServer) {
+    for (const socket of wsClients) { try { socket.end(); } catch {} }
+    wsClients.clear();
+    telemetryServer.close();
+    telemetryServer = null;
   }
 });
 

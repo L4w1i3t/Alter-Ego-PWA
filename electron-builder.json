@@ -30,8 +30,16 @@
     "category": "public.app-category.productivity"
   },
   "linux": {
-    "target": ["AppImage"],
+    "target": [
+      "tar.gz",
+      "pacman"
+    ],
     "icon": "public/assets/icons/icon-512x512.png",
-    "category": "Utility"
+    "category": "Utility",
+    "executableName": "alterego",
+    "maintainer": "L4w1i3t"
+  },
+  "pacman": {
+    "artifactName": "${productName}-${version}-${arch}.pkg.tar.zst"
   }
 }

@@ -49,6 +49,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
 
   const showTimestamps = settings.showTimestamps ?? true;
 
+  // Only the last AI message should animate; all older ones appear instantly
+  const lastAIIndex = messages.reduce(
+    (acc, m, i) => (m.role !== 'user' ? i : acc),
+    -1
+  );
+
   return (
     <ChatContainer>
       {messages.map((message, index) => (
@@ -59,6 +65,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages }) => {
           timestamp={message.timestamp ? new Date(message.timestamp) : new Date()}
           images={message.images}
           showTimestamp={showTimestamps}
+          instant={message.role !== 'user' && index !== lastAIIndex}
         />
       ))}
       <div ref={messagesEndRef} />

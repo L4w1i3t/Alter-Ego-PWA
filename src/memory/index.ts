@@ -21,6 +21,7 @@ export {
   type StoredMessage,
   type StoredAssociation,
   type StoredPersonaState,
+  type StoredIdentityFragment,
   type PaginationResult,
   type MessageQuery,
   
@@ -42,6 +43,13 @@ export {
   findAssociationsInText,
   parseAssociationsFromText as parseAssociations,
   clearPersonaAssociations as clearAssociationsForPersona,
+  
+  // Identity fragment operations
+  addIdentityFragment,
+  getIdentityFragments,
+  getLatestIdentityFragment,
+  countIdentityFragments,
+  clearIdentityFragments,
   
   // Persona state
   getPersonaState,

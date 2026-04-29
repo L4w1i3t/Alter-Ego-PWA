@@ -7,7 +7,14 @@
 export type { Message, MessageHistory, ChatHistoryEntry } from './message';
 
 // Configuration types
-export type { AIConfig, VoiceConfig, VoiceModel, Settings } from './config';
+export type {
+  AIConfig,
+  AIProvider,
+  OpenRouterDataCollection,
+  VoiceConfig,
+  VoiceModel,
+  Settings,
+} from './config';
 
 // Storage types
 export type { ApiKeys, Persona, User } from './storage';

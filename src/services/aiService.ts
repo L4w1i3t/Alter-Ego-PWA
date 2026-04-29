@@ -1,20 +1,14 @@
 import {
   generateChatCompletion,
   generateVisionChatCompletion,
+  generateOpenRouterChatCompletion,
   getAvailableModels,
   getTokenUsageStats,
   modelSupportsVision,
 } from '../utils/openaiApi';
-import {
-  generateOpenSourceCompletion,
-  validateBackendReady,
-  OPEN_SOURCE_CONFIG,
-} from '../utils/openSourceApi';
+import { generateOllamaChatCompletion } from '../utils/ollamaApi';
 import { loadApiKeys, loadSettings, getAIConfigFromStorage, saveAIConfigToStorage } from '../utils/storageUtils';
-import {
-  getOpenSourceStatus,
-  checkOpenSourceFallback,
-} from '../utils/openSourceWip';
+import { detectAIProvider, getModelForProvider } from '../utils/aiProviders';
 import type { AIConfig, MessageHistory } from '../types';
 import { AI, STORAGE_KEYS } from '../config/constants';
 import { logger } from '../utils/logger';
@@ -87,100 +81,73 @@ export const sendMessageToAI = async (
   systemPrompt: string = 'You are ALTER EGO, an intelligent AI personality.',
   history: MessageHistory[] = [],
   config?: Partial<AIConfig>,
-  images?: string[], // Array of image URLs for vision
-  sessionId?: string // For token tracking
+  images?: string[],
+  sessionId?: string,
+  options?: { autonomous?: boolean }
 ): Promise<string> => {
   try {
-    // Check if Open Source model is selected
     const settings = loadSettings();
-    const selectedModel = settings.selectedModel || 'Open Source';
-
-    if (selectedModel === 'Open Source') {
-      const wipStatus = getOpenSourceStatus();
-      if (wipStatus.isWip) {
-        const fallbackMessage = checkOpenSourceFallback(selectedModel);
-        return (
-          fallbackMessage ||
-          ' Open Source model is currently under development. Please use OpenAI for full functionality.'
-        );
-      }
-
-      // If images are provided, we need to use OpenAI since open-source backend doesn't support vision yet
-      if (images && images.length > 0) {
-        logger.info(
-          'Images detected, switching to OpenAI Vision API for processing...'
-        );
-        // Fall through to OpenAI logic
-      } else {
-        // Try to use the open-source backend for text-only
-        try {
-          logger.info('Using open-source backend for AI completion');
-
-          // Validate backend is ready
-          const backendStatus = await validateBackendReady();
-          if (!backendStatus.ready) {
-            throw new Error(backendStatus.error || 'Backend not ready');
-          }
-
-          // Get current configuration and apply any overrides
-          const currentConfig = getAIConfig();
-          const finalConfig = {
-            ...currentConfig,
-            ...config,
-          };
-
-          // Use the configured open-source model or default
-          const openSourceModel =
-            settings.openSourceModel || OPEN_SOURCE_CONFIG.defaultModel;
-
-          // Prepare messages for the backend
-          const messages: MessageHistory[] = [
-            { role: 'system', content: systemPrompt },
-            ...history,
-            { role: 'user', content: message },
-          ];
-
-          logger.debug(`Using open-source model: ${openSourceModel}`);
-          logger.debug(
-            `Using ${history.length} messages from history for AI context`
-          );
-
-          // Call the open-source backend
-          const response = await generateOpenSourceCompletion(
-            messages,
-            openSourceModel,
-            finalConfig.temperature,
-            finalConfig.maxTokens
-          );
-
-          return response;
-        } catch (backendError) {
-          logger.error('Open-source backend error:', backendError);
-
-          // Fallback to OpenAI if backend fails
-          logger.info('Falling back to OpenAI due to backend error');
-          const fallbackMessage = ` Open-source backend unavailable (${backendError instanceof Error ? backendError.message : 'Unknown error'}). Switching to OpenAI...`;
-
-          // Continue to OpenAI logic below
-          logger.warn(fallbackMessage);
-        }
-      }
-    }
-
-    // OpenAI logic (original code + vision support)
-    const { OPENAI_API_KEY } = loadApiKeys();
-
-    if (!OPENAI_API_KEY) {
-      return 'OpenAI API key is not set. Please add your API key in the Settings panel.';
-    }
+    const apiKeys = loadApiKeys();
+    const provider = detectAIProvider(settings, apiKeys);
 
     // Get current configuration and apply any overrides
     const currentConfig = getAIConfig();
-    
     const finalConfig = {
       ...currentConfig,
       ...config,
     };
+
+    if (!config?.model) {
+      finalConfig.model = getModelForProvider(provider, settings);
+    }
+
+    const systemMemoryBlock = history
+      .filter(msg => msg.role === 'system' && msg.content)
+      .map(msg => msg.content)
+      .join('\n\n');
+    const mergedSystemPrompt = systemMemoryBlock
+      ? `${systemPrompt}\n\n${systemMemoryBlock}`
+      : systemPrompt;
+    const conversationHistory = history.filter(
+      msg => msg.role === 'user' || msg.role === 'assistant'
+    ) as { role: 'user' | 'assistant'; content: string; images?: string[] }[];
+
+    if (provider === 'ollama') {
+      logger.info(`Using Ollama model: ${finalConfig.model}`);
+      return generateOllamaChatCompletion(
+        mergedSystemPrompt,
+        message,
+        conversationHistory,
+        images || [],
+        finalConfig.model,
+        finalConfig.temperature,
+        finalConfig.maxTokens,
+        sessionId,
+        { autonomous: options?.autonomous }
+      );
+    }
+
+    if (provider === 'openrouter') {
+      logger.info(`Using OpenRouter model: ${finalConfig.model}`);
+      return generateOpenRouterChatCompletion(
+        mergedSystemPrompt,
+        message,
+        conversationHistory,
+        images || [],
+        finalConfig.model,
+        finalConfig.temperature,
+        finalConfig.maxTokens,
+        sessionId,
+        { autonomous: options?.autonomous }
+      );
+    }
+
+    // OpenAI logic (original code + vision support)
+    const { OPENAI_API_KEY } = apiKeys;
+
+    if (!OPENAI_API_KEY) {
+      return 'OpenAI API key is not set. Please add your API key in the Settings panel.';
+    }
     
     // IMPORTANT: Use preferred language model from settings unless explicitly overridden in config
     // This ensures the user's model selection from API Keys settings is respected
@@ -191,15 +158,6 @@ export const sendMessageToAI = async (
 
     // Check if we have images and need to use vision
     const hasImages = images && images.length > 0;
-
-    // Merge any system-role context from history (e.g., retrieved memories) into the system prompt
-    const systemMemoryBlock = history
-      .filter(m => m.role === 'system' && m.content)
-      .map(m => m.content)
-      .join('\n');
-    const mergedSystemPrompt = systemMemoryBlock
-      ? `${systemPrompt}\n\n${systemMemoryBlock}`
-      : systemPrompt;
 
     if (hasImages) {
       // Ensure we're using a vision-capable model
@@ -219,13 +177,7 @@ export const sendMessageToAI = async (
         mergedSystemPrompt,
         message,
         images,
-        history
-          .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-          .map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content,
-            ...(msg.images && { images: msg.images }),
-          })),
+        conversationHistory,
         finalConfig.model,
         finalConfig.temperature,
         finalConfig.maxTokens,
@@ -242,7 +194,7 @@ export const sendMessageToAI = async (
 
       // Log the number of messages in history for debugging
       logger.debug(
-        `Using ${history.length} messages from history for AI context`
+        `Using ${conversationHistory.length} conversation messages and ${systemMemoryBlock ? 'merged' : 'no'} system memory context for AI context`
       );
 
       // Call the OpenAI API with configuration and persona
@@ -250,13 +202,12 @@ export const sendMessageToAI = async (
       const response = await generateChatCompletion(
         mergedSystemPrompt,
         message,
-        history.filter(
-          msg => msg.role === 'user' || msg.role === 'assistant'
-        ) as { role: 'user' | 'assistant'; content: string }[], // Filter to only user and assistant messages
+        conversationHistory,
         finalConfig.model,
         finalConfig.temperature,
         finalConfig.maxTokens,
-        sessionId
+        sessionId,
+        { autonomous: options?.autonomous }
       );
 
       return response;

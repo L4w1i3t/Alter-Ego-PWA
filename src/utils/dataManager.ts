@@ -11,8 +11,15 @@
  */
 
 import { STORAGE_KEYS } from '../config/constants';
-import { exportAllData as exportConsolidatedDB, importData as importConsolidatedDB } from '../memory/memoryDatabase';
-import { exportDatabaseContent as exportLegacyDB, importMemory as importLegacyMemories, exportAllMemory } from '../memory/longTermDB';
+import {
+  exportAllData as exportConsolidatedDB,
+  importData as importConsolidatedDB,
+} from '../memory/memoryDatabase';
+import {
+  exportDatabaseContent as exportLegacyDB,
+  importMemory as importLegacyMemories,
+  exportAllMemory,
+} from '../memory/longTermDB';
 import { logger } from './logger';
 import { isElectronEnvironment } from './electronUtils';
 
@@ -37,6 +44,23 @@ const ALL_STORAGE_KEYS: string[] = [
   // Associative memory cached in localStorage
   'alterEgo_assocMemory',
 ];
+
+const MODEL_RUNTIME_SETTING_KEYS = [
+  'aiProvider',
+  'selectedModel',
+  'preferredLanguageModel',
+  'openRouterModel',
+  'openRouterFallbackModels',
+  'openRouterByokOptimized',
+  'openRouterProviderOrder',
+  'openRouterOnlyProviders',
+  'openRouterAllowFallbacks',
+  'openRouterRequireParameters',
+  'openRouterDataCollection',
+  'openRouterZdr',
+  'ollamaModel',
+  'ollamaBaseUrl',
+] as const;
 
 export interface BackupPayload {
   formatVersion: number;
@@ -77,8 +101,32 @@ export async function exportAllAppData(): Promise<BackupPayload> {
     }
   }
 
+  // Strip model selection from exported data — it's a runtime preference the user
+  // can change at any time, not persistent user data worth backing up/restoring.
+  try {
+    if (lsData[STORAGE_KEYS.AI_CONFIG]) {
+      const aiCfg = JSON.parse(lsData[STORAGE_KEYS.AI_CONFIG]);
+      delete aiCfg.model;
+      lsData[STORAGE_KEYS.AI_CONFIG] = JSON.stringify(aiCfg);
+    }
+    if (lsData[STORAGE_KEYS.SETTINGS]) {
+      const settings = JSON.parse(lsData[STORAGE_KEYS.SETTINGS]);
+      MODEL_RUNTIME_SETTING_KEYS.forEach(key => {
+        delete settings[key];
+      });
+      lsData[STORAGE_KEYS.SETTINGS] = JSON.stringify(settings);
+    }
+  } catch (err) {
+    logger.warn('Failed to strip model fields from export:', err);
+  }
+
   // 2. Consolidated Dexie DB (AlterEgoMemoryDB)
-  let consolidatedData = { messages: [] as unknown[], associations: [] as unknown[], personaStates: [] as unknown[], settings: [] as unknown[] };
+  let consolidatedData = {
+    messages: [] as unknown[],
+    associations: [] as unknown[],
+    personaStates: [] as unknown[],
+    settings: [] as unknown[],
+  };
   try {
     const raw = await exportConsolidatedDB();
     consolidatedData = {
@@ -127,6 +175,25 @@ export async function importAllAppData(payload: BackupPayload): Promise<void> {
 
   // 1. Restore localStorage
   if (payload.localStorage && typeof payload.localStorage === 'object') {
+    // Preserve the user's current model selection before clearing
+    const currentSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    const currentAIConfig = localStorage.getItem(STORAGE_KEYS.AI_CONFIG);
+    const preservedRuntimeSettings: Record<string, unknown> = {};
+    let preservedAIModel: string | undefined;
+    try {
+      if (currentSettings) {
+        const parsedCurrentSettings = JSON.parse(currentSettings);
+        MODEL_RUNTIME_SETTING_KEYS.forEach(key => {
+          if (parsedCurrentSettings[key] !== undefined) {
+            preservedRuntimeSettings[key] = parsedCurrentSettings[key];
+          }
+        });
+      }
+      if (currentAIConfig) preservedAIModel = JSON.parse(currentAIConfig).model;
+    } catch {
+      /* ignore parse errors */
+    }
+
     // Clear existing keys first
     for (const key of ALL_STORAGE_KEYS) {
       localStorage.removeItem(key);
@@ -135,6 +202,28 @@ export async function importAllAppData(payload: BackupPayload): Promise<void> {
       if (typeof value === 'string') {
         localStorage.setItem(key, value);
       }
+    }
+
+    // Re-apply the user's model selection so imports don't overwrite it
+    try {
+      if (Object.keys(preservedRuntimeSettings).length) {
+        const imported = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+        if (imported) {
+          const parsed = JSON.parse(imported);
+          Object.assign(parsed, preservedRuntimeSettings);
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+        }
+      }
+      if (preservedAIModel) {
+        const imported = localStorage.getItem(STORAGE_KEYS.AI_CONFIG);
+        if (imported) {
+          const parsed = JSON.parse(imported);
+          parsed.model = preservedAIModel;
+          localStorage.setItem(STORAGE_KEYS.AI_CONFIG, JSON.stringify(parsed));
+        }
+      }
+    } catch (err) {
+      logger.warn('Failed to preserve model selection during import:', err);
     }
   }
 
@@ -204,14 +293,19 @@ export async function getDataStats(): Promise<DataStats> {
 /**
  * Trigger a browser download of the backup JSON.
  */
-export function downloadBackup(payload: BackupPayload, filename?: string): void {
+export function downloadBackup(
+  payload: BackupPayload,
+  filename?: string
+): void {
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename || `ALTER_EGO_backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download =
+    filename ||
+    `ALTER_EGO_backup_${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -223,14 +317,17 @@ export function downloadBackup(payload: BackupPayload, filename?: string): void 
  * Returns null if the user cancels.
  */
 export function pickBackupFile(): Promise<BackupPayload | null> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json,application/json';
 
     input.addEventListener('change', async () => {
       const file = input.files?.[0];
-      if (!file) { resolve(null); return; }
+      if (!file) {
+        resolve(null);
+        return;
+      }
 
       try {
         const text = await file.text();

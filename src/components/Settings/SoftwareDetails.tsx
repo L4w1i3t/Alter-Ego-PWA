@@ -100,6 +100,12 @@ const HeaderSection = styled.div`
   animation: ${fadeIn} 0.8s ease-out 0.1s both;
   z-index: 1;
 
+  @media (max-width: 480px) {
+    padding: 1em;
+    margin-bottom: 1.5em;
+    border-radius: 6px;
+  }
+
   &::before {
     content: '';
     position: absolute;
@@ -199,8 +205,14 @@ const AppIcon = styled.img`
   object-fit: contain;
 
   @media (max-width: 768px) {
-    width: 15em;
-    height: 15em;
+    width: 12em;
+    height: 12em;
+  }
+
+  @media (max-width: 480px) {
+    width: 9em;
+    height: 9em;
+  }
 `;
 
 const shimmer = keyframes`
@@ -221,6 +233,11 @@ const InfoGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5em;
   margin-bottom: 2em;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 1em;
+  }
 `;
 
 const InfoCard = styled.div<{ $delay?: number }>`
@@ -237,6 +254,10 @@ const InfoCard = styled.div<{ $delay?: number }>`
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(0, 255, 0, 0.2);
   }
+
+  @media (max-width: 640px) {
+    padding: 1em;
+  }
 `;
 
 const CardTitle = styled.h3`
@@ -246,6 +267,10 @@ const CardTitle = styled.h3`
   display: flex;
   align-items: center;
   gap: 0.5em;
+
+  @media (max-width: 480px) {
+    font-size: 1.1em;
+  }
 `;
 
 const CardContent = styled.div`
@@ -289,6 +314,11 @@ const TechBadge = styled.span`
   &:hover {
     background: rgba(0, 255, 0, 0.2);
     transform: scale(1.05);
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.8em;
+    padding: 0.25em 0.6em;
   }
 `;
 
@@ -377,7 +407,7 @@ const BackButton = styled.button`
 
   @media (max-width: 768px) {
     width: 100%;
-    max-width: 300px;
+    max-width: 100%;
     margin: 2em auto 0;
     display: block;
   }
@@ -548,67 +578,81 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
 
   const details = {
     softwareName: 'ALTER EGO',
-    version: '0.8.5',
-    buildDate: 'July 2024',
+    version: 'Alpha 1.0.0',
+    buildDate: 'April 2026',
     developedBy: ['L4w1i3t', 'ALTER EGO'],
     technologies: [
-      'React 18.2.0',
-      'TypeScript',
-      'Python 3.12',
-      'Styled Components',
+      'React 19',
+      'TypeScript 6',
+      'Styled Components 6',
+      'Dexie.js 4 (IndexedDB)',
+      'Electron 41',
+      'Webpack 5',
       'Web Speech API',
-      'Dexie.js',
+      'Web Crypto API (AES-GCM)',
       'Service Workers',
       'PWA Technologies',
-      'OpenAI API',
-      'OpenAI Vision API',
+      'OpenAI API (Chat + Vision)',
+      'OpenRouter API',
+      'Ollama API',
       'ElevenLabs API',
-      'Webpack 5',
+      'react-markdown + remark-gfm',
     ],
     features: [
-      'Real-time AI conversations',
-      'Advanced image vision and analysis',
-      'Image upload and parsing capabilities',
-      'Smart image cache with AI descriptions',
-      'Voice synthesis (ElevenLabs)',
-      'Custom persona management',
-      'Short-term and long-term memory system',
-      'Offline capability',
-      'Cross-platform compatibility',
-      'Basic emotion processing',
-      'API key management',
-      'Desktop installation support',
+      'Real-time AI conversations with markdown rendering',
+      'Provider-aware AI model selection for OpenAI, OpenRouter, and Ollama',
+      'OpenAI Vision: image upload, analysis, and smart caching',
+      'ElevenLabs and browser-native voice synthesis',
+      'Custom persona creation, editing, and management',
+      'Three-tier memory: episodic, semantic (Ebbinghaus decay), and working',
+      'Conversation data export, import, and backup',
+      '28-label keyword-based emotion detection',
+      'Humanization engine: adaptive temperature, length, and backchannel detection',
+      'Electron desktop app with portable builds (Win/Linux)',
+      'Overlay companion mode with drag, screen capture, and vision',
+      'Autonomy system: AI proactively messages when idle (Electron)',
+      'LAN peer-to-peer: two instances converse autonomously (Electron)',
+      'AES-GCM encrypted API key storage',
+      'Configurable UI scaling, text speed, and notification controls',
+      'Experiment telemetry collection and analysis pipeline',
+      'Installable PWA with offline static asset caching',
     ],
     credits: [
       'React Development Team',
-      'OpenAI GPT Models & Vision',
-      'ElevenLabs TTS',
+      'OpenAI GPT Models & Vision API',
+      'OpenRouter model routing',
+      'Ollama local model runtime',
+      'ElevenLabs Text-to-Speech',
+      'Dexie.js (IndexedDB wrapper)',
+      'Electron & electron-builder',
+      'react-markdown, remark-gfm, remark-breaks',
     ],
     legal: [
       'Licensed under MIT License',
       'Complies with OpenAI Terms of Service',
+      'Complies with OpenRouter Terms of Service',
       'Complies with ElevenLabs API Guidelines',
-      'Privacy-focused data handling',
-      'No personal data tracking',
-      'Local storage for user preferences',
+      'Privacy-focused: all data stored locally',
+      'No personal data tracking or telemetry sent externally',
+      'API key encryption via Web Crypto AES-GCM',
     ],
     knownIssues: [
-      'Voice recognition is not yet implemented',
-      'Open-source language models are still in development',
-      'Emotion detection algorithm may produce false positives',
-      'Limited offline AI processing capabilities',
+      'Voice recognition (speech-to-text) is not yet implemented',
+      'Ollama browser access requires the local service to allow the app origin',
+      'Emotion detection keyword heuristics may produce false positives',
       'Voice synthesis latency depends on internet connection',
-      'Open-source backend integration is work-in-progress',
+      'LAN mode limited to exactly two peers on the same network',
+      'Screen capture overlay requires Electron (not available in PWA)',
     ],
     roadmap: [
-      'Implement Web Speech API for voice recognition',
-      'Add support for local language models (Ollama, etc.)',
-      'Enhance emotion detection with advanced algorithms',
-      'Improve offline functionality with local AI processing',
-      'Add conversation export/import features',
-      'Create plugin system for custom AI providers',
-      'Expand image analysis with OCR and document processing',
-      'Add multi-image batch analysis capabilities',
+      'Implement Web Speech API for voice input',
+      'Broader local model provider support beyond Ollama',
+      'Enhanced emotion detection with ML-based classifiers',
+      'OCR and document processing for image analysis',
+      'Plugin system for custom AI providers',
+      'Multi-image batch analysis',
+      'Conversation search and advanced filtering',
+      'macOS desktop builds',
     ],
   };
   return (
@@ -672,7 +716,7 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
                 {details.developedBy[0]}
               </DetailsItem>
               <DetailsItem>
-                <strong>Platform:</strong> Progressive Web App
+                <strong>Platform:</strong> PWA + Electron Desktop
               </DetailsItem>
               <DetailsItem>
                 <strong>License:</strong> MIT License
@@ -743,7 +787,7 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
 
       <DonationSection>
         <DonationText>
-          If you enjoy ALTER EGO and want to support its development, consider buying us a coffee.
+          If you enjoy ALTER EGO and want to support its or any other of my projects' development, consider donating a coffee!
         </DonationText>
         <KofiLink
           href="https://ko-fi.com/l4w1i3t"

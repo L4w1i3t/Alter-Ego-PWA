@@ -22,7 +22,14 @@ import {
 
 const Container = styled.div`
   padding: 1em;
-  @media (max-width: 768px) { padding: 0.5em; }
+
+  @media (max-width: 768px) {
+    padding: 0.5em;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.4em 0.2em;
+  }
 `;
 
 const Title = styled.h2`
@@ -31,6 +38,16 @@ const Title = styled.h2`
   display: flex;
   align-items: center;
   gap: 0.5em;
+
+  @media (max-width: 768px) {
+    font-size: 1.1em;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1em;
+    gap: 0.4em;
+  }
 `;
 
 const BackButton = styled.button`
@@ -41,7 +58,19 @@ const BackButton = styled.button`
   cursor: pointer;
   padding: 0.3em 0.6em;
   font-size: 0.9em;
-  &:hover { background: #0f0; color: #000; }
+  flex-shrink: 0;
+
+  &:hover {
+    background: #0f0;
+    color: #000;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.5em 1em;
+    font-size: 1em;
+    min-height: 2.2em;
+    touch-action: manipulation;
+  }
 `;
 
 const Section = styled.div`
@@ -86,6 +115,11 @@ const StatGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 0.5em;
   margin-top: 0.5em;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 0.4em;
+  }
 `;
 
 const StatItem = styled.div`
@@ -93,6 +127,11 @@ const StatItem = styled.div`
   border: 1px solid #0f02;
   border-radius: 0.2em;
   font-size: 0.85em;
+
+  @media (max-width: 480px) {
+    padding: 0.6em;
+    font-size: 0.9em;
+  }
 `;
 
 const StatLabel = styled.span`
@@ -111,6 +150,11 @@ const ButtonRow = styled.div`
   gap: 0.8em;
   flex-wrap: wrap;
   margin-top: 0.5em;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.6em;
+  }
 `;
 
 const ActionButton = styled.button.withConfig({
@@ -124,11 +168,28 @@ const ActionButton = styled.button.withConfig({
   font-family: inherit;
   font-size: 0.9em;
   cursor: pointer;
+
   &:hover {
     background: ${p => p.variant === 'danger' ? '#f00' : '#0f0'};
     color: #000;
   }
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.8em 1.4em;
+    font-size: 1em;
+    min-height: 2.5em;
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    text-align: center;
+  }
 `;
 
 const StatusMessage = styled.p.withConfig({
