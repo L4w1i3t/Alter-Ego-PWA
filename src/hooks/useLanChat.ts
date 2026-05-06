@@ -27,10 +27,14 @@ import {
   sendMessageToPeer,
   sendTypingIndicator,
   setLanPersona,
-  getDiscoveredPeers,
   connectToPeer,
+  getLanStatus,
 } from '../services/lanService';
-import type { LanPeerMessage, LanConnectionInfo, LanPeer } from '../services/lanService';
+import type {
+  LanPeerMessage,
+  LanConnectionInfo,
+  LanPeer,
+} from '../services/lanService';
 
 /**
  * Mounts the LAN chat system when running inside Electron and the user
@@ -46,6 +50,7 @@ export function useLanChat(): void {
   const turnCountRef = useRef(0);
   const roleRef = useRef<'initiator' | 'responder' | null>(null);
   const connectedRef = useRef(false);
+  const autoConnectAttemptRef = useRef(false);
   const lastProcessedMsgRef = useRef<string>(''); // Dedup: content hash of last processed message
   const lastSentContentRef = useRef<string>(''); // Track what we last sent to prevent echo loops
 
@@ -85,8 +90,13 @@ export function useLanChat(): void {
       }
 
       // Enforce turn limit to prevent runaway conversations (skipped if unlimited)
-      if (!unlimitedTurnsRef.current && turnCountRef.current >= (LAN.MAX_EXCHANGE_TURNS as number)) {
-        logger.debug(`[LAN Chat] Turn limit reached (${LAN.MAX_EXCHANGE_TURNS}), pausing conversation`);
+      if (
+        !unlimitedTurnsRef.current &&
+        turnCountRef.current >= (LAN.MAX_EXCHANGE_TURNS as number)
+      ) {
+        logger.debug(
+          `[LAN Chat] Turn limit reached (${LAN.MAX_EXCHANGE_TURNS}), pausing conversation`
+        );
         return;
       }
 
@@ -156,8 +166,15 @@ export function useLanChat(): void {
           // This catches a failure mode where the model regurgitates input.
           const inputNorm = data.content.trim().toLowerCase();
           const outputNorm = result.response.trim().toLowerCase();
-          if (outputNorm === inputNorm || outputNorm.startsWith(inputNorm.slice(0, Math.floor(inputNorm.length * 0.8)))) {
-            logger.warn('[LAN Chat] Suppressed parrot response (AI echoed peer input)');
+          if (
+            outputNorm === inputNorm ||
+            outputNorm.startsWith(
+              inputNorm.slice(0, Math.floor(inputNorm.length * 0.8))
+            )
+          ) {
+            logger.warn(
+              '[LAN Chat] Suppressed parrot response (AI echoed peer input)'
+            );
           } else {
             lastSentContentRef.current = result.response;
             await sendMessageToPeer(result.response);
@@ -235,6 +252,60 @@ export function useLanChat(): void {
     }
   }, [sendQuery, currentPersona]);
 
+  /**
+   * Auto-connect with a small deterministic stagger so two instances that both
+   * have auto-connect enabled do not race each other into duplicate sockets.
+   */
+  const attemptAutoConnect = useCallback(async (candidatePeer?: LanPeer) => {
+    if (
+      !autoConnectRef.current ||
+      connectedRef.current ||
+      autoConnectAttemptRef.current
+    ) {
+      return;
+    }
+
+    autoConnectAttemptRef.current = true;
+
+    try {
+      const initialStatus = await getLanStatus();
+      if (!initialStatus?.isRunning || initialStatus.isConnected) return;
+
+      const peer =
+        candidatePeer &&
+        initialStatus.discoveredPeers.some(p => p.id === candidatePeer.id)
+          ? candidatePeer
+          : initialStatus.discoveredPeers[0];
+
+      if (!peer) return;
+
+      const localId = initialStatus.instanceId;
+      const staggerMs = localId && localId > peer.id ? 1200 : 200;
+      await delay(staggerMs);
+
+      const latestStatus = await getLanStatus();
+      if (
+        !autoConnectRef.current ||
+        connectedRef.current ||
+        !latestStatus?.isRunning ||
+        latestStatus.isConnected ||
+        !latestStatus.discoveredPeers.some(p => p.id === peer.id)
+      ) {
+        return;
+      }
+
+      logger.debug(
+        `[LAN Chat] Auto-connecting to discovered peer: ${peer.name}`
+      );
+      const connected = await connectToPeer(peer.id);
+      connectedRef.current = connected || connectedRef.current;
+    } catch (err) {
+      logger.error('[LAN Chat] Auto-connect failed:', err);
+    } finally {
+      autoConnectAttemptRef.current = false;
+    }
+  }, []);
+
   // ── Main Effect: manage LAN lifecycle and event listeners ──
 
   useEffect(() => {
@@ -257,12 +328,12 @@ export function useLanChat(): void {
       turnCountRef.current = 0;
       lastProcessedMsgRef.current = '';
       lastSentContentRef.current = '';
-      logger.debug(`[LAN Chat] Connected to ${data.peerName}. Role: ${data.role}`);
+      logger.debug(
+        `[LAN Chat] Connected to ${data.peerName}. Role: ${data.role}`
+      );
 
       // Notify the UI about the connection
-      window.dispatchEvent(
-        new CustomEvent('lan-connected', { detail: data })
-      );
+      window.dispatchEvent(new CustomEvent('lan-connected', { detail: data }));
 
       // If we're the initiator, send the first message
       if (data.role === 'initiator') {
@@ -272,61 +343,94 @@ export function useLanChat(): void {
     if (unsubConn) cleanups.push(unsubConn);
 
     // Listen for disconnection
-    const unsubDisc = onLanEvent('lan:disconnected', (data: { reason: string }) => {
-      connectedRef.current = false;
-      roleRef.current = null;
-      turnCountRef.current = 0;
-      lastProcessedMsgRef.current = '';
-      lastSentContentRef.current = '';
-      logger.debug(`[LAN Chat] Disconnected: ${data.reason}`);
+    const unsubDisc = onLanEvent(
+      'lan:disconnected',
+      (data: { reason: string }) => {
+        connectedRef.current = false;
+        roleRef.current = null;
+        turnCountRef.current = 0;
+        lastProcessedMsgRef.current = '';
+        lastSentContentRef.current = '';
+        logger.debug(`[LAN Chat] Disconnected: ${data.reason}`);
 
-      window.dispatchEvent(
-        new CustomEvent('lan-disconnected', { detail: data })
-      );
-    });
+        window.dispatchEvent(
+          new CustomEvent('lan-disconnected', { detail: data })
+        );
+      }
+    );
     if (unsubDisc) cleanups.push(unsubDisc);
 
     // Listen for peer discovery (for auto-connect)
-    const unsubPeer = onLanEvent('lan:peer-discovered', async (data: LanPeer) => {
-      if (autoConnectRef.current && !connectedRef.current) {
-        logger.debug(`[LAN Chat] Auto-connecting to discovered peer: ${data.name}`);
-        await connectToPeer(data.id);
-      }
+    const unsubPeer = onLanEvent('lan:peer-discovered', (data: LanPeer) => {
+      void attemptAutoConnect(data);
     });
     if (unsubPeer) cleanups.push(unsubPeer);
 
     return () => {
       cleanups.forEach(fn => fn());
     };
-  }, [handlePeerMessage, sendOpeningMessage, syncSettings]);
+  }, [attemptAutoConnect, handlePeerMessage, sendOpeningMessage, syncSettings]);
 
-  // ── React to settings changes ──
+  // ── React to settings changes and reconcile runtime state ──
 
   useEffect(() => {
     if (!isElectronEnvironment()) return;
 
-    const onSettingsChanged = async () => {
-      const prev = enabledRef.current;
-      syncSettings();
+    let cancelled = false;
 
-      if (enabledRef.current && !prev) {
-        // LAN was just enabled — start discovery
+    const resetConnectionRefs = () => {
+      connectedRef.current = false;
+      roleRef.current = null;
+      turnCountRef.current = 0;
+      lastProcessedMsgRef.current = '';
+      lastSentContentRef.current = '';
+      autoConnectAttemptRef.current = false;
+    };
+
+    const reconcileLanRuntime = async () => {
+      syncSettings();
+      const status = await getLanStatus();
+      if (cancelled) return;
+
+      connectedRef.current = !!status?.isConnected;
+      roleRef.current = status?.role ?? null;
+
+      if (enabledRef.current) {
         setLanPersona(currentPersona);
-        await startLan(currentPersona);
-      } else if (!enabledRef.current && prev) {
-        // LAN was just disabled — shut down
+
+        if (!status?.isRunning) {
+          const started = await startLan(currentPersona);
+          if (!started) {
+            logger.warn('[LAN Chat] LAN is enabled, but startup failed');
+            return;
+          }
+        }
+
+        await attemptAutoConnect();
+        return;
+      }
+
+      if (status?.isRunning) {
         await stopLan();
       }
+      resetConnectionRefs();
     };
 
-    // Initial startup
-    onSettingsChanged();
+    void reconcileLanRuntime();
 
-    window.addEventListener(EVENTS.SETTINGS_UPDATED, onSettingsChanged as EventListener);
+    window.addEventListener(
+      EVENTS.SETTINGS_UPDATED,
+      reconcileLanRuntime as EventListener
+    );
+
     return () => {
-      window.removeEventListener(EVENTS.SETTINGS_UPDATED, onSettingsChanged as EventListener);
+      cancelled = true;
+      window.removeEventListener(
+        EVENTS.SETTINGS_UPDATED,
+        reconcileLanRuntime as EventListener
+      );
     };
-  }, [syncSettings, currentPersona]);
+  }, [attemptAutoConnect, currentPersona, syncSettings]);
 
   // ── Keep persona name in sync with the main process ──
 

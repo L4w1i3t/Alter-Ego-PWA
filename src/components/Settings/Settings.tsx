@@ -35,7 +35,16 @@ const SettingsOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 12000;
+  padding: 1.5rem;
+
+  @supports (height: 100dvh) {
+    height: 100dvh;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+  }
 `;
 
 const SettingsPanel = styled.div`
@@ -44,19 +53,30 @@ const SettingsPanel = styled.div`
   padding: 2em;
   border-radius: 0.5em;
   position: relative;
-  width: 50vw;
-  max-width: 90vw;
-  max-height: 90vh;
+  width: clamp(560px, 72vw, 960px);
+  max-width: calc(100vw - 3rem);
+  max-height: calc(100vh - 3rem);
   overflow-y: auto;
+  scrollbar-gutter: stable;
 
   @media (max-width: 768px) {
-    width: 90vw;
+    width: 100%;
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100vh - 1.5rem);
     padding: 1.2em;
   }
 
+  @supports (height: 100dvh) {
+    max-height: calc(100dvh - 3rem);
+
+    @media (max-width: 768px) {
+      max-height: calc(100dvh - 1.5rem);
+    }
+  }
+
   @media (max-width: 480px) {
-    width: 95vw;
-    max-width: 95vw;
+    width: 100%;
+    max-width: calc(100vw - 1rem);
     padding: 1em 0.8em;
     border-radius: 0.3em;
   }
@@ -67,14 +87,25 @@ const SettingsGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 1em;
   margin-bottom: 1.5em;
+  align-items: stretch;
 
-  @media (max-width: 600px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
     gap: 0.75em;
   }
 `;
 
 const SettingsCategory = styled.button.attrs({ type: 'button' })`
+  && {
+    display: grid;
+    grid-template-columns: 1.75rem minmax(7.5rem, max-content) minmax(0, 1fr);
+    align-items: center;
+    justify-content: stretch;
+    column-gap: 0.85em;
+    row-gap: 0.25em;
+    min-height: 5rem;
+  }
+
   border: 1px solid #0f03;
   padding: 1em;
   border-radius: 0.3em;
@@ -85,6 +116,7 @@ const SettingsCategory = styled.button.attrs({ type: 'button' })`
   width: 100%;
   transition: all 0.2s ease;
   cursor: pointer;
+  line-height: 1.25;
 
   &:hover {
     background-color: #0f01;
@@ -99,31 +131,50 @@ const SettingsCategory = styled.button.attrs({ type: 'button' })`
     outline-offset: 2px;
   }
 
+  @media (max-width: 640px) {
+    && {
+      grid-template-columns: 1.5rem minmax(0, 1fr);
+      min-height: 4.5rem;
+      align-items: start;
+    }
+  }
+
   @media (max-width: 480px) {
     padding: 0.8em;
   }
 `;
-// category title and icon should not disappear when hovered over, only the background and border should change color. The text color should remain the same to ensure readability and consistency across the UI.
-// so fix that
+
 const CategoryTitle = styled.h3`
   margin: 0;
-  margin-bottom: 0.5em;
   font-size: 1em;
+  line-height: 1.2;
+  min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const CategoryDescription = styled.p`
   margin: 0;
   font-size: 0.8em;
   color: #0f09;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+
+  @media (max-width: 640px) {
+    grid-column: 2;
+  }
 `;
 
 const CategoryIcon = styled.div`
-  font-size: 1.5em;
-  margin-bottom: 0.5em;
+  width: 1.75rem;
+  min-width: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   @media (max-width: 480px) {
-    font-size: 1.3em;
-    margin-bottom: 0.3em;
+    width: 1.5rem;
+    min-width: 1.5rem;
   }
 `;
 
@@ -131,6 +182,7 @@ const SettingsTitle = styled.h2`
   margin-top: 0;
   margin-bottom: 1em;
   font-size: 1.2em;
+  padding-right: 3rem;
 
   @media (max-width: 480px) {
     font-size: 1.1em;
@@ -178,7 +230,7 @@ const CloseButton = styled.button`
   cursor: pointer;
   font-weight: bold;
   padding: 0.2em 0.5em;
-  z-index: 1000;
+  z-index: 1;
 
   /* Ensure the button has a proper click area */
   &::before {
@@ -241,10 +293,7 @@ interface SettingsProps {
   initialView?: string;
 }
 
-const Settings: React.FC<SettingsProps> = ({
-  onClose,
-  initialView,
-}) => {
+const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
   const [currentView, setCurrentView] = useState<string | null>(
     initialView || null
   );

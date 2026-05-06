@@ -122,6 +122,21 @@ const StatusText = styled.p`
   }
 `;
 
+const ReleaseLink = styled.a`
+  color: #0ff;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+
+  &:hover {
+    color: #8ff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #0ff;
+    outline-offset: 2px;
+  }
+`;
+
 const InstallButton = styled.button`
   background: #0f0;
   color: #000;
@@ -292,7 +307,10 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
       setInstallError(null);
     };
 
-    window.addEventListener(EVENTS.PWA_INSTALL_AVAILABLE, handleInstallAvailable);
+    window.addEventListener(
+      EVENTS.PWA_INSTALL_AVAILABLE,
+      handleInstallAvailable
+    );
     window.addEventListener(EVENTS.PWA_INSTALLED, handleInstalled);
 
     return () => {
@@ -408,20 +426,33 @@ export const DesktopInstall: React.FC<Props> = ({ onBack }) => {
           Native Desktop App (Portable .exe)
         </InstructionsTitle>
         <StatusText>
-          ALTER EGO can also be built as a standalone portable desktop application.
-          No installer required -- just run the .exe from any folder. All data
-          (settings, memory, conversations) is stored next to the executable so
-          the entire folder can be copied between machines.
+          ALTER EGO can also be built as a standalone portable desktop
+          application. No installer required -- just run the .exe from any
+          folder. All data (settings, memory, conversations) is stored next to
+          the executable so the entire folder can be copied between machines.
         </StatusText>
         <StatusText style={{ marginTop: '0.5em', color: '#0ff' }}>
           To build the portable app yourself, clone the repository and run:{' '}
-          <code style={{ background: '#111', padding: '0.15em 0.4em', borderRadius: '3px' }}>
+          <code
+            style={{
+              background: '#111',
+              padding: '0.15em 0.4em',
+              borderRadius: '3px',
+            }}
+          >
             npm run electron:build
           </code>
         </StatusText>
         <StatusText style={{ marginTop: '0.5em', color: '#0ff' }}>
-          If you just want an easy download, the releases page on GitHub will have the program already bundled.
-          Simply install the latest release and you're good to go!
+          If you just want an easy download, get the bundled desktop app from{' '}
+          <ReleaseLink
+            href="https://github.com/L4w1i3t/Alter-Ego-PWA/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub Releases
+          </ReleaseLink>
+          . Simply install the latest release and you're good to go!
         </StatusText>
       </Instructions>
 

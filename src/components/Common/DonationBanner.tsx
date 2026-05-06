@@ -127,28 +127,38 @@ const CheckboxRow = styled.label`
   &:hover {
     color: #0f0b;
   }
-
-
 `;
 
-const CheckMark = styled.span.withConfig({
-  shouldForwardProp: prop => prop !== 'checked',
-})<{ checked: boolean }>`
+const HiddenCheckbox = styled.input`
+  && {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 1px;
+    min-height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+`;
+
+const CheckMark = styled.span<{ $checked: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  border: 1px solid ${p => (p.checked ? '#0f0' : '#0f06')};
+  width: 16px;
+  height: 16px;
+  border: 1px solid ${p => (p.$checked ? '#0f0' : '#0f06')};
   border-radius: 3px;
-  background: ${p => (p.checked ? 'rgba(0, 255, 0, 0.15)' : 'transparent')};
+  background: ${p => (p.$checked ? '#0f0' : 'transparent')};
+  color: #000;
   transition: all 0.2s ease;
   flex-shrink: 0;
 
   &::after {
-    content: '${p => (p.checked ? '\\2713' : '')}';
-    color: #0f0;
-    font-size: 11px;
+    content: '${p => (p.$checked ? '\\2713' : '')}';
+    font-size: 12px;
     line-height: 1;
   }
 `;
@@ -187,7 +197,8 @@ const DonationBanner: React.FC = () => {
     <Wrapper closing={closing}>
       <Heading>Consider supporting ALTER EGO</Heading>
       <Body>
-        Like and support my work? A small donation helps me dedicate more time to developing ALTER EGO, other projects, and my research!
+        Like and support my work? A small donation helps me dedicate more time
+        to developing ALTER EGO, other projects, and my research!
       </Body>
       <ButtonRow>
         <KofiLink href={KOFI_URL} target="_blank" rel="noopener noreferrer">
@@ -195,8 +206,13 @@ const DonationBanner: React.FC = () => {
         </KofiLink>
         <DismissBtn onClick={dismiss}>Maybe later</DismissBtn>
       </ButtonRow>
-      <CheckboxRow onClick={() => setSuppress(prev => !prev)}>
-        <CheckMark checked={suppress} />
+      <CheckboxRow>
+        <HiddenCheckbox
+          type="checkbox"
+          checked={suppress}
+          onChange={event => setSuppress(event.target.checked)}
+        />
+        <CheckMark $checked={suppress} />
         Don't show this again
       </CheckboxRow>
     </Wrapper>

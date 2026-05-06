@@ -137,61 +137,85 @@ const CheckboxContainer = styled.div`
 `;
 
 const Checkbox = styled.input`
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-  border: 1px solid #0f0;
-  border-radius: 4px;
-  background: transparent;
-  color: #0f0;
-  display: inline-grid;
-  place-items: center;
-  cursor: pointer;
-  position: relative;
-  touch-action: manipulation;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-
-  &::before {
-    content: '';
-    width: 10px;
-    height: 6px;
-    border-left: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    opacity: 0;
-    transform: rotate(-45deg) scale(0.7);
+  && {
+    appearance: none;
+    width: 44px;
+    height: 24px;
+    min-width: 44px;
+    min-height: 24px;
+    flex: 0 0 44px;
+    border: 1px solid #0f0;
+    border-radius: 999px;
+    background: #001008;
+    color: #0f0;
+    cursor: pointer;
+    position: relative;
+    touch-action: manipulation;
     transition:
-      opacity 0.15s ease,
-      transform 0.15s ease;
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
   }
 
-  &:hover {
+  &&::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border: 0;
+    border-radius: 50%;
+    background: #0f08;
+    opacity: 1;
+    transform: translateX(0);
+    transition:
+      background 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  &&:hover {
     border-color: #0ff;
+    background: #001810;
   }
 
-  &:focus-visible {
+  &&:focus-visible {
     outline: 2px solid #0ff;
     outline-offset: 2px;
   }
 
-  &:checked {
+  &&:checked {
     background: #0f0;
     border-color: #0ff;
-    color: #000;
   }
 
-  &:checked::before {
-    opacity: 1;
-    transform: rotate(-45deg) scale(1);
+  &&:checked::before {
+    background: #000;
+    transform: translateX(20px);
+  }
+
+  &&:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
   }
 
   @media (max-width: 768px) {
-    width: 24px;
-    height: 24px;
-    flex-basis: 24px;
+    && {
+      width: 48px;
+      height: 28px;
+      min-width: 48px;
+      min-height: 28px;
+      flex-basis: 48px;
+    }
+
+    &&::before {
+      width: 20px;
+      height: 20px;
+    }
+
+    &&:checked::before {
+      transform: translateX(20px);
+    }
   }
 `;
 
@@ -276,10 +300,16 @@ const Button = styled.button`
   border: 1px solid #0f0;
   padding: 0.5em 1em;
   cursor: pointer;
+  border-radius: 0.3em;
 
   &:hover {
     background: #0f0;
     color: #000;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 
   @media (max-width: 768px) {
@@ -288,6 +318,69 @@ const Button = styled.button`
     border-width: 2px;
     border-radius: 0.3em;
   }
+`;
+
+const CompactButton = styled(Button)`
+  min-height: 2.25em;
+  padding: 0.35em 0.85em;
+  font-size: 0.85em;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    width: auto;
+    min-height: 2.75em;
+    padding: 0.6em 1em;
+    font-size: 0.95em;
+  }
+`;
+
+const LanStatusPanel = styled(ImmersiveInfoBox)`
+  margin-top: 0;
+`;
+
+const LanStatusRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+
+  & + & {
+    margin-top: 0.45em;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25em;
+  }
+`;
+
+const LanMutedText = styled.span`
+  color: #0f08;
+  font-size: 0.9em;
+`;
+
+const LanPeerList = styled.div`
+  margin-top: 0.75em;
+  border-top: 1px solid #0ff3;
+`;
+
+const LanPeerRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75em;
+  align-items: center;
+  padding: 0.65em 0;
+  border-bottom: 1px solid #0ff2;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+`;
+
+const LanPeerName = styled.div`
+  overflow-wrap: anywhere;
 `;
 
 const InfoText = styled.p`
@@ -391,10 +484,14 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
   const [showLanInfo, setShowLanInfo] = useState<boolean>(false);
   const [lanStatus, setLanStatus] = useState<LanStatus | null>(null);
   const [discoveredPeers, setDiscoveredPeers] = useState<LanPeer[]>([]);
+  const [lanBusy, setLanBusy] = useState<boolean>(false);
+  const [lanError, setLanError] = useState<string | null>(null);
+  const [connectingPeerId, setConnectingPeerId] = useState<string | null>(null);
   // Current Notification API permission state
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
-    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
-  );
+  const [notifPermission, setNotifPermission] =
+    useState<NotificationPermission>(
+      typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+    );
 
   const sampleText =
     'Hello! This is how ALTER EGO will type responses at this speed.';
@@ -529,16 +626,79 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
   };
 
   // LAN handlers
-  const handleLanToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLanEnabled(e.target.checked);
+  const waitForLanRuntime = async (): Promise<LanStatus | null> => {
+    await new Promise(resolve => setTimeout(resolve, 450));
+    return getLanStatus();
   };
 
-  const handleLanAutoConnectToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLanAutoConnect(e.target.checked);
+  const saveLanRuntimeSettings = (
+    patch: Pick<
+      Partial<ReturnType<typeof loadSettings>>,
+      'lanEnabled' | 'lanAutoConnect' | 'lanUnlimitedTurns'
+    >
+  ) => {
+    saveSettings({
+      ...loadSettings(),
+      ...patch,
+    });
   };
 
-  const handleLanUnlimitedTurnsToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLanUnlimitedTurns(e.target.checked);
+  const handleLanToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextEnabled = e.target.checked;
+    setLanEnabled(nextEnabled);
+    setLanError(null);
+    setLanBusy(true);
+
+    if (!nextEnabled) {
+      setDiscoveredPeers([]);
+      setLanStatus(null);
+    }
+
+    try {
+      saveLanRuntimeSettings({ lanEnabled: nextEnabled });
+      const status = await waitForLanRuntime();
+      setLanStatus(nextEnabled ? status : null);
+      setDiscoveredPeers(nextEnabled ? (status?.discoveredPeers ?? []) : []);
+
+      if (nextEnabled && !status?.isRunning) {
+        setLanError(
+          'LAN did not start. Check that the desktop app has network permissions.'
+        );
+      }
+    } catch (error) {
+      setLanEnabled(!nextEnabled);
+      setLanError('Unable to update LAN state.');
+    } finally {
+      setLanBusy(false);
+    }
+  };
+
+  const handleLanAutoConnectToggle = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextAutoConnect = e.target.checked;
+    setLanAutoConnect(nextAutoConnect);
+    setLanError(null);
+
+    try {
+      saveLanRuntimeSettings({ lanAutoConnect: nextAutoConnect });
+      if (lanEnabled) {
+        const status = await waitForLanRuntime();
+        setLanStatus(status);
+        setDiscoveredPeers(status?.discoveredPeers ?? []);
+      }
+    } catch {
+      setLanAutoConnect(!nextAutoConnect);
+      setLanError('Unable to update LAN auto-connect.');
+    }
+  };
+
+  const handleLanUnlimitedTurnsToggle = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextUnlimited = e.target.checked;
+    setLanUnlimitedTurns(nextUnlimited);
+    saveLanRuntimeSettings({ lanUnlimitedTurns: nextUnlimited });
   };
 
   const toggleLanInfo = () => {
@@ -546,27 +706,56 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
   };
 
   const refreshLanStatus = async () => {
+    if (!isElectron) return;
     const status = await getLanStatus();
     setLanStatus(status);
-    const peers = await getDiscoveredPeers();
-    setDiscoveredPeers(peers);
+    setDiscoveredPeers(status?.discoveredPeers ?? (await getDiscoveredPeers()));
   };
 
   const handleConnectPeer = async (peerId: string) => {
-    await connectToPeer(peerId);
-    await refreshLanStatus();
+    if (connectingPeerId || lanBusy) return;
+    setConnectingPeerId(peerId);
+    setLanError(null);
+
+    try {
+      const connected = await connectToPeer(peerId);
+      if (!connected) {
+        setLanError(
+          'Could not connect to that peer. Make sure both apps are still on the same network.'
+        );
+      }
+    } finally {
+      setConnectingPeerId(null);
+      await refreshLanStatus();
+    }
   };
 
   const handleDisconnectPeer = async () => {
-    await disconnectFromPeer();
-    await refreshLanStatus();
+    setLanBusy(true);
+    setLanError(null);
+
+    try {
+      await disconnectFromPeer();
+      await refreshLanStatus();
+    } finally {
+      setLanBusy(false);
+    }
   };
 
   // Poll LAN status while settings are open and LAN is enabled
   useEffect(() => {
-    if (!isElectron || !lanEnabled) return;
+    if (!isElectron) return;
+    if (!lanEnabled) {
+      setLanStatus(null);
+      setDiscoveredPeers([]);
+      return;
+    }
+
     refreshLanStatus();
-    const interval = setInterval(refreshLanStatus, LAN.POLL_INTERVAL_MS as number);
+    const interval = setInterval(
+      refreshLanStatus,
+      LAN.POLL_INTERVAL_MS as number
+    );
     return () => clearInterval(interval);
   }, [isElectron, lanEnabled]);
 
@@ -778,11 +967,12 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
           </SettingRow>
           {showAutonomyInfo && (
             <ImmersiveInfoBox>
-              <strong>Autonomy Mode:</strong> When enabled, the AI can proactively
-              send you messages without waiting for your input. It may start new
-              conversations or revisit interesting topics from your chat history.
-              Messages are sent after a period of no queries from you, so the AI
-              can reach out even while you are busy with other things.
+              <strong>Autonomy Mode:</strong> When enabled, the AI can
+              proactively send you messages without waiting for your input. It
+              may start new conversations or revisit interesting topics from
+              your chat history. Messages are sent after a period of no queries
+              from you, so the AI can reach out even while you are busy with
+              other things.
               <br />
               <strong>Desktop only:</strong> This feature is exclusive to the
               Electron desktop app.
@@ -830,19 +1020,21 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
               in your OS settings to use this feature.
             </ImmersiveInfoBox>
           )}
-          {autonomyEnabled && notifPermission === 'default' && autonomyNotifications && (
-            <ImmersiveInfoBox>
-              <strong>Permission needed.</strong> Click the button below to
-              grant notification access.
-              <br />
-              <Button
-                style={{ marginTop: '0.5em' }}
-                onClick={handleRequestNotifPermission}
-              >
-                Allow Notifications
-              </Button>
-            </ImmersiveInfoBox>
-          )}
+          {autonomyEnabled &&
+            notifPermission === 'default' &&
+            autonomyNotifications && (
+              <ImmersiveInfoBox>
+                <strong>Permission needed.</strong> Click the button below to
+                grant notification access.
+                <br />
+                <Button
+                  style={{ marginTop: '0.5em' }}
+                  onClick={handleRequestNotifPermission}
+                >
+                  Allow Notifications
+                </Button>
+              </ImmersiveInfoBox>
+            )}
         </>
       )}
       {/* LAN Peer-to-Peer settings - Electron desktop app only */}
@@ -856,6 +1048,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
                 id="lanEnabled"
                 checked={lanEnabled}
                 onChange={handleLanToggle}
+                disabled={lanBusy}
               />
               <CheckboxLabel htmlFor="lanEnabled">
                 Let two ALTER EGOs on the same network talk to each other
@@ -882,7 +1075,8 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
               ALTER EGO instances. When two instances find each other, their AI
               personas will have a live conversation. One is randomly chosen to
               speak first so neither user has to initiate.
-              <br /><br />
+              <br />
+              <br />
               <strong>Two-peer limit:</strong> Only one connection at a time is
               allowed to keep the conversation natural and avoid multiple AIs
               talking over each other.
@@ -899,7 +1093,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
                 id="lanAutoConnect"
                 checked={lanAutoConnect}
                 onChange={handleLanAutoConnectToggle}
-                disabled={!lanEnabled}
+                disabled={!lanEnabled || lanBusy}
               />
               <CheckboxLabel htmlFor="lanAutoConnect">
                 Automatically connect to the first discovered peer
@@ -914,77 +1108,86 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
                 id="lanUnlimitedTurns"
                 checked={lanUnlimitedTurns}
                 onChange={handleLanUnlimitedTurnsToggle}
-                disabled={!lanEnabled}
+                disabled={!lanEnabled || lanBusy}
               />
               <CheckboxLabel htmlFor="lanUnlimitedTurns">
-                Keep chatting until disconnected (no {LAN.MAX_EXCHANGE_TURNS}-turn limit)
+                Keep chatting until disconnected (no {LAN.MAX_EXCHANGE_TURNS}
+                -turn limit)
               </CheckboxLabel>
             </CheckboxContainer>
           </SettingRow>
-          {lanEnabled && lanStatus && (
+          {lanError && (
+            <WarningInfoBox>
+              <strong>LAN:</strong> {lanError}
+            </WarningInfoBox>
+          )}
+          {lanEnabled && (
             <>
-              <ImmersiveInfoBox>
-                <strong>Status:</strong>{' '}
-                {lanStatus.isConnected
-                  ? `Connected to ${lanStatus.peer?.name ?? 'peer'} (${lanStatus.role})`
-                  : lanStatus.isRunning
-                    ? 'Scanning for peers...'
-                    : 'Not running (save settings to start)'}
-                {lanStatus.localIPs?.length > 0 && (
-                  <>
-                    <br />
-                    <span style={{ color: '#0f08', fontSize: '0.9em' }}>
-                      Your IP: {lanStatus.localIPs.join(', ')}
-                    </span>
-                  </>
-                )}
-              </ImmersiveInfoBox>
-              {lanStatus.isConnected && (
+              <LanStatusPanel>
+                <LanStatusRow>
+                  <strong>Status:</strong>
+                  <span>
+                    {lanBusy
+                      ? 'Updating...'
+                      : lanStatus?.isConnected
+                        ? `Connected to ${lanStatus.peer?.name ?? 'peer'} (${lanStatus.role})`
+                        : lanStatus?.isRunning
+                          ? lanAutoConnect
+                            ? 'Scanning and auto-connecting...'
+                            : 'Scanning for peers...'
+                          : 'Starting LAN services...'}
+                  </span>
+                </LanStatusRow>
+                {lanStatus?.localIPs?.length ? (
+                  <LanStatusRow>
+                    <strong>Your IP:</strong>
+                    <LanMutedText>{lanStatus.localIPs.join(', ')}</LanMutedText>
+                  </LanStatusRow>
+                ) : null}
+              </LanStatusPanel>
+
+              {lanStatus?.isConnected && (
                 <ButtonContainer style={{ marginTop: '0' }}>
-                  <Button onClick={handleDisconnectPeer}>
-                    Disconnect from Peer
+                  <Button onClick={handleDisconnectPeer} disabled={lanBusy}>
+                    {lanBusy ? 'Disconnecting...' : 'Disconnect from Peer'}
                   </Button>
                 </ButtonContainer>
               )}
-              {!lanStatus.isConnected && discoveredPeers.length > 0 && (
-                <>
-                  <ImmersiveInfoBox>
-                    <strong>Discovered Peers:</strong>
+              {!lanStatus?.isConnected && discoveredPeers.length > 0 && (
+                <LanStatusPanel>
+                  <strong>Discovered Peers:</strong>
+                  <LanPeerList>
                     {discoveredPeers.map(peer => (
-                      <div
-                        key={peer.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginTop: '0.5em',
-                          padding: '0.3em 0',
-                          borderBottom: '1px solid #0ff3',
-                        }}
-                      >
-                        <span>
-                          {peer.name}{' '}
-                          <span style={{ color: '#0f08', fontSize: '0.85em' }}>
-                            ({peer.ip})
-                          </span>
-                        </span>
-                        <Button
-                          style={{ padding: '0.25em 0.75em', fontSize: '0.85em' }}
-                          onClick={() => handleConnectPeer(peer.id)}
-                        >
-                          Connect
-                        </Button>
-                      </div>
+                      <LanPeerRow key={peer.id}>
+                        <LanPeerName>
+                          {peer.name} <LanMutedText>({peer.ip})</LanMutedText>
+                        </LanPeerName>
+                        {lanAutoConnect ? (
+                          <LanMutedText>Auto-connect enabled</LanMutedText>
+                        ) : (
+                          <CompactButton
+                            type="button"
+                            onClick={() => handleConnectPeer(peer.id)}
+                            disabled={lanBusy || !!connectingPeerId}
+                          >
+                            {connectingPeerId === peer.id
+                              ? 'Connecting...'
+                              : 'Connect'}
+                          </CompactButton>
+                        )}
+                      </LanPeerRow>
                     ))}
-                  </ImmersiveInfoBox>
-                </>
+                  </LanPeerList>
+                </LanStatusPanel>
               )}
-              {!lanStatus.isConnected && discoveredPeers.length === 0 && lanStatus.isRunning && (
-                <ImmersiveInfoBox>
-                  No peers found yet. Make sure another ALTER EGO desktop app
-                  with LAN Peer Chat enabled is running on the same network.
-                </ImmersiveInfoBox>
-              )}
+              {!lanStatus?.isConnected &&
+                discoveredPeers.length === 0 &&
+                lanStatus?.isRunning && (
+                  <LanStatusPanel>
+                    No peers found yet. Make sure another ALTER EGO desktop app
+                    with LAN Peer Chat enabled is running on the same network.
+                  </LanStatusPanel>
+                )}
             </>
           )}
         </>

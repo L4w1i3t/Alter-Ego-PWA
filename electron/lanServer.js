@@ -35,6 +35,7 @@ let instanceId = crypto.randomUUID();
 let wsServer = null;
 let heartbeatTimer = null;
 let peerConnection = null; // Active WebSocket to remote peer (socket object)
+let peerConnectionSide = null; // 'client' | 'server' for frame masking
 let peerInfo = null;       // { id, name, ip, port, role }
 let isRunning = false;
 let ipcSender = null;      // Reference to BrowserWindow.webContents for IPC
@@ -418,6 +419,15 @@ function connectToPeer(peerId) {
   return new Promise((resolve) => {
     const net = require('net');
     const socket = new net.Socket();
+    let settled = false;
+    let timeout = null;
+
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      resolve(value);
+    };
 
     socket.connect(peer.port, peer.ip, () => {
       // Send WebSocket upgrade request
@@ -460,11 +470,11 @@ function connectToPeer(peerId) {
             if (remaining.length > 0) {
               handleWsData(socket, remaining);
             }
-            resolve(true);
+            finish(true);
           } else {
             console.error('[LAN] Peer rejected connection:', header.split('\r\n')[0]);
             socket.destroy();
-            resolve(false);
+            finish(false);
           }
         }
       }
@@ -473,7 +483,7 @@ function connectToPeer(peerId) {
 
     socket.on('error', (err) => {
       console.error('[LAN] Connection error:', err.message);
-      resolve(false);
+      finish(false);
     });
 
     socket.on('close', () => {
@@ -483,10 +493,10 @@ function connectToPeer(peerId) {
     });
 
     // Timeout the connection attempt
-    setTimeout(() => {
+    timeout = setTimeout(() => {
       if (!handshakeComplete) {
         socket.destroy();
-        resolve(false);
+        finish(false);
       }
     }, 5000);
   });
@@ -498,6 +508,8 @@ function connectToPeer(peerId) {
 
 function handleNewPeerConnection(socket, side) {
   peerConnection = socket;
+  peerConnectionSide = side;
+  wsBuffer = Buffer.alloc(0);
 
   // Assign role via deterministic tiebreak: lower instance ID = initiator.
   // Both sides compute this independently using the same logic.
@@ -657,6 +669,7 @@ function handlePeerDisconnect(reason) {
     try { peerConnection.end(); } catch { /* ignore */ }
   }
   peerConnection = null;
+  peerConnectionSide = null;
   peerInfo = null;
   localRole = null;
   rendererNotified = false;
@@ -674,7 +687,7 @@ function sendWsMessage(obj) {
   try {
     const payload = JSON.stringify(obj);
     // Use masked frames when we're the client, unmasked when server
-    const frame = peerInfo?.role === 'client'
+    const frame = peerConnectionSide === 'client'
       ? buildMaskedWsFrame(payload)
       : buildWsFrame(payload);
     peerConnection.write(frame);
@@ -705,7 +718,11 @@ function notifyRenderer(channel, data) {
  * @param {string} personaName - The current persona name for peer display
  */
 function startLan(webContents, personaName) {
-  if (isRunning) return { success: true, instanceId };
+  if (isRunning) {
+    ipcSender = webContents;
+    localPersonaName = personaName || localPersonaName || 'ALTER EGO';
+    return { success: true, instanceId };
+  }
 
   ipcSender = webContents;
   localPersonaName = personaName || 'ALTER EGO';
@@ -726,7 +743,7 @@ function startLan(webContents, personaName) {
 
 /** Cleanly shut down all LAN networking. */
 function stopLan() {
-  if (!isRunning) return;
+  if (!isRunning) return false;
 
   // Notify peer we're leaving
   sendWsMessage({ type: 'disconnect' });
@@ -763,7 +780,10 @@ function stopLan() {
   discoveredPeers.clear();
   isRunning = false;
   localRole = null;
+  rendererNotified = false;
+  wsBuffer = Buffer.alloc(0);
   console.log('[LAN] Stopped.');
+  return true;
 }
 
 /** Connect to a specific discovered peer by their instance ID. */
@@ -773,8 +793,10 @@ async function connectPeer(peerId) {
 
 /** Disconnect from the currently connected peer. */
 function disconnectPeer() {
+  if (!peerConnection) return false;
   sendWsMessage({ type: 'disconnect' });
   handlePeerDisconnect('Local disconnect');
+  return true;
 }
 
 /**

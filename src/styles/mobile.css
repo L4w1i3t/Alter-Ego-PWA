@@ -57,9 +57,19 @@
 
   /* Ensure touch targets are large enough */
   button,
-  input {
+  input:not([type='checkbox']):not([type='range']) {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  input[type='checkbox'] {
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  input[type='range'] {
+    min-width: 0;
+    min-height: 32px;
   }
 }
 

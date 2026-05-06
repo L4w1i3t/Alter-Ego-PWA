@@ -9,7 +9,11 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { EVENTS } from '../../config/constants';
-import { installPWA, isPWAInstalled, canInstallPWA } from '../../utils/pwaUtils';
+import {
+  installPWA,
+  isPWAInstalled,
+  canInstallPWA,
+} from '../../utils/pwaUtils';
 import { isElectronEnvironment } from '../../utils/electronUtils';
 
 const slideDown = keyframes`
@@ -22,9 +26,9 @@ const Banner = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 0.75em;
-  padding: 0.6em 1em;
-  background: linear-gradient(90deg, rgba(0, 255, 0, 0.12) 0%, rgba(0, 180, 0, 0.08) 100%);
-  border-bottom: 1px solid #0f0;
+  padding: 0.65em 1em;
+  background: #020b06;
+  border-bottom: 1px solid #0f06;
   animation: ${slideDown} 0.3s ease-out;
   flex-shrink: 0;
 
@@ -61,16 +65,23 @@ const ButtonGroup = styled.div`
 const InstallBtn = styled.button`
   background: #0f0;
   color: #000;
-  border: none;
-  border-radius: 0.25em;
+  border: 1px solid #0f0;
+  border-radius: 6px;
   padding: 0.35em 0.9em;
   font-weight: bold;
   font-size: 0.85em;
   cursor: pointer;
+  min-height: 2.25em;
   white-space: nowrap;
 
-  &:hover { background: #00e000; }
-  &:disabled { background: #666; color: #999; cursor: not-allowed; }
+  &:hover {
+    background: #8f8;
+  }
+  &:disabled {
+    background: #666;
+    color: #999;
+    cursor: not-allowed;
+  }
 
   @media (max-width: 768px) {
     padding: 0.5em 1em;
@@ -82,12 +93,16 @@ const DismissBtn = styled.button`
   background: transparent;
   color: #0f0;
   border: 1px solid #0f04;
-  border-radius: 0.25em;
+  border-radius: 6px;
   padding: 0.35em 0.6em;
   font-size: 0.85em;
   cursor: pointer;
+  min-height: 2.25em;
 
-  &:hover { border-color: #0f0; }
+  &:hover {
+    border-color: #0f0;
+    background: #001408;
+  }
 
   @media (max-width: 768px) {
     padding: 0.5em 0.8em;
@@ -146,7 +161,8 @@ const InstallBanner: React.FC = () => {
   return (
     <Banner role="banner" aria-label="Install ALTER EGO">
       <BannerText>
-        Install ALTER EGO as a desktop app for faster loading and offline access.
+        Install ALTER EGO as a desktop app for faster loading and offline
+        access.
       </BannerText>
       <ButtonGroup>
         <InstallBtn onClick={handleInstall} disabled={installing}>
