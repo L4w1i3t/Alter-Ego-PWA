@@ -227,10 +227,9 @@ const OpenSourceWipInfo: React.FC<OpenSourceWipInfoProps> = ({ onBack }) => {
       <RecommendationBox>
         <RecommendationTitle> Current Recommendation:</RecommendationTitle>
         <WipDescription style={{ color: '#aaffaa', margin: 0 }}>
-          For the best experience right now, please use the{' '}
-          <strong>OpenAI</strong> model which provides: full conversational AI
-          capabilities, advanced reasoning, reliable performance, and regular
-          updates.
+          For hosted models, use either <strong>OpenAI</strong> or{' '}
+          <strong>OpenRouter</strong>. For local models, use{' '}
+          <strong>Ollama</strong> from the AI Models panel.
         </WipDescription>
       </RecommendationBox>
 

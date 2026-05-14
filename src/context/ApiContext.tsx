@@ -9,6 +9,7 @@ import { sendMessageToAI } from '../services/aiService';
 import type { AIConfig, MessageHistory, ChatHistoryEntry } from '../types';
 import {
   loadChatHistory,
+  loadApiKeys,
   saveChatHistory,
   loadSettings,
 } from '../utils/storageUtils';
@@ -689,7 +690,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
     // Capture settings at query time for telemetry
     const settingsAtQuery = loadSettings();
-    const activeModel = config?.model || getActiveModelLabel(settingsAtQuery);
+    const activeModel =
+      config?.model || getActiveModelLabel(settingsAtQuery, loadApiKeys());
     const activeTemp = config?.temperature ?? 0.9;
     const activeMaxTok = config?.maxTokens ?? 1000;
 

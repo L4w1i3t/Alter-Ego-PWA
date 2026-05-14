@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { loadApiKeys, saveApiKeys, ApiKeys } from '../../utils/storageUtils';
+import {
+  loadApiKeys,
+  loadSettings,
+  saveApiKeys,
+  saveSettings,
+  ApiKeys,
+} from '../../utils/storageUtils';
+import { AI_PROVIDER_LABELS } from '../../utils/aiProviders';
+import type { AIProvider } from '../../types';
 import {
   showSuccess,
   showError,
@@ -161,6 +169,37 @@ interface ApiKeyManagerProps {
   onBack: () => void;
 }
 
+const trimApiKeys = (keys: ApiKeys): ApiKeys => ({
+  OPENAI_API_KEY: keys.OPENAI_API_KEY.trim(),
+  OPENROUTER_API_KEY: keys.OPENROUTER_API_KEY.trim(),
+  ELEVENLABS_API_KEY: keys.ELEVENLABS_API_KEY.trim(),
+});
+
+const getProviderAfterKeySave = (
+  currentProvider: AIProvider | undefined,
+  keys: ApiKeys
+): AIProvider | null => {
+  if (currentProvider === 'ollama') return null;
+
+  const hasOpenAIKey = !!keys.OPENAI_API_KEY;
+  const hasOpenRouterKey = !!keys.OPENROUTER_API_KEY;
+
+  if (currentProvider === 'openai' && !hasOpenAIKey && hasOpenRouterKey) {
+    return 'openrouter';
+  }
+
+  if (currentProvider === 'openrouter' && !hasOpenRouterKey && hasOpenAIKey) {
+    return 'openai';
+  }
+
+  if (!currentProvider) {
+    if (hasOpenRouterKey && !hasOpenAIKey) return 'openrouter';
+    if (hasOpenAIKey && !hasOpenRouterKey) return 'openai';
+  }
+
+  return null;
+};
+
 const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
   const [keys, setKeys] = useState<ApiKeys>({
     OPENAI_API_KEY: '',
@@ -195,16 +234,19 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
     setIsValidating(true);
 
     try {
+      const nextKeys = trimApiKeys(keys);
+      setKeys(nextKeys);
+
       // Enhanced validation
       let hasErrors = false;
 
       // Check for compromised keys
-      const compromisedWarnings = checkForCompromisedKeys(keys);
+      const compromisedWarnings = checkForCompromisedKeys(nextKeys);
       compromisedWarnings.forEach(warning => showWarning(warning));
 
       // Validate OpenAI key if provided
-      if (keys.OPENAI_API_KEY) {
-        const openaiResult = await validateOpenAIKey(keys.OPENAI_API_KEY);
+      if (nextKeys.OPENAI_API_KEY) {
+        const openaiResult = await validateOpenAIKey(nextKeys.OPENAI_API_KEY);
         setValidationResults(prev => ({ ...prev, openai: openaiResult }));
 
         if (!openaiResult.valid) {
@@ -212,14 +254,14 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           hasErrors = true;
         } else {
           console.log(
-            `OpenAI key validated: ${sanitizeKeyForLogging(keys.OPENAI_API_KEY)}`
+            `OpenAI key validated: ${sanitizeKeyForLogging(nextKeys.OPENAI_API_KEY)}`
           );
           if (openaiResult.warnings) {
             openaiResult.warnings.forEach(warning => showWarning(warning));
           }
 
           // Assess key strength
-          const strength = assessKeyStrength(keys.OPENAI_API_KEY);
+          const strength = assessKeyStrength(nextKeys.OPENAI_API_KEY);
           if (strength.strength === 'weak') {
             showWarning(
               "OpenAI key appears to have weak patterns. Ensure you're using a genuine API key."
@@ -228,9 +270,9 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
         }
       }
 
-      if (keys.OPENROUTER_API_KEY) {
+      if (nextKeys.OPENROUTER_API_KEY) {
         const openRouterResult = await validateOpenRouterKey(
-          keys.OPENROUTER_API_KEY
+          nextKeys.OPENROUTER_API_KEY
         );
         setValidationResults(prev => ({
           ...prev,
@@ -242,16 +284,16 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           hasErrors = true;
         } else {
           console.log(
-            `OpenRouter key validated: ${sanitizeKeyForLogging(keys.OPENROUTER_API_KEY)}`
+            `OpenRouter key validated: ${sanitizeKeyForLogging(nextKeys.OPENROUTER_API_KEY)}`
           );
           openRouterResult.warnings?.forEach(warning => showWarning(warning));
         }
       }
 
       // Validate ElevenLabs key if provided
-      if (keys.ELEVENLABS_API_KEY) {
+      if (nextKeys.ELEVENLABS_API_KEY) {
         const elevenlabsResult = await validateElevenLabsKey(
-          keys.ELEVENLABS_API_KEY
+          nextKeys.ELEVENLABS_API_KEY
         );
         setValidationResults(prev => ({
           ...prev,
@@ -263,7 +305,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           hasErrors = true;
         } else {
           console.log(
-            `ElevenLabs key validated: ${sanitizeKeyForLogging(keys.ELEVENLABS_API_KEY)}`
+            `ElevenLabs key validated: ${sanitizeKeyForLogging(nextKeys.ELEVENLABS_API_KEY)}`
           );
           if (elevenlabsResult.warnings) {
             elevenlabsResult.warnings.forEach(warning => showWarning(warning));
@@ -276,9 +318,26 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
         return;
       }
 
-      await saveApiKeys(keys);
+      await saveApiKeys(nextKeys);
 
-      showSuccess('API keys saved successfully!');
+      const currentSettings = loadSettings();
+      const nextProvider = getProviderAfterKeySave(
+        currentSettings.aiProvider,
+        nextKeys
+      );
+
+      if (nextProvider) {
+        saveSettings({
+          ...currentSettings,
+          aiProvider: nextProvider,
+          selectedModel: nextProvider,
+        });
+        showSuccess(
+          `API keys saved. Active AI provider set to ${AI_PROVIDER_LABELS[nextProvider]}.`
+        );
+      } else {
+        showSuccess('API keys saved successfully!');
+      }
     } catch (error) {
       showError('Error saving API keys.');
       console.error('Failed to save API keys:', error);
@@ -303,17 +362,18 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
       <Title>Manage API Keys</Title>
 
       <SecurityNotice>
-        <strong>SECURITY NOTICE:</strong> Your API keys are stored locally in
-        your browser. For maximum security: (1) Only use these keys on trusted
+        <strong>SECURITY NOTICE:</strong> Your API keys are stored locally.
+        For maximum security: (1) Only use these keys on trusted
         devices, (2) Regularly rotate your keys, (3) Monitor your API usage for
         unusual activity, (4) Consider setting usage limits in your API
         provider's dashboard.
       </SecurityNotice>
 
       <InfoBox>
-        You'll need API keys to use certain features of ALTER EGO. The OpenAI
-        API keys unlock hosted model providers and premium voice synthesis.
-        Model and provider selection now lives in the AI Models panel.
+        Chat providers are mutually exclusive. Use either an OpenAI key or an
+        OpenRouter key for hosted models, or use Ollama locally without a hosted
+        API key. ElevenLabs is separate and only affects premium voice
+        synthesis. Model and provider selection lives in the AI Models panel.
       </InfoBox>
 
       <FormGroup>
@@ -327,7 +387,8 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           placeholder="sk-..."
         />
         <Description>
-          Required for OpenAI models. Get your API key from the{' '}
+          Required only when the active AI provider is OpenAI. OpenRouter and
+          Ollama do not need an OpenAI API key. Get your API key from the{' '}
           <a
             href="https://platform.openai.com"
             target="_blank"
@@ -351,7 +412,9 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           placeholder="sk-or-..."
         />
         <Description>
-          Optional. Required only when the active AI provider is OpenRouter.
+          Required only when the active AI provider is OpenRouter. OpenRouter
+          runs independently from OpenAI in this app, including account-level
+          BYOK routing configured in OpenRouter.
         </Description>
       </FormGroup>
 

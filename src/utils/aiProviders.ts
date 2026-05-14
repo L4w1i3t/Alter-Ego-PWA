@@ -363,9 +363,10 @@ export const detectAIProvider = (
 
   if (settings.selectedModel === 'Open Source') return 'ollama';
   if (settings.selectedModel === 'openai') return 'openai';
+  if (settings.selectedModel === 'openrouter') return 'openrouter';
 
-  if (keys?.OPENROUTER_API_KEY) return 'openrouter';
-  if (keys?.OPENAI_API_KEY) return 'openai';
+  if (keys?.OPENROUTER_API_KEY?.trim()) return 'openrouter';
+  if (keys?.OPENAI_API_KEY?.trim()) return 'openai';
 
   return 'openai';
 };

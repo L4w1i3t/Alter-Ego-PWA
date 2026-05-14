@@ -18,9 +18,9 @@ export interface OpenSourceWipConfig {
 const DEFAULT_WIP_CONFIG: OpenSourceWipConfig = {
   enabled: false, // Disabled by default now that we have a backend
   wipMessage:
-    ' Open Source model is currently under development. Please use OpenAI for now.',
+    'Open Source model support is currently under development. Choose OpenAI, OpenRouter, or Ollama in AI Models.',
   fallbackMessage:
-    'The Open Source language model is not yet available. Redirecting to OpenAI...',
+    'The Open Source language model is not yet available. Choose an active provider in AI Models.',
   allowSelection: true, // Allow selection since we have a working backend
 };
 

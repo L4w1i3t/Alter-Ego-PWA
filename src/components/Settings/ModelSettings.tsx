@@ -360,9 +360,9 @@ interface ModelSettingsProps {
 }
 
 const providerNotes: Record<AIProvider, string> = {
-  openai: 'Uses the OpenAI API key from API Keys.',
-  openrouter: 'Uses your OpenRouter key with OpenAI model ids only.',
-  ollama: 'Uses a local Ollama server.',
+  openai: 'Uses only the OpenAI API key from API Keys.',
+  openrouter: 'Uses only the OpenRouter key. No OpenAI key required.',
+  ollama: 'Uses a local Ollama server. No hosted key required.',
 };
 
 type OpenRouterFlagKey =
@@ -410,7 +410,7 @@ const routingToggles: Array<{
 const recommendationPanels = [
   {
     title: 'Convenience',
-    text: 'Use OpenAI with GPT-5 Chat or GPT-5 mini when you want the least setup. Use OpenRouter when you want one key for OpenAI models.',
+    text: 'Use one hosted key: OpenAI for direct OpenAI billing, or OpenRouter for OpenAI model ids through OpenRouter.',
   },
   {
     title: 'Highest quality',
@@ -444,6 +444,30 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
 
   const apiKeys = useMemo(() => loadApiKeys(), []);
   const activeModel = getModelForProvider(provider, settings);
+  const openAIKeyStatus =
+    provider === 'openai'
+      ? {
+          label: apiKeys.OPENAI_API_KEY ? 'configured' : 'missing',
+          status: apiKeys.OPENAI_API_KEY ? 'good' : 'warning',
+        }
+      : {
+          label: apiKeys.OPENAI_API_KEY
+            ? 'configured (not active)'
+            : 'not required',
+          status: apiKeys.OPENAI_API_KEY ? 'good' : undefined,
+        };
+  const openRouterKeyStatus =
+    provider === 'openrouter'
+      ? {
+          label: apiKeys.OPENROUTER_API_KEY ? 'configured' : 'missing',
+          status: apiKeys.OPENROUTER_API_KEY ? 'good' : 'warning',
+        }
+      : {
+          label: apiKeys.OPENROUTER_API_KEY
+            ? 'configured (not active)'
+            : 'not required',
+          status: apiKeys.OPENROUTER_API_KEY ? 'good' : undefined,
+        };
 
   useEffect(() => {
     if (provider !== 'ollama') return;
@@ -599,7 +623,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
       const nextSettings = {
         ...settings,
         aiProvider: provider,
-        selectedModel: provider === 'ollama' ? 'Open Source' : 'openai',
+        selectedModel: provider === 'ollama' ? 'Open Source' : provider,
         preferredLanguageModel:
           settings.preferredLanguageModel || AI.DEFAULT_MODEL,
         openRouterModel,
@@ -886,9 +910,10 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
       <Title>AI Models</Title>
 
       <InfoBox>
-        Active provider is controlled by this panel. Persona instructions,
-        associative memory, long-term memory, and identity context are applied
-        through the same request path for OpenAI, OpenRouter, and Ollama.
+        Active provider is controlled by this panel. OpenAI, OpenRouter, and
+        Ollama are alternatives: ALTER EGO only calls the selected provider, so
+        OpenRouter does not require an OpenAI key, and Ollama does not require a
+        hosted API key.
       </InfoBox>
 
       <GuideGrid>
@@ -915,6 +940,11 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
           slugs when you need endpoint-level routing.
         </HelpItem>
         <HelpItem>
+          OpenRouter BYOK is handled by your OpenRouter account and routing
+          settings. ALTER EGO only needs your OpenRouter API key for the
+          OpenRouter provider.
+        </HelpItem>
+        <HelpItem>
           OpenRouter's default routing weighs stable low-cost providers most
           heavily. Setting provider order or sort makes routing more explicit.
         </HelpItem>
@@ -931,14 +961,20 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
         </StatusCell>
         <StatusCell>
           <StatusLabel>OpenAI key</StatusLabel>
-          <StatusValue status={apiKeys.OPENAI_API_KEY ? 'good' : 'warning'}>
-            {apiKeys.OPENAI_API_KEY ? 'configured' : 'missing'}
+          <StatusValue
+            status={openAIKeyStatus.status as 'good' | 'warning' | undefined}
+          >
+            {openAIKeyStatus.label}
           </StatusValue>
         </StatusCell>
         <StatusCell>
           <StatusLabel>OpenRouter key</StatusLabel>
-          <StatusValue status={apiKeys.OPENROUTER_API_KEY ? 'good' : 'warning'}>
-            {apiKeys.OPENROUTER_API_KEY ? 'configured' : 'missing'}
+          <StatusValue
+            status={
+              openRouterKeyStatus.status as 'good' | 'warning' | undefined
+            }
+          >
+            {openRouterKeyStatus.label}
           </StatusValue>
         </StatusCell>
       </StatusGrid>

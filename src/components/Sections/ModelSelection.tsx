@@ -140,7 +140,7 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({
     } else {
       // Fallback if callback not provided
       alert(
-        ' Open Source model is under development.\n\nFor detailed information, check the Settings panel ( icon).\n\nFor full functionality, please use OpenAI.'
+        'Open Source model support is under development.\n\nFor detailed information, check the Settings panel.\n\nFor hosted models, choose OpenAI or OpenRouter in AI Models.'
       );
     }
   };
@@ -149,7 +149,9 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({
     <Overlay>
       <OverlayContent>
         <Title>Choose Language Model.</Title>
-        <Subtitle>NOTE: Only OpenAI is available at the moment.</Subtitle>
+        <Subtitle>
+          Choose OpenAI, OpenRouter, or Ollama from Settings &gt; AI Models.
+        </Subtitle>
         <ButtonContainer>
           {' '}
           <div style={{ position: 'relative', display: 'inline-block' }}>

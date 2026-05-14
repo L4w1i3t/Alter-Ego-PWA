@@ -29,6 +29,7 @@ import {
   getBackchannelResponse,
   postProcessResponse,
 } from '../../utils/humanization';
+import { AI_PROVIDER_LABELS, detectAIProvider } from '../../utils/aiProviders';
 import type { MessageHistory } from '../../types';
 import { UI } from '../../config/constants';
 
@@ -272,7 +273,11 @@ const OverlayCompanion: React.FC = () => {
   // Load persisted conversation + show a status message on mount
   useEffect(() => {
     const keys = loadApiKeys();
-    const hasKey = !!keys.OPENAI_API_KEY;
+    const settings = loadSettings();
+    const provider = detectAIProvider(settings, keys);
+    const missingProviderKey =
+      (provider === 'openai' && !keys.OPENAI_API_KEY) ||
+      (provider === 'openrouter' && !keys.OPENROUTER_API_KEY);
     const personaName = getActivePersona();
     const existing = getPersonaChatHistory(personaName);
 
@@ -290,9 +295,9 @@ const OverlayCompanion: React.FC = () => {
     // Append a status system message so the user knows the overlay is ready
     restored.push({
       role: 'system',
-      content: hasKey
-        ? `Overlay active as ${personaName}. Capture your screen or type a message.`
-        : 'No OpenAI API key found. Set one in the main ALTER EGO window first.',
+      content: missingProviderKey
+        ? `No ${AI_PROVIDER_LABELS[provider]} API key found. Set one in the main ALTER EGO window first, or choose a different AI provider.`
+        : `Overlay active as ${personaName} using ${AI_PROVIDER_LABELS[provider]}. Capture your screen or type a message.`,
     });
 
     setMessages(capMessages(restored));
