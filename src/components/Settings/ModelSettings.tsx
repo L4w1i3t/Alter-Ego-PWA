@@ -667,7 +667,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
 
       return (
         <>
-          {renderModelSearch('Search OpenAI models on OpenRouter')}
+          {renderModelSearch('Search models on OpenRouter')}
           <FormGroup>
             <Label htmlFor="openRouterModelPreset">OpenRouter models:</Label>
             <Select
@@ -886,7 +886,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
     );
     return (
       <>
-        {renderModelSearch('Search OpenAI model presets')}
+        {renderModelSearch('Search model presets')}
         <FormGroup>
           <Label htmlFor="openaiModel">OpenAI model:</Label>
           <Select
