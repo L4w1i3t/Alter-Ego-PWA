@@ -10,7 +10,7 @@ export interface AIConfig {
   maxTokens: number;
 }
 
-export type AIProvider = 'openai' | 'openrouter' | 'ollama';
+export type AIProvider = 'openai' | 'openrouter' | 'ollama' | 'claude';
 export type OpenRouterDataCollection = 'allow' | 'deny';
 
 export interface VoiceConfig {
@@ -60,6 +60,7 @@ export interface Settings {
   openRouterZdr?: boolean; // Require zero-data-retention endpoints
   ollamaModel?: string; // User's preferred local Ollama model id
   ollamaBaseUrl?: string; // Ollama server URL
+  claudeModel?: string; // User's preferred Anthropic Claude model id
   hasCompletedFirstStartup?: boolean; // Controls the one-time splash screen
   // Presentation controls
   overallTextScale?: number; // Global font scale (1 = 100%)

@@ -259,7 +259,7 @@ const showHotkeyFeedback = (): void => {
     padding: 12px 20px;
     border-radius: 4px;
     font-family: Arial, sans-serif;
-    z-index: 10000;
+    z-index: var(--ae-z-devtools);
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     transition: opacity 0.3s;
   `;
@@ -1049,7 +1049,7 @@ export const clearPerformanceData = (): void => {
   try {
     const toast = document.createElement('div');
     toast.style.cssText = `
-      position: fixed; bottom: 20px; right: 20px; z-index: 99999;
+      position: fixed; bottom: 20px; right: 20px; z-index: var(--ae-z-devtools);
       background: #222; color: #0f0; border: 1px solid #0f0;
       padding: 10px 14px; border-radius: 4px; font-family: monospace;
     `;

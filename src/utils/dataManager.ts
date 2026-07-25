@@ -22,6 +22,7 @@ import {
 } from '../memory/longTermDB';
 import { logger } from './logger';
 import { isElectronEnvironment } from './electronUtils';
+import { invalidateSettingsCache } from './storageUtils';
 
 // ── Types ──
 
@@ -212,6 +213,9 @@ export async function importAllAppData(payload: BackupPayload): Promise<void> {
           const parsed = JSON.parse(imported);
           Object.assign(parsed, preservedRuntimeSettings);
           localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsed));
+          // Written straight to storage rather than through saveSettings, so
+          // the in-memory settings cache has to be dropped explicitly.
+          invalidateSettingsCache();
         }
       }
       if (preservedAIModel) {

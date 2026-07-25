@@ -217,6 +217,83 @@ export const validateOpenRouterKey = async (
   }
 };
 
+export const validateAnthropicKey = async (
+  key: string
+): Promise<KeyValidationResult> => {
+  if (!key) {
+    return { valid: true };
+  }
+
+  if (!key.startsWith('sk-ant-')) {
+    return {
+      valid: false,
+      error: 'Anthropic API key should start with "sk-ant-"',
+    };
+  }
+
+  if (!/^sk-ant-[a-zA-Z0-9_-]+$/.test(key)) {
+    return {
+      valid: false,
+      error: 'Anthropic API key contains invalid characters',
+    };
+  }
+
+  // Validate with a minimal Messages API call. A 400 means the key was accepted
+  // but the (deliberately tiny) request was rejected, which still confirms auth.
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'Hi' }],
+      }),
+    });
+
+    if (response.status === 401) {
+      return { valid: false, error: 'Anthropic API key is invalid' };
+    }
+
+    if (response.status === 403) {
+      return {
+        valid: true,
+        warnings: [
+          'Anthropic key was accepted but may lack access to some models or account features.',
+        ],
+      };
+    }
+
+    if (response.status === 429) {
+      return {
+        valid: true,
+        warnings: ['Anthropic API key appears valid but rate limited.'],
+      };
+    }
+
+    // 200 (accepted) or 400 (auth OK, request rejected) both confirm the key.
+    if (response.ok || response.status === 400) {
+      return { valid: true };
+    }
+
+    return {
+      valid: false,
+      error: `Anthropic validation failed: ${response.status}`,
+    };
+  } catch {
+    return {
+      valid: false,
+      error:
+        'Unable to validate Anthropic API key - please check your internet connection',
+    };
+  }
+};
+
 /**
  * Check if API keys might be compromised (very basic patterns)
  */

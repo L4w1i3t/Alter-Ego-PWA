@@ -5,44 +5,43 @@ import {
   Persona,
   isExamplePersonaName,
 } from '../../utils/storageUtils';
+import { safeAreaInset } from '../../styles/safeArea';
 
 const SelectorOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: var(--ae-z-overlay);
+  ${safeAreaInset('1rem')}
+
+  @supports (height: 100dvh) {
+    height: 100dvh;
+  }
 
   @media (max-width: 768px) {
-    align-items: flex-start;
-    padding: 1rem;
-    overflow-y: auto;
+    ${safeAreaInset('0.75rem')}
   }
 `;
 
 const SelectorContent = styled.div`
   background: #000;
   border: 1px solid #0f0;
-  padding: 1.2em 1.2em 1.2em;
+  padding: 1.2em;
   border-radius: 10px;
-  width: min(920px, 92vw);
-  max-height: min(86vh, 1000px);
+  width: min(920px, 100%);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 8px 40px rgba(0, 255, 0, 0.15);
 
   @media (max-width: 768px) {
     width: 100%;
-    max-width: 100%;
-    padding: 2rem;
+    padding: 1.2rem;
     border-radius: 0.5rem;
-    border-width: 2px;
-    margin-top: 2rem;
   }
 `;
 

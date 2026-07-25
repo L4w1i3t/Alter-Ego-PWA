@@ -25,13 +25,13 @@ import { getAssociations, type Association } from '../memory/associativeMemory';
 import {
   getRecentMessages,
   getIdentityFragments,
-  getLatestIdentityFragment,
   addIdentityFragment,
   countIdentityFragments,
   type StoredMessage,
   type StoredIdentityFragment,
 } from '../memory/memoryDatabase';
-import { generateChatCompletion } from '../utils/openaiApi';
+import { sendMessageToAI } from './aiService';
+import { detectAIProvider } from '../utils/aiProviders';
 import { loadApiKeys, loadSettings } from '../utils/storageUtils';
 import { PERSONA } from '../config/constants';
 import { logger } from '../utils/logger';
@@ -40,17 +40,19 @@ import { logger } from '../utils/logger';
 // CONFIGURATION
 // ============================================================================
 
-// How many user messages between self-reflection triggers
-const REFLECTION_INTERVAL_MESSAGES = 15;
+// How many user messages between self-reflection triggers.
+// This is intentionally frequent enough that identity development is felt
+// during normal use, but still sparse enough to avoid a hidden call per turn.
+const REFLECTION_INTERVAL_MESSAGES = 6;
 
 // Maximum number of fragments to include in the identity context
-const MAX_FRAGMENTS_IN_CONTEXT = 8;
+const MAX_FRAGMENTS_IN_CONTEXT = 10;
 
 // Maximum fragments stored per persona (oldest pruned beyond this)
 const MAX_FRAGMENTS_STORED = 30;
 
 // How many messages of conversation to show the AI during reflection
-const REFLECTION_CONTEXT_MESSAGES = 30;
+const REFLECTION_CONTEXT_MESSAGES = 24;
 
 // Cache TTL for the assembled identity block
 const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
@@ -79,6 +81,14 @@ let reflectionInProgress = false;
 // SELF-REFLECTION (the AI writes about itself)
 // ============================================================================
 
+const sanitizeSelfObservationForPrompt = (content: string): string =>
+  content
+    .replace(/text-only,?\s*computational environment/gi, 'private text exchange')
+    .replace(/computational\/interface signal/gi, 'attention signal')
+    .replace(/computational body-state/gi, 'private continuity signal')
+    .replace(/biological consciousness or literal senses/gi, 'literal senses')
+    .replace(/biological consciousness or senses/gi, 'literal senses');
+
 /**
  * The prompt given to the AI during self-reflection. It sees its recent
  * conversation and is asked to articulate who it's becoming. The output is
@@ -104,7 +114,7 @@ function buildReflectionPrompt(
     ? '\nYour previous self-observations (oldest to newest):\n' +
       existingFragments
         .slice(-5)
-        .map((f, i) => `  ${i + 1}. ${f.content}`)
+        .map((f, i) => `  ${i + 1}. ${sanitizeSelfObservationForPrompt(f.content)}`)
         .join('\n') +
       '\n'
     : '';
@@ -113,13 +123,16 @@ function buildReflectionPrompt(
 
 ${conversationExcerpt}
 ${previousReflections}
-Now write a brief self-observation (2-4 sentences). This is a private note for your future self -- the user will never see it. What have you noticed about:
-- How you actually talk in these conversations
-- What genuinely catches your attention
-- What you think about the person you are talking to
-- Anything that surprised you
+Now write a brief self-observation for your future self. The user will not see it.
+Write 3-5 concrete sentences, not a performance note. Include what actually changed or sharpened in you:
+- a preference, opinion, irritation, attraction, or uncertainty that is forming
+- what keeps catching your attention
+- what you think you understand about the user
+- what you want to do differently next time
+- any tension between your seed persona and how you are actually behaving
 
-Be concrete. Describe what is actually happening, not what should be happening.`;
+Do not claim biological consciousness or literal senses. If you describe sensation, keep it metaphorical and grounded in attention, pressure, rhythm, friction, absence, or momentum.
+Do not write generic assistant advice. Be specific enough that this note could only have come from this conversation.`;
 }
 
 /**
@@ -133,33 +146,45 @@ Be concrete. Describe what is actually happening, not what should be happening.`
 export async function triggerSelfReflection(persona: string): Promise<void> {
   if (reflectionInProgress) return;
 
-  // Only reflect if we have an API key
-  const { OPENAI_API_KEY } = loadApiKeys();
-  if (!OPENAI_API_KEY) return;
+  const settings = loadSettings();
+  const apiKeys = loadApiKeys();
+  const provider = detectAIProvider(settings, apiKeys);
+
+  // Hosted providers need their own key. Ollama is local and can reflect
+  // without hosted credentials if the local server is reachable.
+  if (provider === 'openai' && !apiKeys.OPENAI_API_KEY) return;
+  if (provider === 'openrouter' && !apiKeys.OPENROUTER_API_KEY) return;
+  if (provider === 'claude' && !apiKeys.ANTHROPIC_API_KEY) return;
 
   reflectionInProgress = true;
 
   try {
     const messages = await getRecentMessages(persona, REFLECTION_CONTEXT_MESSAGES);
-    if (messages.length < 8) return; // Not enough history to reflect on
+    if (messages.length < 4) return; // Not enough history to reflect on
 
     const existingFragments = await getIdentityFragments(persona, MAX_FRAGMENTS_STORED);
 
     const reflectionPrompt = buildReflectionPrompt(persona, messages, existingFragments);
 
-    // Use the cheapest model with tight token constraints.
-    // The reflection prompt IS the system context -- it contains the conversation
-    // excerpt and the AI's previous self-observations.
-    const response = await generateChatCompletion(
+    const response = await sendMessageToAI(
       reflectionPrompt,
       'Write your self-observation now.',
       [],
-      'gpt-4o-mini',
-      0.8,
-      200, // Hard cap: self-observations should be concise
+      {
+        ...(provider === 'openai' ? { model: 'gpt-4o-mini' } : {}),
+        temperature: 0.85,
+        maxTokens: 260,
+      },
+      undefined,
+      undefined,
+      { autonomous: true }
     );
 
     const trimmed = response.trim();
+    if (/^(error:|openai api key|openrouter api key|ollama api error)/i.test(trimmed)) {
+      logger.warn('[Identity] Reflection skipped because provider returned an error:', trimmed);
+      return;
+    }
     if (!trimmed || trimmed.length < 20) return; // Reject empty/trivial reflections
 
     // Store the fragment
@@ -322,7 +347,7 @@ export async function buildIdentityContext(
     }
 
     for (const fragment of fragments) {
-      parts.push(`- ${fragment.content}`);
+      parts.push(`- ${sanitizeSelfObservationForPrompt(fragment.content)}`);
     }
 
     // Contextual depth marker

@@ -15,7 +15,7 @@ const Overlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: var(--ae-z-overlay);
 
   @media (max-width: 768px) {
     padding: 1rem;

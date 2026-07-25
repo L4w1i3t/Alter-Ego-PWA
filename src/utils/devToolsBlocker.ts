@@ -157,7 +157,7 @@ export class DevToolsBlocker {
       padding: 10px 15px;
       border-radius: 5px;
       font-size: 14px;
-      z-index: 999999;
+      z-index: var(--ae-z-critical);
       transition: opacity 0.3s ease;
       font-family: system-ui, -apple-system, sans-serif;
     `;
@@ -287,7 +287,7 @@ export class DevToolsBlocker {
       padding: 15px 25px;
       border-radius: 8px;
       font-size: 14px;
-      z-index: 999999;
+      z-index: var(--ae-z-critical);
       font-family: system-ui, -apple-system, sans-serif;
       text-align: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);

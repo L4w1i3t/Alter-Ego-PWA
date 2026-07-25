@@ -26,6 +26,7 @@ export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   openai: 'OpenAI',
   openrouter: 'OpenRouter',
   ollama: 'Ollama',
+  claude: 'Claude',
 };
 
 export const OPENAI_MODEL_OPTIONS: ModelOption[] = [
@@ -94,7 +95,7 @@ const OPEN_WEIGHT_MODEL_MARKERS = [
 ];
 
 const stripProviderLabel = (model: string): string =>
-  model.replace(/^(openai|openrouter|ollama):/i, '').trim();
+  model.replace(/^(openai|openrouter|ollama|claude):/i, '').trim();
 
 export const normalizeModelIdForCapabilities = (model?: string | null): string => {
   if (!model) return '';
@@ -148,7 +149,7 @@ export const getCognitiveContextProfile = (
       semanticMemoryLimit: 3,
       associationLimit: 3,
       factsCharBudget: 120,
-      identityFragmentLimit: 3,
+      identityFragmentLimit: 4,
       memoryCharBudget: 360,
     };
   }
@@ -160,7 +161,7 @@ export const getCognitiveContextProfile = (
     semanticMemoryLimit: 5,
     associationLimit: 4,
     factsCharBudget: 160,
-    identityFragmentLimit: 8,
+    identityFragmentLimit: 10,
     memoryCharBudget: 600,
   };
 };
@@ -345,10 +346,64 @@ export const OLLAMA_MODEL_OPTIONS: ModelOption[] = [
   },
 ];
 
+export const CLAUDE_MODEL_OPTIONS: ModelOption[] = [
+  {
+    id: 'claude-opus-4-8',
+    name: 'Claude Opus 4.8',
+    description: 'Most capable Opus-tier model for demanding, long-form work',
+    source: 'preset',
+  },
+  {
+    id: 'claude-opus-4-7',
+    name: 'Claude Opus 4.7',
+    description: 'Previous-generation Opus; strong reasoning and vision',
+    source: 'preset',
+  },
+  {
+    id: 'claude-sonnet-5',
+    name: 'Claude Sonnet 5',
+    description: 'Best balance of speed and intelligence; near-Opus quality',
+    source: 'preset',
+  },
+  {
+    id: 'claude-sonnet-4-6',
+    name: 'Claude Sonnet 4.6',
+    description: 'Previous-generation Sonnet; fast general-purpose chat',
+    source: 'preset',
+  },
+  {
+    id: 'claude-haiku-4-5',
+    name: 'Claude Haiku 4.5',
+    description: 'Fastest and most cost-effective Claude model',
+    source: 'preset',
+  },
+];
+
+// Current-generation Claude models (Opus 4.7+, Sonnet 5, Fable/Mythos 5) reject
+// temperature/top_p/top_k and return a 400 if they are sent. Older models
+// (Opus 4.6, Sonnet 4.6, Haiku 4.5) still accept sampling parameters.
+const CLAUDE_NO_SAMPLING_MARKERS = [
+  'opus-4-8',
+  'opus-4-7',
+  'sonnet-5',
+  'fable-5',
+  'mythos-5',
+];
+
+export const claudeModelRejectsSampling = (model: string): boolean => {
+  const normalized = normalizeModelIdForCapabilities(model);
+  return CLAUDE_NO_SAMPLING_MARKERS.some(marker => normalized.includes(marker));
+};
+
 export const normalizeAIProvider = (
   value?: string | null
 ): AIProvider | null => {
-  if (value === 'openai' || value === 'openrouter' || value === 'ollama') {
+  if (
+    value === 'openai' ||
+    value === 'openrouter' ||
+    value === 'ollama' ||
+    value === 'claude'
+  ) {
     return value;
   }
   return null;
@@ -356,7 +411,10 @@ export const normalizeAIProvider = (
 
 export const detectAIProvider = (
   settings: Settings,
-  keys?: Pick<ApiKeys, 'OPENAI_API_KEY' | 'OPENROUTER_API_KEY'>
+  keys?: Pick<
+    ApiKeys,
+    'OPENAI_API_KEY' | 'OPENROUTER_API_KEY' | 'ANTHROPIC_API_KEY'
+  >
 ): AIProvider => {
   const configuredProvider = normalizeAIProvider(settings.aiProvider);
   if (configuredProvider) return configuredProvider;
@@ -364,8 +422,10 @@ export const detectAIProvider = (
   if (settings.selectedModel === 'Open Source') return 'ollama';
   if (settings.selectedModel === 'openai') return 'openai';
   if (settings.selectedModel === 'openrouter') return 'openrouter';
+  if (settings.selectedModel === 'claude') return 'claude';
 
   if (keys?.OPENROUTER_API_KEY?.trim()) return 'openrouter';
+  if (keys?.ANTHROPIC_API_KEY?.trim()) return 'claude';
   if (keys?.OPENAI_API_KEY?.trim()) return 'openai';
 
   return 'openai';
@@ -380,6 +440,8 @@ export const getModelForProvider = (
       return getSafeOpenRouterModel(settings.openRouterModel);
     case 'ollama':
       return settings.ollamaModel || AI.DEFAULT_OLLAMA_MODEL;
+    case 'claude':
+      return settings.claudeModel || AI.DEFAULT_CLAUDE_MODEL;
     case 'openai':
     default:
       return settings.preferredLanguageModel || AI.DEFAULT_MODEL;
@@ -388,7 +450,10 @@ export const getModelForProvider = (
 
 export const getActiveModelLabel = (
   settings: Settings,
-  keys?: Pick<ApiKeys, 'OPENAI_API_KEY' | 'OPENROUTER_API_KEY'>
+  keys?: Pick<
+    ApiKeys,
+    'OPENAI_API_KEY' | 'OPENROUTER_API_KEY' | 'ANTHROPIC_API_KEY'
+  >
 ): string => {
   const provider = detectAIProvider(settings, keys);
   return `${AI_PROVIDER_LABELS[provider]}:${getModelForProvider(provider, settings)}`;

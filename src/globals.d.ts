@@ -18,6 +18,11 @@ interface ElectronAPI {
   setOverlayAlwaysOnTop: (value: boolean) => Promise<void>;
   switchMode: (mode: 'main' | 'overlay') => Promise<string>;
   getDataPath: () => Promise<string>;
+
+  // Updates
+  downloadUpdate?: (url: string, fileName: string) => Promise<string>;
+  revealUpdate?: (filePath: string) => Promise<boolean>;
+  openReleasesPage?: (url: string) => Promise<boolean>;
   /** Forward a telemetry event to the experiment pipeline via IPC. */
   emitTelemetry?: (event: import('./utils/experimentTelemetry').TelemetryEvent) => void;
 
@@ -36,4 +41,16 @@ interface ElectronAPI {
 
 interface Window {
   electronAPI?: ElectronAPI;
+}
+
+/**
+ * Build-time constants injected by webpack's DefinePlugin.
+ * APP_VERSION mirrors package.json; BUILD_TARGET says which shell this bundle
+ * was produced for.
+ */
+declare namespace NodeJS {
+  interface ProcessEnv {
+    APP_VERSION: string;
+    BUILD_TARGET: 'web' | 'electron' | 'capacitor';
+  }
 }

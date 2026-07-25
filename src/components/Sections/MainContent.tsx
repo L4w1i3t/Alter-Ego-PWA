@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { loadSettings, Settings, getPersonaChatHistory } from '../../utils/storageUtils';
 import { EVENTS, UI } from '../../config/constants';
@@ -7,6 +7,11 @@ import { openImageInNewTab } from '../../utils/imageUtils';
 import { UserIcon } from '../Common/Icons';
 import { useApi } from '../../context/ApiContext';
 
+/*
+ * `order: 1` keeps this above the composer on phones (the composer is `order:
+ * 2`), so the visual stack reads header -> conversation -> composer -> footer
+ * while the DOM order stays unchanged.
+ */
 const MainContentContainer = styled.main`
   display: flex;
   flex: 1 1 auto;
@@ -17,13 +22,13 @@ const MainContentContainer = styled.main`
   min-height: 0;
 
   @media (max-width: 768px) {
+    order: 1;
     flex-direction: column;
     flex-wrap: nowrap;
-    padding: 0.75rem;
+    padding: 0.6rem 0.75rem;
     gap: 0.5rem;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     width: 100%;
   }
 `;
@@ -57,15 +62,17 @@ const ResponseBox = styled.div<{ $showEmotions: boolean }>`
   word-wrap: break-word;
 
   @media (max-width: 768px) {
-    flex: 1;
-    min-height: 100px;
+    flex: 1 1 0;
+    min-height: 0;
     height: auto;
     max-height: none;
     padding: 0.75rem;
     font-size: 0.9rem;
-    line-height: 1.4;
+    line-height: 1.45;
     width: 100%;
     box-sizing: border-box;
+    border-radius: 0.4em;
+    overscroll-behavior: contain;
   }
 `;
 
@@ -183,16 +190,20 @@ const AvatarArea = styled.div<{ $showEmotions: boolean }>`
   align-items: flex-start;
   position: relative;
 
+  /*
+   * Sized against the viewport rather than a fixed 220px. On a short phone the
+   * old fixed height left the conversation with a sliver of room; on a tall one
+   * it wasted space the transcript could have used.
+   */
   @media (max-width: 768px) {
     width: 100%;
-    height: 220px;
-    min-height: 160px;
-    max-height: 260px;
-    flex-shrink: 0;
+    height: clamp(130px, 22vh, 210px);
+    flex: none;
     padding: 0.5rem;
     box-sizing: border-box;
     align-items: flex-start;
     justify-content: center;
+    border-radius: 0.6em;
   }
 `;
 
@@ -234,6 +245,59 @@ interface Message {
   sender?: string;   // Display label override (e.g. peer name in LAN conversations)
 }
 
+/*
+ * Split out and memoized so appending a message re-renders only the new row.
+ * Previously every message in the transcript re-rendered on each append, which
+ * also restarted the typing effect's reconciliation for all of them.
+ */
+interface MessageRowProps {
+  message: Message;
+  activeCharacter: string;
+  textSpeed: number;
+  onImageClick: (imageUrl: string) => void;
+}
+
+const MessageRow = React.memo<MessageRowProps>(
+  ({ message, activeCharacter, textSpeed, onImageClick }) => (
+    <MessageContainer>
+      {message.isUser ? (
+        <>
+          <UserMessage>
+            {message.sender || 'YOU'}: {message.text}
+          </UserMessage>
+          {/* Display user images if present */}
+          {message.images && message.images.length > 0 && (
+            <ImageContainer>
+              {message.images.map((imageUrl, imgIndex) => (
+                <MessageImage
+                  key={imgIndex}
+                  src={imageUrl}
+                  alt={`User image ${imgIndex + 1}`}
+                  onClick={() => onImageClick(imageUrl)}
+                  title="Click to view full size"
+                />
+              ))}
+            </ImageContainer>
+          )}
+        </>
+      ) : (
+        <AIMessage>
+          {activeCharacter}:{' '}
+          <TypingAnimation
+            text={message.text}
+            speed={message.instant ? 1000 : textSpeed}
+            showCursor={!message.instant}
+          >
+            {(displayText: string) => <span>{displayText}</span>}
+          </TypingAnimation>
+        </AIMessage>
+      )}
+    </MessageContainer>
+  )
+);
+
+MessageRow.displayName = 'MessageRow';
+
 interface MainContentProps {
   personaContent?: string;
   activeCharacter?: string;
@@ -256,6 +320,16 @@ const MainContent: React.FC<MainContentProps> = ({
     return !isProduction && (initialSettings.showEmotionDetection ?? false);
   });
 
+  /*
+   * Held in state rather than read inline in the message list. It used to be
+   * `loadSettings().textSpeed` inside the render of every AI message, so a
+   * screen of restored history meant one storage read + parse per message per
+   * render. The settings-updated listener below keeps this current.
+   */
+  const [textSpeed, setTextSpeed] = useState(
+    () => loadSettings().textSpeed || UI.DEFAULT_TEXT_SPEED
+  );
+
   // Track the last persona so we can detect genuine user-initiated persona
   // switches vs. normal mounts / mode transitions.  Initialised to null so
   // the very first effect run always attempts to restore history rather than
@@ -269,26 +343,23 @@ const MainContent: React.FC<MainContentProps> = ({
   };
 
   useEffect(() => {
+    const applySettings = (next: Settings) => {
+      setShowEmotionDetection(
+        !isProduction && (next.showEmotionDetection ?? false)
+      );
+      setTextSpeed(next.textSpeed || UI.DEFAULT_TEXT_SPEED);
+    };
+
     const handleSettingsUpdated = (event: Event) => {
       const detail = (event as CustomEvent<Settings>).detail;
-      if (detail && typeof detail === 'object') {
-        setShowEmotionDetection(
-          !isProduction && (detail.showEmotionDetection ?? false)
-        );
-      } else {
-        const latest = loadSettings();
-        setShowEmotionDetection(
-          !isProduction && (latest.showEmotionDetection ?? false)
-        );
-      }
+      applySettings(
+        detail && typeof detail === 'object' ? detail : loadSettings()
+      );
     };
 
     const handleStorageUpdate = (event: StorageEvent) => {
       if (event.key === 'alterEgoSettings') {
-        const latest = loadSettings();
-        setShowEmotionDetection(
-          !isProduction && (latest.showEmotionDetection ?? false)
-        );
+        applySettings(loadSettings());
       }
     };
 
@@ -364,13 +435,10 @@ const MainContent: React.FC<MainContentProps> = ({
     }
   }, [messages]);
 
-  // Load the memory limit from settings
-  const { memoryBuffer } = loadSettings();
-
-  // Handle image click to open in new tab
-  const handleImageClick = (imageUrl: string) => {
+  // Stable identity, otherwise every MessageRow's memo comparison fails.
+  const handleImageClick = useCallback((imageUrl: string) => {
     openImageInNewTab(imageUrl);
-  };
+  }, []);
 
   // Listen for user queries and event to clear chat display
   useEffect(() => {
@@ -537,40 +605,13 @@ const MainContent: React.FC<MainContentProps> = ({
           $showEmotions={showEmotionDetection}
         >
           {messages.map((message, index) => (
-            <MessageContainer key={index}>
-              {message.isUser ? (
-                <>
-                  <UserMessage>{message.sender || 'YOU'}: {message.text}</UserMessage>
-                  {/* Display user images if present */}
-                  {message.images && message.images.length > 0 && (
-                    <ImageContainer>
-                      {message.images.map((imageUrl, imgIndex) => (
-                        <MessageImage
-                          key={imgIndex}
-                          src={imageUrl}
-                          alt={`User image ${imgIndex + 1}`}
-                          onClick={() => handleImageClick(imageUrl)}
-                          title="Click to view full size"
-                        />
-                      ))}
-                    </ImageContainer>
-                  )}
-                </>
-              ) : (
-                <AIMessage>
-                  {activeCharacter}:{' '}
-                  <TypingAnimation
-                    text={message.text}
-                    speed={message.instant ? 1000 : (loadSettings().textSpeed || 40)}
-                    showCursor={!message.instant}
-                  >
-                    {(displayText: string, isComplete: boolean) => (
-                      <span>{displayText}</span>
-                    )}
-                  </TypingAnimation>
-                </AIMessage>
-              )}
-            </MessageContainer>
+            <MessageRow
+              key={index}
+              message={message}
+              activeCharacter={activeCharacter}
+              textSpeed={textSpeed}
+              onImageClick={handleImageClick}
+            />
           ))}
           {isThinking && (
             <ThinkingMessage>{activeCharacter} is thinking...</ThinkingMessage>

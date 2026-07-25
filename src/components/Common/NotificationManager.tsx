@@ -8,6 +8,7 @@ import {
   PauseIcon,
   PlayIcon,
 } from '../Common/Icons';
+import { safeAreaTop, safeAreaSides } from '../../styles/safeArea';
 
 // Animation for notification entry
 const slideIn = keyframes`
@@ -49,15 +50,14 @@ const getAccent = (type: 'success' | 'error' | 'info' | 'warning') => {
 
 const NotificationViewport = styled.div`
   position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 10000;
+  ${safeAreaTop('16px')}
+  right: calc(16px + var(--ae-safe-right, 0px));
+  z-index: var(--ae-z-toast);
   pointer-events: none;
 
   @media (max-width: 560px) {
-    top: 10px;
-    right: 10px;
-    left: 10px;
+    ${safeAreaTop('10px')}
+    ${safeAreaSides('10px')}
   }
 `;
 

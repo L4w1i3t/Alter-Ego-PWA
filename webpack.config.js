@@ -27,9 +27,17 @@ module.exports = (env, argv) => {
   // Determine if we're building for Electron (native desktop)
   const isElectron = process.env.BUILD_TARGET === 'electron';
 
-  // Electron and local builds need relative paths (file:// can't resolve absolute /)
-  // GitHub Pages needs the repo prefix; regular web deploys use root /
-  const publicPath = isGitHubPages ? '/Alter-Ego-PWA/' : isElectron ? './' : '/';
+  // Determine if we're building for Capacitor (native Android/iOS WebView)
+  const isCapacitor = process.env.BUILD_TARGET === 'capacitor';
+
+  // Electron, Capacitor, and local builds need relative paths (file:// and the
+  // native WebView can't resolve absolute /). GitHub Pages needs the repo
+  // prefix; regular web deploys use root /
+  const publicPath = isGitHubPages
+    ? '/Alter-Ego-PWA/'
+    : isElectron || isCapacitor
+      ? './'
+      : '/';
 
 // Performance metrics log directory
 const METRICS_DIR = path.resolve(__dirname, 'performance-metrics');
@@ -182,22 +190,38 @@ return {
       template: './index.html',
       filename: 'index.html',
       inject: true,
-      // Inject a production-only CSP meta for stronger security without breaking dev tooling
-      // Electron builds use a relaxed policy since file:// doesn't work with strict 'self'
-      ...(isDevelopment
+      // Inject a production-only CSP meta for stronger security without breaking dev tooling.
+      // Electron keeps no meta CSP: file:// does not work with a strict 'self'
+      // and the main process already controls what the renderer can load.
+      ...(isDevelopment || isElectron
         ? {}
-        : isElectron
-          ? {} // Electron: skip CSP meta entirely; security is handled by the main process
-          : {
-              meta: {
-                'Content-Security-Policy': {
-                  'http-equiv': 'Content-Security-Policy',
-                  // Note: frame-ancestors is ignored in meta; enforced via HTTP headers on Vercel
-                  content:
-                    "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.elevenlabs.io https://openrouter.ai http://127.0.0.1:8000 http://127.0.0.1:11434 http://localhost:11434 ws: wss:; media-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'",
-                },
+        : {
+            meta: {
+              'Content-Security-Policy': {
+                'http-equiv': 'Content-Security-Policy',
+                // Note: frame-ancestors is ignored in meta; enforced via HTTP headers on Vercel.
+                //
+                // connect-src is the load-bearing directive here. The app holds
+                // provider API keys in local storage, so the policy names every
+                // host it may talk to and nothing else -- that is what keeps a
+                // hypothetical injection from posting those keys somewhere.
+                // `ws: wss:` used to be in this list and has been removed: no
+                // renderer code opens a WebSocket (LAN peer chat runs over
+                // Electron IPC in the main process), so it only widened the
+                // exfiltration surface.
+                //
+                // The Capacitor APK gets the same policy minus the localhost
+                // model servers, which a phone cannot reach anyway, plus the
+                // scheme Capacitor serves the bundle from.
+                // The Capacitor build additionally reaches GitHub to check for
+                // releases and download the updated APK. objects.githubusercontent.com
+                // is where release asset downloads redirect to.
+                content: isCapacitor
+                  ? "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://localhost capacitor://localhost https://api.openai.com https://api.anthropic.com https://api.elevenlabs.io https://openrouter.ai https://api.github.com https://github.com https://objects.githubusercontent.com; media-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'"
+                  : "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.elevenlabs.io https://openrouter.ai http://127.0.0.1:8000 http://127.0.0.1:11434 http://localhost:11434; media-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'",
               },
-            }),
+            },
+          }),
     }),
     new ForkTsCheckerWebpackPlugin({
       async: true,
@@ -230,6 +254,14 @@ return {
     new webpack.DefinePlugin({
       // Set NODE_ENV based on the build mode (from --mode flag)
       'process.env.NODE_ENV': JSON.stringify(isDevelopment ? 'development' : 'production'),
+      // Single source of truth for the running version. The update check
+      // compares this against the latest GitHub release, and Android derives
+      // its versionName/versionCode from the same field in package.json.
+      'process.env.APP_VERSION': JSON.stringify(require('./package.json').version),
+      // Lets the renderer tell which shell it was built for without sniffing.
+      'process.env.BUILD_TARGET': JSON.stringify(
+        isElectron ? 'electron' : isCapacitor ? 'capacitor' : 'web'
+      ),
       'process.env.PUBLIC_URL': JSON.stringify(publicPath.slice(0, -1)),
       'process.env.REACT_APP_IMMERSIVE_MODE': JSON.stringify(process.env.REACT_APP_IMMERSIVE_MODE || 'false'),
       'process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING': JSON.stringify(process.env.REACT_APP_ENABLE_PERFORMANCE_MONITORING || 'false'),

@@ -21,6 +21,7 @@ import {
   PencilIcon,
   TrashIcon,
 } from '../Common/Icons';
+import { Disclosure, Notice, ScreenIntro } from '../Common/Disclosure';
 
 const Container = styled.div`
   color: #0f0;
@@ -1012,20 +1013,22 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
     <Container>
       <Title>Manage Voice Models</Title>
 
-      {!elevenlabsKeyExists && (
-        <ErrorBox>
-          ElevenLabs API key is not set. You can still create browser-based
-          voice models, but ElevenLabs premium voices require an API key from
-          the "Manage API Keys" section.
-        </ErrorBox>
+      {!editingModel && (
+        <ScreenIntro>
+          Give ALTER EGO a voice. Browser voices are free and work offline;
+          {elevenlabsKeyExists
+            ? ' ElevenLabs voices sound better.'
+            : ' ElevenLabs voices sound better but need an API key.'}
+        </ScreenIntro>
       )}
 
-      {elevenlabsKeyExists && !editingModel && (
-        <InfoBox>
-          Voice models allow ALTER EGO to speak using different voices. You can
-          add ElevenLabs premium voices for higher quality output or use free
-          browser speech synthesis for basic functionality.
-        </InfoBox>
+      {/* Downgraded from a red error panel: not having an ElevenLabs key is a
+          normal state, not a failure -- browser voices work fine without it. */}
+      {!elevenlabsKeyExists && !editingModel && (
+        <Notice>
+          No ElevenLabs key set, so premium voices are unavailable. Add one
+          under <strong>Settings -&gt; API Keys</strong> if you want them.
+        </Notice>
       )}
 
       {!editingModel ? (
@@ -1337,17 +1340,20 @@ const VoiceModelManager: React.FC<VoiceModelManagerProps> = ({ onBack }) => {
                 </SliderContainer>
               </FormGroup>
 
-              <InfoBox>
-                <strong>Voice Settings Guide:</strong>
-                <br />
-                <strong>Stability</strong> - Higher values create consistent
-                output but may sound monotonous. Lower values add more emotion
-                but may be unpredictable.
-                <br />
-                <strong>Similarity Boost</strong> - Higher values make the voice
-                sound closer to the original voice sample, lower values allow
-                more creativity.
-              </InfoBox>
+              <Disclosure
+                id="voice-settings-guide"
+                summary="What do these sliders do?"
+              >
+                <p>
+                  <strong>Stability</strong> -- higher is more consistent but
+                  can sound monotonous; lower adds emotion but is less
+                  predictable.
+                </p>
+                <p>
+                  <strong>Similarity Boost</strong> -- higher stays closer to
+                  the original voice sample; lower allows more variation.
+                </p>
+              </Disclosure>
             </>
           )}
 

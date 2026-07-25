@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 // Cursor blinking animation
@@ -34,6 +34,21 @@ interface TypingAnimationProps {
   children?: (displayText: string, isComplete: boolean) => React.ReactNode;
 }
 
+/** At or above this the text is revealed in one go. */
+const INSTANT_SPEED = 1000;
+
+/**
+ * Reveals `text` a character at a time.
+ *
+ * Driven by requestAnimationFrame against a wall-clock start time rather than a
+ * setTimeout chain that advanced one character per tick. The old approach cost
+ * one timer and one React render for every single character, so a 1500-character
+ * reply meant 1500 renders of the message list -- the main source of the typing
+ * animation feeling heavy on slower machines. Now the visible length is derived
+ * from elapsed time, so the work is capped at one render per frame no matter how
+ * high the characters-per-second setting goes, and it stays accurate if a frame
+ * is dropped instead of drifting slower like the timer chain did.
+ */
 const TypingAnimation: React.FC<TypingAnimationProps> = ({
   text,
   speed = 50, // Default 50 characters per second (quite fast for VN feel)
@@ -42,38 +57,50 @@ const TypingAnimation: React.FC<TypingAnimationProps> = ({
   className,
   children,
 }) => {
-  const [displayText, setDisplayText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(0);
+
+  // Kept in a ref so a caller passing an inline arrow does not restart the
+  // animation on every parent render.
+  const onCompleteRef = useRef(onComplete);
   useEffect(() => {
-    // Reset when text changes
-    setDisplayText('');
-    setCurrentIndex(0);
-    setIsComplete(false);
-  }, [text]);
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
-    // Handle instant text (speed >= 1000)
-    if (speed >= 1000) {
-      setDisplayText(text);
-      setCurrentIndex(text.length);
-      setIsComplete(true);
-      onComplete?.();
+    const total = text.length;
+
+    if (speed >= INSTANT_SPEED || total === 0) {
+      setVisibleCount(total);
+      onCompleteRef.current?.();
       return;
     }
 
-    if (currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayText(text.slice(0, currentIndex + 1));
-        setCurrentIndex(currentIndex + 1);
-      }, 1000 / speed); // Convert speed to milliseconds per character
+    setVisibleCount(0);
 
-      return () => clearTimeout(timeout);
-    } else if (currentIndex >= text.length && !isComplete) {
-      setIsComplete(true);
-      onComplete?.();
-    }
-  }, [currentIndex, text, speed, onComplete, isComplete]);
+    let frame = 0;
+    const started = performance.now();
+    const charsPerMs = speed / 1000;
+
+    const tick = (now: number) => {
+      const revealed = Math.min(total, Math.floor((now - started) * charsPerMs));
+
+      // Only re-render when the visible length actually changed. At low speeds
+      // most frames reveal nothing.
+      setVisibleCount(prev => (prev === revealed ? prev : revealed));
+
+      if (revealed >= total) {
+        onCompleteRef.current?.();
+        return;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [text, speed]);
+
+  const isComplete = visibleCount >= text.length;
+  const displayText = isComplete ? text : text.slice(0, visibleCount);
 
   // If children render prop is provided, use it
   if (children) {

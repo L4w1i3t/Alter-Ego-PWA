@@ -1,0 +1,136 @@
+import groovy.json.JsonSlurper
+
+apply plugin: 'com.android.application'
+
+/*
+ * Version comes from package.json so the web app, the desktop build and the APK
+ * always report the same number. The in-app updater compares the running
+ * version against the latest GitHub release, so a hardcoded "1.0" here would
+ * make every APK look identical to the updater.
+ *
+ * versionCode has to be a monotonically increasing integer for Android to treat
+ * a new APK as an upgrade (and so keep the user's conversations and personas
+ * rather than requiring an uninstall), so the semver is packed into one:
+ * major * 10000 + minor * 100 + patch. That allows 99 minors and 99 patches
+ * per major.
+ */
+def packageJson = new JsonSlurper().parse(
+    file("$rootDir/../package.json"), 'UTF-8')
+def appVersionName = packageJson.version
+def (vMajor, vMinor, vPatch) = appVersionName.tokenize('-')[0].tokenize('.').collect { it.toInteger() }
+def appVersionCode = vMajor * 10000 + vMinor * 100 + vPatch
+
+android {
+    namespace "com.l4w1i3t.alterego"
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.l4w1i3t.alterego"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode appVersionCode
+        versionName appVersionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    /*
+     * Release signing.
+     *
+     * Android will only install a new APK over an existing one -- preserving
+     * conversations, personas and keys -- when both are signed with the SAME
+     * key. Change or lose this keystore and every user has to uninstall first,
+     * which wipes their data. So: generate it once (npm run android:keystore),
+     * back it up somewhere safe, and never regenerate it.
+     *
+     * Credentials come from android/keystore.properties (gitignored) or, for
+     * CI, the ANDROID_KEYSTORE_* environment variables. When neither is present
+     * the release build falls back to the debug key so the build still works --
+     * but such an APK cannot upgrade a properly signed install, so it is only
+     * suitable for local testing.
+     */
+    signingConfigs {
+        release {
+            def propsFile = rootProject.file('keystore.properties')
+            if (propsFile.exists()) {
+                def props = new Properties()
+                propsFile.withInputStream { props.load(it) }
+                // rootProject.file, not file: this script is the :app module, so
+                // a bare file() would resolve against android/app/ and silently
+                // miss the keystore sitting in android/.
+                storeFile rootProject.file(props['storeFile'])
+                storePassword props['storePassword']
+                keyAlias props['keyAlias']
+                keyPassword props['keyPassword']
+            } else if (System.getenv('ANDROID_KEYSTORE_PATH')) {
+                storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            def signing = signingConfigs.release
+            if (signing.storeFile != null && signing.storeFile.exists()) {
+                signingConfig signing
+                println "[signing] Release APK will be signed with ${signing.storeFile}"
+            } else {
+                // println, not logger.warn: warn is swallowed by --quiet, and a
+                // debug-signed artifact that looks like a release build is
+                // exactly the thing that must not slip through unnoticed.
+                println '[signing] ============================================'
+                println '[signing] WARNING: no release keystore found.'
+                println '[signing] Falling back to the DEBUG key. This APK'
+                println '[signing] cannot update an existing release install --'
+                println '[signing] users would have to uninstall first, losing'
+                println '[signing] their conversations and personas.'
+                println '[signing] Run: npm run android:keystore'
+                println '[signing] ============================================'
+                if (System.getenv('ANDROID_SIGN_REQUIRED') == 'true') {
+                    throw new GradleException(
+                        'ANDROID_SIGN_REQUIRED=true but no release keystore was found.')
+                }
+                signingConfig signingConfigs.debug
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    // Explicit: MainActivity uses ViewCompat/WindowInsetsCompat to inset the
+    // WebView out from under the system bars.
+    implementation "androidx.core:core:$androidxCoreVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

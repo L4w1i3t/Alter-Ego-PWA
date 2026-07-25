@@ -35,6 +35,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Returns the absolute path to the Electron userData directory (where DB and settings live) */
   getDataPath: () => ipcRenderer.invoke('get-data-path'),
 
+  // ── Updates ──
+
+  /**
+   * Downloads a release asset next to the running executable and resolves with
+   * its path. The main process restricts this to HTTPS URLs on GitHub's own
+   * release hosts.
+   */
+  downloadUpdate: (url, fileName) =>
+    ipcRenderer.invoke('update:download', { url, fileName }),
+
+  /** Shows a downloaded file in the OS file manager. */
+  revealUpdate: (filePath) => ipcRenderer.invoke('update:reveal', filePath),
+
+  /** Opens a release page in the user's real browser. */
+  openReleasesPage: (url) => ipcRenderer.invoke('update:open-releases', url),
+
   /**
    * Forward a telemetry event to the experiment pipeline WebSocket relay.
    * Fire-and-forget (ipcRenderer.send), no response expected.

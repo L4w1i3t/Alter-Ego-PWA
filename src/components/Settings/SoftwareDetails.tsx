@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { getCurrentVersion } from '../../services/updateService';
 import {
   GearIcon,
   StarIcon,
@@ -578,7 +579,9 @@ const SoftwareDetails: React.FC<SoftwareDetailsProps> = ({ onBack }) => {
 
   const details = {
     softwareName: 'ALTER EGO',
-    version: 'Alpha 1.0.0',
+    // Injected from package.json at build time, so this cannot drift from what
+    // the update check compares against or what the APK reports.
+    version: getCurrentVersion(),
     buildDate: 'April 2026',
     developedBy: ['L4w1i3t', 'ALTER EGO'],
     technologies: [

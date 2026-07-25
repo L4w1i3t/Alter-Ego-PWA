@@ -18,10 +18,12 @@ import {
   validateOpenAIKey,
   validateElevenLabsKey,
   validateOpenRouterKey,
+  validateAnthropicKey,
   checkForCompromisedKeys,
   assessKeyStrength,
   sanitizeKeyForLogging,
 } from '../../utils/keyValidation';
+import { Disclosure, Hint, ScreenIntro } from '../Common/Disclosure';
 
 const Container = styled.div`
   color: #0f0;
@@ -79,52 +81,7 @@ const Input = styled.input`
   }
 `;
 
-const Description = styled.p`
-  font-size: 0.8em;
-  margin-top: 0.5em;
-  color: #0f09;
-  line-height: 1.4; /* Improved readability */
-
-  @media (max-width: 768px) {
-    font-size: 0.95em;
-    margin-top: 1em;
-    line-height: 1.5;
-    padding: 0 0.2em;
-  }
-`;
-
-const SecurityNotice = styled.div`
-  background: #330;
-  border: 1px solid #ff0;
-  padding: 1em;
-  margin-bottom: 1.5em;
-  border-radius: 0.3em;
-  font-size: 0.9em;
-  line-height: 1.4;
-
-  @media (max-width: 768px) {
-    padding: 1.2em;
-    font-size: 1em;
-  }
-`;
-
-const InfoBox = styled.div`
-  padding: 1em;
-  border: 1px solid #00f;
-  background-color: #000020;
-  margin-bottom: 2em;
-  font-size: 0.9em;
-  line-height: 1.5; /* Improved readability */
-
-  @media (max-width: 768px) {
-    padding: 1.5em;
-    margin-bottom: 2.5em;
-    font-size: 1em;
-    line-height: 1.6;
-    border-width: 2px;
-    border-radius: 0.3em;
-  }
-`;
+/* Field-level help now uses the shared Hint primitive; see the render below. */
 
 const ButtonContainer = styled.div`
   display: flex;
@@ -172,6 +129,7 @@ interface ApiKeyManagerProps {
 const trimApiKeys = (keys: ApiKeys): ApiKeys => ({
   OPENAI_API_KEY: keys.OPENAI_API_KEY.trim(),
   OPENROUTER_API_KEY: keys.OPENROUTER_API_KEY.trim(),
+  ANTHROPIC_API_KEY: keys.ANTHROPIC_API_KEY.trim(),
   ELEVENLABS_API_KEY: keys.ELEVENLABS_API_KEY.trim(),
 });
 
@@ -181,21 +139,17 @@ const getProviderAfterKeySave = (
 ): AIProvider | null => {
   if (currentProvider === 'ollama') return null;
 
-  const hasOpenAIKey = !!keys.OPENAI_API_KEY;
-  const hasOpenRouterKey = !!keys.OPENROUTER_API_KEY;
+  // Which hosted providers now have a usable key.
+  const available: AIProvider[] = [];
+  if (keys.OPENAI_API_KEY) available.push('openai');
+  if (keys.OPENROUTER_API_KEY) available.push('openrouter');
+  if (keys.ANTHROPIC_API_KEY) available.push('claude');
 
-  if (currentProvider === 'openai' && !hasOpenAIKey && hasOpenRouterKey) {
-    return 'openrouter';
-  }
+  // Keep the active provider if it still has its key.
+  if (currentProvider && available.includes(currentProvider)) return null;
 
-  if (currentProvider === 'openrouter' && !hasOpenRouterKey && hasOpenAIKey) {
-    return 'openai';
-  }
-
-  if (!currentProvider) {
-    if (hasOpenRouterKey && !hasOpenAIKey) return 'openrouter';
-    if (hasOpenAIKey && !hasOpenRouterKey) return 'openai';
-  }
+  // Otherwise adopt the sole available provider (unambiguous case only).
+  if (available.length === 1) return available[0];
 
   return null;
 };
@@ -204,16 +158,19 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
   const [keys, setKeys] = useState<ApiKeys>({
     OPENAI_API_KEY: '',
     OPENROUTER_API_KEY: '',
+    ANTHROPIC_API_KEY: '',
     ELEVENLABS_API_KEY: '',
   });
   const [isValidating, setIsValidating] = useState(false);
   const [validationResults, setValidationResults] = useState<{
     openai: { valid: boolean; error?: string; warnings?: string[] } | null;
     openrouter: { valid: boolean; error?: string; warnings?: string[] } | null;
+    anthropic: { valid: boolean; error?: string; warnings?: string[] } | null;
     elevenlabs: { valid: boolean; error?: string; warnings?: string[] } | null;
   }>({
     openai: null,
     openrouter: null,
+    anthropic: null,
     elevenlabs: null,
   });
 
@@ -290,6 +247,26 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
         }
       }
 
+      if (nextKeys.ANTHROPIC_API_KEY) {
+        const anthropicResult = await validateAnthropicKey(
+          nextKeys.ANTHROPIC_API_KEY
+        );
+        setValidationResults(prev => ({
+          ...prev,
+          anthropic: anthropicResult,
+        }));
+
+        if (!anthropicResult.valid) {
+          showError(`Anthropic API Key: ${anthropicResult.error}`);
+          hasErrors = true;
+        } else {
+          console.log(
+            `Anthropic key validated: ${sanitizeKeyForLogging(nextKeys.ANTHROPIC_API_KEY)}`
+          );
+          anthropicResult.warnings?.forEach(warning => showWarning(warning));
+        }
+      }
+
       // Validate ElevenLabs key if provided
       if (nextKeys.ELEVENLABS_API_KEY) {
         const elevenlabsResult = await validateElevenLabsKey(
@@ -346,35 +323,47 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
     }
   };
 
-  // Function to mask API keys for display
-  const maskApiKey = (key: string): string => {
-    if (!key) return '';
-    if (key.length <= 8) return '*'.repeat(key.length);
-    return (
-      key.substring(0, 4) +
-      '*'.repeat(key.length - 8) +
-      key.substring(key.length - 4)
-    );
-  };
-
   return (
     <Container>
       <Title>Manage API Keys</Title>
 
-      <SecurityNotice>
-        <strong>SECURITY NOTICE:</strong> Your API keys are stored locally.
-        For maximum security: (1) Only use these keys on trusted
-        devices, (2) Regularly rotate your keys, (3) Monitor your API usage for
-        unusual activity, (4) Consider setting usage limits in your API
-        provider's dashboard.
-      </SecurityNotice>
+      <ScreenIntro>
+        Add a key for the provider you want to chat with. You only need one.
+      </ScreenIntro>
 
-      <InfoBox>
-        Chat providers are mutually exclusive. Use either an OpenAI key or an
-        OpenRouter key for hosted models, or use Ollama locally without a hosted
-        API key. ElevenLabs is separate and only affects premium voice
-        synthesis. Model and provider selection lives in the AI Models panel.
-      </InfoBox>
+      <Disclosure
+        id="api-keys-how-providers-work"
+        summary="Which key do I need?"
+      >
+        <p>
+          Chat providers are alternatives, not layers: pick <strong>one</strong>{' '}
+          of OpenAI, OpenRouter, or Anthropic (Claude) and add only that key. Or
+          run <strong>Ollama</strong> locally and add no hosted key at all.
+        </p>
+        <p>
+          ElevenLabs is separate and only affects premium voice synthesis --
+          it's never required for chat. Choose which provider is active in{' '}
+          <strong>Settings -&gt; AI Models</strong>.
+        </p>
+      </Disclosure>
+
+      <Disclosure
+        id="api-keys-security"
+        tone="warn"
+        summary="How your keys are stored"
+      >
+        <p>
+          Keys are saved in this device's local storage in plain text and are
+          sent only to the provider they belong to. They are never uploaded
+          anywhere else, and they are not included in Android system backups.
+        </p>
+        <ul>
+          <li>Only enter keys on devices you trust.</li>
+          <li>Rotate keys periodically.</li>
+          <li>Set spending limits in your provider's dashboard.</li>
+          <li>Check your provider's usage page if something looks off.</li>
+        </ul>
+      </Disclosure>
 
       <FormGroup>
         <Label htmlFor="OPENAI_API_KEY">OpenAI API Key:</Label>
@@ -386,19 +375,17 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           onChange={handleChange}
           placeholder="sk-..."
         />
-        <Description>
-          Required only when the active AI provider is OpenAI. OpenRouter and
-          Ollama do not need an OpenAI API key. Get your API key from the{' '}
+        <Hint>
+          From the{' '}
           <a
             href="https://platform.openai.com"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#0af' }}
           >
             OpenAI dashboard
           </a>
           .
-        </Description>
+        </Hint>
       </FormGroup>
 
       <FormGroup>
@@ -411,11 +398,40 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           onChange={handleChange}
           placeholder="sk-or-..."
         />
-        <Description>
-          Required only when the active AI provider is OpenRouter. OpenRouter
-          runs independently from OpenAI in this app, including account-level
-          BYOK routing configured in OpenRouter.
-        </Description>
+        <Hint>
+          From{' '}
+          <a
+            href="https://openrouter.ai/keys"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            openrouter.ai/keys
+          </a>
+          . Works on its own -- no OpenAI key needed.
+        </Hint>
+      </FormGroup>
+
+      <FormGroup>
+        <Label htmlFor="ANTHROPIC_API_KEY">Anthropic (Claude) API Key:</Label>
+        <Input
+          type="password"
+          id="ANTHROPIC_API_KEY"
+          name="ANTHROPIC_API_KEY"
+          value={keys.ANTHROPIC_API_KEY}
+          onChange={handleChange}
+          placeholder="sk-ant-..."
+        />
+        <Hint>
+          From the{' '}
+          <a
+            href="https://console.anthropic.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Anthropic Console
+          </a>
+          .
+        </Hint>
       </FormGroup>
 
       <FormGroup>
@@ -428,22 +444,27 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({ onBack }) => {
           onChange={handleChange}
           placeholder="..."
         />
-        <Description>
-          Required for ElevenLabs voice synthesis. Get your API key from the{' '}
+        <Hint>
+          Optional -- premium voices only. From{' '}
           <a
             href="https://elevenlabs.io/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#0af' }}
           >
-            ElevenLabs website
+            elevenlabs.io
           </a>
           .
-        </Description>
+        </Hint>
       </FormGroup>
       <ButtonContainer>
-        <BackButton onClick={onBack}>Back</BackButton>
-        <SaveButton onClick={handleSaveKeys}>Save</SaveButton>
+        <BackButton onClick={onBack} disabled={isValidating}>
+          Back
+        </BackButton>
+        {/* Saving round-trips to each provider to check the key, which can take
+            a second or two. Without this the button looked inert. */}
+        <SaveButton onClick={handleSaveKeys} disabled={isValidating}>
+          {isValidating ? 'Checking keys...' : 'Save'}
+        </SaveButton>
       </ButtonContainer>
     </Container>
   );

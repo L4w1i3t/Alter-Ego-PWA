@@ -14,6 +14,7 @@ export const APP_CONSTANTS = {
     DEFAULT_MODEL: 'gpt-4o-mini',
     DEFAULT_OPENROUTER_MODEL: 'openai/gpt-5.2',
     DEFAULT_OLLAMA_MODEL: 'llama3.1',
+    DEFAULT_CLAUDE_MODEL: 'claude-opus-4-8',
     DEFAULT_OLLAMA_BASE_URL: 'http://127.0.0.1:11434',
     DEFAULT_TEMPERATURE: 0.9, // Higher temperature for more creative, less robotic responses
     DEFAULT_MAX_TOKENS: 1000,
@@ -45,7 +46,7 @@ export const APP_CONSTANTS = {
 
   // Persona
   PERSONA: {
-    VERSION: '0.10.0',
+    VERSION: '0.10.1',
     DEFAULT_NAME: 'ALTER EGO',
   },
 

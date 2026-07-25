@@ -11,7 +11,7 @@
  * can be copied between machines.
  */
 
-const { app, BrowserWindow, ipcMain, desktopCapturer, screen, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, screen, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -171,8 +171,96 @@ const launchInOverlay = process.argv.includes('--overlay');
 const distPath = path.join(__dirname, '..', 'dist');
 
 // ──────────────────────────────────────────────
+// Update Download
+// ──────────────────────────────────────────────
+// The Windows artifact is a portable .exe, and a running executable cannot
+// overwrite itself on Windows. So rather than self-patching, the new build is
+// downloaded beside the current one and revealed in the file manager for the
+// user to swap in. User data lives in the "ALTER EGO Data" folder next to the
+// executable and is untouched by replacing the binary.
+ipcMain.handle('update:download', async (_event, { url, fileName }) => {
+  if (typeof url !== 'string' || !/^https:\/\//i.test(url)) {
+    throw new Error('Refusing to download from a non-HTTPS URL');
+  }
+
+  // Only ever accept downloads from the project's own release hosts.
+  const allowedHosts = new Set([
+    'github.com',
+    'api.github.com',
+    'objects.githubusercontent.com',
+    'release-assets.githubusercontent.com',
+  ]);
+  const parsed = new URL(url);
+  if (!allowedHosts.has(parsed.hostname)) {
+    throw new Error(`Refusing to download from ${parsed.hostname}`);
+  }
+
+  // Strip any path components a release asset name might smuggle in.
+  const safeName = path.basename(String(fileName || 'alterego-update'));
+  const targetDir = app.isPackaged
+    ? path.dirname(process.execPath)
+    : app.getPath('downloads');
+  const targetPath = path.join(targetDir, safeName);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download failed: HTTP ${response.status}`);
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  await fs.promises.writeFile(targetPath, buffer);
+
+  return targetPath;
+});
+
+ipcMain.handle('update:reveal', async (_event, filePath) => {
+  shell.showItemInFolder(String(filePath));
+  return true;
+});
+
+ipcMain.handle('update:open-releases', async (_event, url) => {
+  if (typeof url === 'string' && /^https:\/\//i.test(url)) {
+    await shell.openExternal(url);
+    return true;
+  }
+  return false;
+});
+
+// ──────────────────────────────────────────────
 // Window Creation
 // ──────────────────────────────────────────────
+
+/**
+ * Confine a window to the bundled app.
+ *
+ * The renderer shows outbound links (provider dashboards, Ko-fi, the repo).
+ * Without this, clicking one opened a second Electron BrowserWindow pointed at
+ * a remote origin -- still sandboxed and context-isolated, but with the app's
+ * preload attached and no address bar, so the user could not see where they
+ * were. External URLs now go to the real browser, and in-place navigation away
+ * from the bundled file:// app is refused outright.
+ */
+function confineToApp(win) {
+  const openExternally = url => {
+    if (/^https?:\/\//i.test(url)) {
+      shell.openExternal(url);
+    }
+  };
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    openExternally(url);
+    return { action: 'deny' };
+  });
+
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url !== win.webContents.getURL()) {
+      event.preventDefault();
+      openExternally(url);
+    }
+  });
+
+  // Nothing in this app embeds remote content; refuse any attempt to.
+  win.webContents.on('will-attach-webview', event => event.preventDefault());
+}
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -194,6 +282,8 @@ function createMainWindow() {
 
   // Remove the default Electron menu bar entirely
   mainWindow.setMenuBarVisibility(false);
+
+  confineToApp(mainWindow);
 
   mainWindow.loadFile(path.join(distPath, 'index.html'));
 
@@ -228,6 +318,8 @@ function createOverlayWindow() {
       sandbox: true,
     },
   });
+
+  confineToApp(overlayWindow);
 
   // Load the app with an overlay query param so the renderer can adapt its UI
   overlayWindow.loadFile(path.join(distPath, 'index.html'), {

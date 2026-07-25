@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import SoftwareDetails from './SoftwareDetails';
 import PersonaManager from './PersonaManager';
@@ -12,6 +12,8 @@ import MemoryAndHistory from './MemoryAndHistory';
 import OpenSourceWipInfo from './OpenSourceWipInfo';
 import MiscellaneousSettings from './MiscellaneousSettings';
 import DataManagement from './DataManagement';
+import AppUpdates from './AppUpdates';
+import { checkForUpdate, isVersionSkipped } from '../../services/updateService';
 import {
   KeyIcon,
   HeadphonesIcon,
@@ -35,15 +37,21 @@ const SettingsOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 12000;
-  padding: 1.5rem;
+  z-index: var(--ae-z-modal);
+  padding: calc(1.5rem + var(--ae-safe-top, 0px))
+    calc(1.5rem + var(--ae-safe-right, 0px))
+    calc(1.5rem + var(--ae-safe-bottom, 0px))
+    calc(1.5rem + var(--ae-safe-left, 0px));
 
   @supports (height: 100dvh) {
     height: 100dvh;
   }
 
   @media (max-width: 768px) {
-    padding: 0.75rem;
+    padding: calc(0.75rem + var(--ae-safe-top, 0px))
+      calc(0.75rem + var(--ae-safe-right, 0px))
+      calc(0.75rem + var(--ae-safe-bottom, 0px))
+      calc(0.75rem + var(--ae-safe-left, 0px));
   }
 `;
 
@@ -53,30 +61,22 @@ const SettingsPanel = styled.div`
   padding: 2em;
   border-radius: 0.5em;
   position: relative;
+  /* Sized against the overlay's content box, which already has the device
+     safe areas subtracted, so the panel can never run under a system bar. */
   width: clamp(560px, 72vw, 960px);
-  max-width: calc(100vw - 3rem);
-  max-height: calc(100vh - 3rem);
+  max-width: 100%;
+  max-height: 100%;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable;
 
   @media (max-width: 768px) {
     width: 100%;
-    max-width: calc(100vw - 1.5rem);
-    max-height: calc(100vh - 1.5rem);
     padding: 1.2em;
-  }
-
-  @supports (height: 100dvh) {
-    max-height: calc(100dvh - 3rem);
-
-    @media (max-width: 768px) {
-      max-height: calc(100dvh - 1.5rem);
-    }
   }
 
   @media (max-width: 480px) {
     width: 100%;
-    max-width: calc(100vw - 1rem);
     padding: 1em 0.8em;
     border-radius: 0.3em;
   }
@@ -85,14 +85,33 @@ const SettingsPanel = styled.div`
 const SettingsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1em;
-  margin-bottom: 1.5em;
+  gap: 0.75em;
+  margin-bottom: 1.4em;
   align-items: stretch;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    gap: 0.75em;
   }
+`;
+
+/* Small pip next to the Updates entry when a newer release exists. */
+const UpdateDot = styled.span`
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  margin-left: 0.5em;
+  border-radius: 50%;
+  background: var(--ae-color-cyan);
+  vertical-align: middle;
+`;
+
+const GroupLabel = styled.h3`
+  margin: 0 0 0.6em;
+  font-size: 0.7em;
+  font-weight: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ae-color-text-muted);
 `;
 
 const SettingsCategory = styled.button.attrs({ type: 'button' })`
@@ -190,29 +209,6 @@ const SettingsTitle = styled.h2`
   }
 `;
 
-const SettingsList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-`;
-
-const SettingsItem = styled.li`
-  margin: 0.5em 0;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const DangerSettingsItem = styled(SettingsItem)`
-  color: #f00;
-
-  &:hover {
-    color: #f55;
-  }
-`;
-
 const Divider = styled.hr`
   border: 0;
   border-top: 1px solid #0f03;
@@ -298,6 +294,27 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
     initialView || null
   );
 
+  /*
+   * Reads whatever the background check already found; passing force=false
+   * means opening Settings never triggers a network request of its own.
+   */
+  const [hasUpdate, setHasUpdate] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    checkForUpdate(false)
+      .then(result => {
+        if (!cancelled && result && !isVersionSkipped(result.version)) {
+          setHasUpdate(true);
+        }
+      })
+      .catch(() => {
+        /* never let an update check interfere with opening settings */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Scroll to top when view changes (fixes mobile scroll position issue)
   useEffect(() => {
     const settingsPanel = document.querySelector(
@@ -344,6 +361,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
         return <DataManagement onBack={handleBack} />;
       case 'Desktop Install':
         return <DesktopInstall onBack={handleBack} />;
+      case 'Updates':
+        return <AppUpdates onBack={handleBack} />;
       case 'Software Details':
         return <SoftwareDetails onBack={handleBack} />;
       case 'Factory Reset':
@@ -354,6 +373,12 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
         return (
           <>
             <SettingsTitle>Settings</SettingsTitle>
+            {/*
+             * Nine equally weighted cards gave no clue where to begin. Grouping
+             * them puts the two things a new user must do first ("Connect")
+             * ahead of the things they may never touch, without hiding anything.
+             */}
+            <GroupLabel>Connect</GroupLabel>
             <SettingsGrid>
               <SettingsCategory
                 onClick={() => handleMenuClick('Manage API Keys')}
@@ -363,7 +388,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
                 </CategoryIcon>
                 <CategoryTitle>API Keys</CategoryTitle>
                 <CategoryDescription>
-                  Configure provider and voice API keys
+                  Add a key for your AI provider
                 </CategoryDescription>
               </SettingsCategory>
               <SettingsCategory onClick={() => handleMenuClick('AI Models')}>
@@ -372,7 +397,22 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
                 </CategoryIcon>
                 <CategoryTitle>AI Models</CategoryTitle>
                 <CategoryDescription>
-                  Choose OpenAI, OpenRouter, or Ollama models
+                  Choose which provider and model to use
+                </CategoryDescription>
+              </SettingsCategory>
+            </SettingsGrid>
+
+            <GroupLabel>Personalize</GroupLabel>
+            <SettingsGrid>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Manage Personas')}
+              >
+                <CategoryIcon>
+                  <UserIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
+                <CategoryTitle>Personas</CategoryTitle>
+                <CategoryDescription>
+                  Create and edit the characters you talk to
                 </CategoryDescription>
               </SettingsCategory>
               <SettingsCategory
@@ -383,29 +423,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
                 </CategoryIcon>
                 <CategoryTitle>Voice Models</CategoryTitle>
                 <CategoryDescription>
-                  Add and configure voice synthesis models
-                </CategoryDescription>
-              </SettingsCategory>
-              <SettingsCategory
-                onClick={() => handleMenuClick('Manage Personas')}
-              >
-                <CategoryIcon>
-                  <UserIcon size={20} aria-hidden="true" />
-                </CategoryIcon>
-                <CategoryTitle>Personas</CategoryTitle>
-                <CategoryDescription>
-                  Create and edit AI character personas
-                </CategoryDescription>
-              </SettingsCategory>
-              <SettingsCategory
-                onClick={() => handleMenuClick('Memory & History')}
-              >
-                <CategoryIcon>
-                  <MemoryIcon size={20} aria-hidden="true" />
-                </CategoryIcon>
-                <CategoryTitle>Memory & History</CategoryTitle>
-                <CategoryDescription>
-                  Review history, adjust memory limits, and clear stored data
+                  Let ALTER EGO speak out loud
                 </CategoryDescription>
               </SettingsCategory>
               <SettingsCategory
@@ -414,9 +432,24 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
                 <CategoryIcon>
                   <WrenchIcon size={20} aria-hidden="true" />
                 </CategoryIcon>
-                <CategoryTitle>Miscellaneous</CategoryTitle>
+                <CategoryTitle>Preferences</CategoryTitle>
                 <CategoryDescription>
-                  Customize text speed and other preferences
+                  Text size, typing speed, and other options
+                </CategoryDescription>
+              </SettingsCategory>
+            </SettingsGrid>
+
+            <GroupLabel>Your data</GroupLabel>
+            <SettingsGrid>
+              <SettingsCategory
+                onClick={() => handleMenuClick('Memory & History')}
+              >
+                <CategoryIcon>
+                  <MemoryIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
+                <CategoryTitle>Memory &amp; History</CategoryTitle>
+                <CategoryDescription>
+                  Review conversations and what is remembered
                 </CategoryDescription>
               </SettingsCategory>
               <SettingsCategory
@@ -425,9 +458,27 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
                 <CategoryIcon>
                   <ShieldIcon size={20} aria-hidden="true" />
                 </CategoryIcon>
-                <CategoryTitle>Data Management</CategoryTitle>
+                <CategoryTitle>Backup &amp; Restore</CategoryTitle>
                 <CategoryDescription>
-                  Export, import, and back up all app data
+                  Export or import everything as one file
+                </CategoryDescription>
+              </SettingsCategory>
+            </SettingsGrid>
+
+            <GroupLabel>About</GroupLabel>
+            <SettingsGrid>
+              <SettingsCategory onClick={() => handleMenuClick('Updates')}>
+                <CategoryIcon>
+                  <DownloadIcon size={20} aria-hidden="true" />
+                </CategoryIcon>
+                <CategoryTitle>
+                  Updates
+                  {hasUpdate && <UpdateDot aria-label="Update available" />}
+                </CategoryTitle>
+                <CategoryDescription>
+                  {hasUpdate
+                    ? 'A new version is available'
+                    : 'Check for new releases'}
                 </CategoryDescription>
               </SettingsCategory>
               {!isElectronEnvironment() && (
@@ -437,9 +488,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
                   <CategoryIcon>
                     <DownloadIcon size={20} aria-hidden="true" />
                   </CategoryIcon>
-                  <CategoryTitle>Desktop Install</CategoryTitle>
+                  <CategoryTitle>Install App</CategoryTitle>
                   <CategoryDescription>
-                    Install ALTER EGO as a desktop application
+                    Run ALTER EGO as a desktop application
                   </CategoryDescription>
                 </SettingsCategory>
               )}
@@ -451,10 +502,11 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialView }) => {
                 </CategoryIcon>
                 <CategoryTitle>Software Details</CategoryTitle>
                 <CategoryDescription>
-                  View version info and credits
+                  Version info and credits
                 </CategoryDescription>
               </SettingsCategory>
             </SettingsGrid>
+
             <Divider />
             <SettingsCategory
               onClick={() => handleMenuClick('Factory Reset')}

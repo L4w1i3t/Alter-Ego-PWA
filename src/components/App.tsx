@@ -23,6 +23,8 @@ import '../styles/mobile.css';
 import { EVENTS } from '../config/constants';
 import { useAutonomy } from '../hooks/useAutonomy';
 import { useLanChat } from '../hooks/useLanChat';
+import { useViewportHeight } from '../hooks/useViewportHeight';
+import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import {
   loadSettings,
   saveSettings,
@@ -47,18 +49,38 @@ import {
   clearPerformanceData,
 } from '../utils/performanceMetrics';
 
-// Styled components for main app layout
+/*
+ * The app shell owns the device safe areas for the whole non-overlay UI.
+ *
+ * Keeping the inset here rather than on Header/Footer means whichever element
+ * happens to be first (the install banner, when it is showing, otherwise the
+ * header) is pushed clear of the status bar without each one needing its own
+ * rule. The exposed strip is plain black, which matches the header and footer
+ * backgrounds, so the seam is invisible.
+ *
+ * Fixed-position overlays escape this padding and handle insets themselves via
+ * the helpers in styles/safeArea.
+ */
 const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
+  padding: var(--ae-safe-top, 0px) var(--ae-safe-right, 0px)
+    var(--ae-safe-bottom, 0px) var(--ae-safe-left, 0px);
   background-color: #000;
   color: #0f0;
   font-family: monospace, 'Courier New', Courier;
   overflow: hidden;
 
+  /*
+   * --ae-viewport-height is set by useViewportHeight from visualViewport,
+   * which -- unlike dvh -- also shrinks for the on-screen keyboard. Without it
+   * the composer at the bottom of the phone layout ends up behind the keyboard.
+   * It falls back to dvh when the hook has not set a value, and the plain
+   * 100vh above covers browsers with no dvh support at all.
+   */
   @supports (height: 100dvh) {
-    height: 100dvh;
+    height: var(--ae-viewport-height, 100dvh);
   }
 
   @media (max-width: 768px) {
@@ -76,6 +98,13 @@ const App: React.FC = () => {
 
   // Activate LAN peer-to-peer chat (Electron-only, no-op in PWA)
   useLanChat();
+
+  // Track the visible viewport so the on-screen keyboard never covers the
+  // composer at the bottom of the phone layout.
+  useViewportHeight();
+
+  // Quietly look for a newer GitHub release (desktop and Android only).
+  useUpdateCheck();
 
   // Log mounting for debugging
   useEffect(() => {
@@ -335,7 +364,19 @@ const App: React.FC = () => {
 
   const handleSplashConfigure = () => {
     completeFirstStartup();
-    setSettingsInitialView('AI Models');
+    /*
+     * Land on API Keys rather than AI Models. Saving a single key there also
+     * selects the matching provider (see getProviderAfterKeySave), so it is the
+     * shortest path from "nothing configured" to "can send a message". Someone
+     * who already has a key gets the settings index instead.
+     */
+    const keys = loadApiKeys();
+    const hasChatKey = !!(
+      keys.OPENAI_API_KEY ||
+      keys.OPENROUTER_API_KEY ||
+      keys.ANTHROPIC_API_KEY
+    );
+    setSettingsInitialView(hasChatKey ? undefined : 'Manage API Keys');
     setShowSettings(true);
   };
 
@@ -580,6 +621,7 @@ const App: React.FC = () => {
       <Header
         onSettingsClick={() => setShowSettings(!showSettings)}
         onLoadCharacter={handleLoadCharacterClick}
+        activeCharacter={activeCharacter}
       />
       <QuerySection
         personaContent={currentPersonaContent}

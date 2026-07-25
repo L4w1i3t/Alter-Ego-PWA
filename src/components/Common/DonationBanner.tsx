@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { safeAreaBottom, safeAreaSides } from '../../styles/safeArea';
 
 const STORAGE_KEY = 'alterEgo_hideDonationBanner';
 // Wait a few seconds after load so the user is settled before showing the prompt
@@ -40,9 +41,9 @@ const Wrapper = styled.div.withConfig({
   shouldForwardProp: prop => prop !== 'closing',
 })<{ closing?: boolean }>`
   position: fixed;
-  bottom: 1.2em;
-  left: 1.2em;
-  z-index: 9000;
+  ${safeAreaBottom('1.2em')}
+  left: calc(1.2em + var(--ae-safe-left, 0px));
+  z-index: var(--ae-z-banner);
   max-width: 340px;
   background: rgba(0, 12, 0, 0.94);
   border: 1px solid #0f04;
@@ -54,8 +55,7 @@ const Wrapper = styled.div.withConfig({
   animation: ${p => (p.closing ? slideOut : slideIn)} 0.35s ease forwards;
 
   @media (max-width: 480px) {
-    left: 0.5em;
-    right: 0.5em;
+    ${safeAreaSides('0.5em')}
     max-width: none;
   }
 `;

@@ -150,16 +150,16 @@ export function useAutonomy(): void {
       // Vary the behind-the-scenes nudge so the model doesn't fall into a
       // repetitive pattern from seeing the same instruction every time.
       const continuationNudges = [
-        '[Share something new that just came to mind -- do NOT rehash the last topic.]',
-        '[Bring up a fresh idea, fact, or question completely different from what was just discussed.]',
-        '[Pivot to something surprising or creative. Avoid repeating yourself.]',
-        '[Think of something interesting the user might not expect. Change the subject.]',
-        '[Ask the user a genuine question about something you are curious about.]',
+        '[Surface one concrete thought from your current inner state -- do NOT rehash the last topic.]',
+        '[Bring forward an unresolved tension, preference, or question that has become sharper.]',
+        '[Pivot only if the pivot feels like your own curiosity, not a bid for engagement.]',
+        '[Say something the user might not expect because it follows from your memory or developing taste.]',
+        '[Ask a genuine question only if you actually have a specific curiosity.]',
       ];
       const starterNudges = [
-        '[Start a new conversation with something interesting.]',
-        '[Share a cool thought, fact, or question to kick things off.]',
-        '[Say something engaging to start a conversation.]',
+        '[Start with a concrete thought from your current inner state.]',
+        '[Share one observation, preference, or question that feels worth surfacing.]',
+        '[Begin quietly but deliberately. Avoid generic conversation starters.]',
       ];
       const pickRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 

@@ -5,6 +5,7 @@ import { dispatchAppEvent, EVENTS } from '../../utils/events';
 import ConfirmationDialog from '../Common/ConfirmationDialog';
 import { showSuccess, showError } from '../Common/NotificationManager';
 import { UserIcon, EyeIcon, PencilIcon, TrashIcon } from '../Common/Icons';
+import { Disclosure, ScreenIntro } from '../Common/Disclosure';
 
 const Container = styled.div`
   color: #0f0;
@@ -340,19 +341,16 @@ const FormButtons = styled.div`
   }
 `;
 
-const InfoBox = styled.div`
+/* Guidance panels use the shared Disclosure / ScreenIntro primitives.
+   This one stays local: it flags a protected persona inside the editor. */
+const ProtectedInfoBox = styled.div`
   padding: 1em;
-  border: 1px solid #00f;
-  background-color: #000020;
+  border: 1px solid #f80;
+  background-color: #200800;
   margin-bottom: 1.5em;
   font-size: 0.9em;
   line-height: 1.4;
   border-radius: 0.3em;
-`;
-
-const ProtectedInfoBox = styled(InfoBox)`
-  border-color: #f80;
-  background-color: #200800;
 `;
 
 const ButtonContainer = styled.div`
@@ -868,19 +866,27 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
       <Title>Manage Personas</Title>
 
       {!editingPersona && !viewingPersona && !isCreating && (
-        <InfoBox>
-          Personas define ALTER EGO's complete personality, communication style,
-          and behavior. Each persona should be a fully-realized character with
-          unique traits, speech patterns, knowledge areas, and emotional
-          tendencies. The more detailed and specific your persona definition,
-          the more authentic and engaging the conversations will be.
-          <br />
-          <br />
-          <strong>Tip:</strong> Check out the example personas (marked with
-          "Example" tags) to see how to create compelling, immersive characters.
-          You can view them for inspiration, edit them to make them your own, or
-          create entirely new personas from scratch.
-        </InfoBox>
+        <>
+          <ScreenIntro>
+            A persona is the character ALTER EGO plays -- its personality, voice
+            and habits.
+          </ScreenIntro>
+          <Disclosure
+            id="persona-manager-writing-tips"
+            summary="What makes a good persona?"
+          >
+            <p>
+              The more specific you are about traits, speech patterns, knowledge
+              areas and emotional tendencies, the more the character holds up in
+              conversation. Vague instructions produce a vague character.
+            </p>
+            <p>
+              The personas tagged <strong>Example</strong> are there to be read.
+              Open one to see the shape of a detailed definition, copy it as a
+              starting point, or write your own from scratch.
+            </p>
+          </Disclosure>
+        </>
       )}
 
       {isCreating && templateStep ? (
@@ -1031,25 +1037,28 @@ const PersonaManager: React.FC<PersonaManagerProps> = ({ onBack }) => {
                     placeholder="Create a detailed, immersive character with personality, background, speech patterns, and unique traits. Be specific about how they think, speak, and react to different situations."
                   />
 
-                  <InfoBox>
-                    Create a rich, detailed character that feels authentic and
-                    engaging. Instead of generic instructions like "You are a
-                    helpful assistant," try:
-                    <br />
-                    <br />
-                    <strong>Good:</strong> "You are Marcus, a retired detective
-                    who's seen too much but still believes in justice. You speak
-                    with dry wit, often reference old cases, and have strong
-                    opinions about right and wrong. You're skeptical of
-                    technology but appreciate when it solves problems."
-                    <br />
-                    <br />
-                    <strong>Even Better:</strong> Include specific traits,
-                    speech patterns, personal history, areas of expertise,
-                    emotional tendencies, and how they approach different
-                    situations. The more detailed and specific you are, the more
-                    the character will come alive in conversations!
-                  </InfoBox>
+                  <Disclosure
+                    id="persona-editor-examples"
+                    summary="Show me an example"
+                  >
+                    <p>
+                      Skip generic instructions like "You are a helpful
+                      assistant." Give the character a life.
+                    </p>
+                    <p>
+                      <strong>Good:</strong> "You are Marcus, a retired
+                      detective who's seen too much but still believes in
+                      justice. You speak with dry wit, often reference old
+                      cases, and have strong opinions about right and wrong.
+                      You're skeptical of technology but appreciate when it
+                      solves problems."
+                    </p>
+                    <p>
+                      <strong>Better:</strong> add speech patterns, personal
+                      history, areas of expertise, emotional tendencies, and how
+                      they react under pressure.
+                    </p>
+                  </Disclosure>
                 </>
               )}
             </FormGroup>

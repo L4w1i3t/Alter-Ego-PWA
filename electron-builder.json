@@ -2,9 +2,17 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.l4w1i3t.alterego",
   "productName": "ALTEREGO",
+  "copyright": "Copyright © 2026 L4w1i3t",
   "directories": {
     "output": "electron-dist"
   },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "L4w1i3t",
+      "repo": "Alter-Ego-PWA"
+    }
+  ],
   "files": [
     "dist/**/*",
     "electron/**/*"
@@ -37,7 +45,9 @@
     "icon": "public/assets/icons/icon-512x512.png",
     "category": "Utility",
     "executableName": "alterego",
-    "maintainer": "L4w1i3t"
+    "maintainer": "L4w1i3t",
+    "synopsis": "Converse with an AI character of your own making",
+    "description": "ALTER EGO lets you hold text or voice conversations with AI characters you define yourself. Bring your own OpenAI, Anthropic, or OpenRouter key, or run a local Ollama model. Conversations, personas, and keys stay on your device."
   },
   "pacman": {
     "artifactName": "${productName}-${version}-${arch}.pkg.tar.zst"

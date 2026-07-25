@@ -1,16 +1,18 @@
 import React from 'react';
 import styled from 'styled-components';
+import { loadApiKeys, loadSettings } from '../../utils/storageUtils';
+import { safeAreaInset } from '../../styles/safeArea';
 
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--ae-z-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
   background: #000;
   color: #0f0;
-  padding: 1rem;
+  ${safeAreaInset('1rem')}
 `;
 
 const Panel = styled.div`
@@ -37,7 +39,8 @@ const Title = styled.h1`
 const Subtitle = styled.p`
   margin: 0 0 1.25rem;
   color: #0f0b;
-  line-height: 1.4;
+  line-height: 1.5;
+  font-size: 0.9rem;
 `;
 
 const Actions = styled.div`
@@ -50,15 +53,16 @@ const Actions = styled.div`
   }
 `;
 
-const Button = styled.button`
-  min-height: 2.75rem;
-  background: #000;
-  color: #0f0;
-  border: 1px solid #0f0;
-  cursor: pointer;
-  font-family: monospace;
+const Button = styled.button<{ $primary?: boolean }>`
+  && {
+    min-height: 2.75rem;
+    background: ${p => (p.$primary ? '#0f0' : '#000')};
+    color: ${p => (p.$primary ? '#000' : '#0f0')};
+    border: 1px solid #0f0;
+    font-family: monospace;
+  }
 
-  &:hover {
+  &&:hover {
     background: #0f0;
     color: #000;
   }
@@ -69,19 +73,60 @@ interface SplashScreenProps {
   onConfigure: () => void;
 }
 
+const hasAnyChatKey = (): boolean => {
+  try {
+    const keys = loadApiKeys();
+    if (
+      keys.OPENAI_API_KEY ||
+      keys.OPENROUTER_API_KEY ||
+      keys.ANTHROPIC_API_KEY
+    ) {
+      return true;
+    }
+    // Ollama runs locally and needs no key, so selecting it counts as set up.
+    return loadSettings().aiProvider === 'ollama';
+  } catch {
+    return false;
+  }
+};
+
 const SplashScreen: React.FC<SplashScreenProps> = ({
   onStart,
   onConfigure,
 }) => {
+  /*
+   * A first-time user has no provider configured, so "Start" drops them into a
+   * chat where every message fails. Lead with setup in that case, and keep the
+   * emphasis on chatting once they are actually ready.
+   */
+  const configured = hasAnyChatKey();
+
   return (
     <Overlay>
       <Panel>
         <Logo src="assets/readmeicon.png" alt="" aria-hidden="true" />
         <Title>ALTER EGO</Title>
-        <Subtitle>Glad to see you!</Subtitle>
+        <Subtitle>
+          {configured
+            ? 'Glad to see you. Pick up where you left off.'
+            : 'Talk to a character of your own making. Add an AI provider key to get started -- it takes a minute.'}
+        </Subtitle>
         <Actions>
-          <Button onClick={onStart}>Start</Button>
-          <Button onClick={onConfigure}>Settings</Button>
+          {configured ? (
+            <>
+              <Button $primary onClick={onStart}>
+                Start
+              </Button>
+              <Button onClick={onConfigure}>Settings</Button>
+            </>
+          ) : (
+            <>
+              <Button $primary onClick={onConfigure}>
+                Set up
+              </Button>
+              <Button onClick={onStart}>Skip for now</Button>
+            </>
+          )}
         </Actions>
       </Panel>
     </Overlay>

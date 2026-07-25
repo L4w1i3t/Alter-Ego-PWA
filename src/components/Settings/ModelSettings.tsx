@@ -6,6 +6,7 @@ import {
   OPENAI_MODEL_OPTIONS,
   OPENROUTER_MODEL_OPTIONS,
   OLLAMA_MODEL_OPTIONS,
+  CLAUDE_MODEL_OPTIONS,
   detectAIProvider,
   filterOpenRouterOpenAIModels,
   getModelForProvider,
@@ -30,6 +31,7 @@ import {
 } from '../../utils/storageUtils';
 import { AI, EVENTS } from '../../config/constants';
 import { showError, showSuccess } from '../Common/NotificationManager';
+import { Disclosure, Notice, ScreenIntro } from '../Common/Disclosure';
 
 const Container = styled.div`
   color: #0f0;
@@ -55,20 +57,11 @@ const Title = styled.h2`
   }
 `;
 
-const InfoBox = styled.div`
-  padding: 1em;
-  border: 1px solid #00f;
-  background-color: #000020;
-  margin-bottom: 1.5em;
-  font-size: 0.9em;
-  line-height: 1.5;
-`;
-
 const GuideGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75em;
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -93,18 +86,6 @@ const GuideText = styled.p`
   color: #0f0;
   font-size: 0.84em;
   line-height: 1.45;
-`;
-
-const HelpList = styled.ul`
-  margin: 0 0 1.5em;
-  padding-left: 1.25em;
-  color: #0f0;
-  font-size: 0.84em;
-  line-height: 1.45;
-`;
-
-const HelpItem = styled.li`
-  margin-bottom: 0.45em;
 `;
 
 const StatusGrid = styled.div`
@@ -172,8 +153,22 @@ const ProviderButton = styled.button.withConfig({
 `;
 
 const ProviderName = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6em;
   font-weight: bold;
   margin-bottom: 0.35em;
+`;
+
+const ProviderReady = styled.span<{ $ready: boolean }>`
+  flex: none;
+  font-size: 0.7em;
+  font-weight: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  color: ${p => (p.$ready ? 'inherit' : 'var(--ae-color-warning)')};
 `;
 
 const ProviderMeta = styled.div`
@@ -363,6 +358,7 @@ const providerNotes: Record<AIProvider, string> = {
   openai: 'Uses only the OpenAI API key from API Keys.',
   openrouter: 'Uses only the OpenRouter key. No OpenAI key required.',
   ollama: 'Uses a local Ollama server. No hosted key required.',
+  claude: 'Uses only the Anthropic (Claude) API key from API Keys.',
 };
 
 type OpenRouterFlagKey =
@@ -444,30 +440,20 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
 
   const apiKeys = useMemo(() => loadApiKeys(), []);
   const activeModel = getModelForProvider(provider, settings);
-  const openAIKeyStatus =
-    provider === 'openai'
-      ? {
-          label: apiKeys.OPENAI_API_KEY ? 'configured' : 'missing',
-          status: apiKeys.OPENAI_API_KEY ? 'good' : 'warning',
-        }
-      : {
-          label: apiKeys.OPENAI_API_KEY
-            ? 'configured (not active)'
-            : 'not required',
-          status: apiKeys.OPENAI_API_KEY ? 'good' : undefined,
-        };
-  const openRouterKeyStatus =
-    provider === 'openrouter'
-      ? {
-          label: apiKeys.OPENROUTER_API_KEY ? 'configured' : 'missing',
-          status: apiKeys.OPENROUTER_API_KEY ? 'good' : 'warning',
-        }
-      : {
-          label: apiKeys.OPENROUTER_API_KEY
-            ? 'configured (not active)'
-            : 'not required',
-          status: apiKeys.OPENROUTER_API_KEY ? 'good' : undefined,
-        };
+  /*
+   * Key readiness per provider. This used to be three near-identical blocks
+   * feeding three cells in a status grid above the fold; it now annotates the
+   * provider buttons themselves, where the reader is actually choosing.
+   * Ollama needs no key, so it is always ready.
+   */
+  const providerKeyReady: Record<AIProvider, boolean> = {
+    openai: !!apiKeys.OPENAI_API_KEY,
+    openrouter: !!apiKeys.OPENROUTER_API_KEY,
+    claude: !!apiKeys.ANTHROPIC_API_KEY,
+    ollama: true,
+  };
+
+  const activeProviderNeedsKey = !providerKeyReady[provider];
 
   useEffect(() => {
     if (provider !== 'ollama') return;
@@ -569,6 +555,8 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
       updateSettings({ preferredLanguageModel: model });
     } else if (provider === 'openrouter') {
       updateSettings({ openRouterModel: model });
+    } else if (provider === 'claude') {
+      updateSettings({ claudeModel: model });
     } else {
       updateSettings({ ollamaModel: model });
     }
@@ -638,6 +626,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
         openRouterZdr: settings.openRouterZdr ?? false,
         ollamaModel: settings.ollamaModel || AI.DEFAULT_OLLAMA_MODEL,
         ollamaBaseUrl: settings.ollamaBaseUrl || AI.DEFAULT_OLLAMA_BASE_URL,
+        claudeModel: settings.claudeModel || AI.DEFAULT_CLAUDE_MODEL,
       };
 
       saveSettings(nextSettings);
@@ -880,6 +869,36 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
       );
     }
 
+    if (provider === 'claude') {
+      const filteredClaudeModels = ensureActiveModelVisible(
+        filterModelOptions(CLAUDE_MODEL_OPTIONS),
+        CLAUDE_MODEL_OPTIONS
+      );
+      return (
+        <>
+          {renderModelSearch('Search Claude model presets')}
+          <FormGroup>
+            <Label htmlFor="claudeModel">Claude model:</Label>
+            <Select
+              id="claudeModel"
+              value={settings.claudeModel || AI.DEFAULT_CLAUDE_MODEL}
+              onChange={e => handleModelChange(e.target.value)}
+            >
+              {filteredClaudeModels.map(model => (
+                <option key={model.id} value={model.id}>
+                  {model.name} - {model.description}
+                </option>
+              ))}
+            </Select>
+            <Description>
+              Claude models are called directly with your Anthropic API key.
+              All listed models support text and image input.
+            </Description>
+          </FormGroup>
+        </>
+      );
+    }
+
     const filteredModels = ensureActiveModelVisible(
       filterModelOptions(OPENAI_MODEL_OPTIONS),
       OPENAI_MODEL_OPTIONS
@@ -909,75 +928,68 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
     <Container>
       <Title>AI Models</Title>
 
-      <InfoBox>
-        Active provider is controlled by this panel. OpenAI, OpenRouter, and
-        Ollama are alternatives: ALTER EGO only calls the selected provider, so
-        OpenRouter does not require an OpenAI key, and Ollama does not require a
-        hosted API key.
-      </InfoBox>
+      <ScreenIntro>
+        Pick a provider, then a model. Only the selected provider is ever
+        called.
+      </ScreenIntro>
 
-      <GuideGrid>
-        {recommendationPanels.map(panel => (
-          <GuidePanel key={panel.title}>
-            <GuideTitle>{panel.title}</GuideTitle>
-            <GuideText>{panel.text}</GuideText>
-          </GuidePanel>
-        ))}
-      </GuideGrid>
-
-      <HelpList>
-        <HelpItem>
-          Temperature controls variation. Lower values are steadier; higher
-          values are more exploratory.
-        </HelpItem>
-        <HelpItem>
-          Max output tokens caps response length. Higher caps allow longer
-          answers but can cost more and take longer.
-        </HelpItem>
-        <HelpItem>
-          OpenRouter model choices are restricted to the openai/ namespace.
-          Provider order and allowed providers still use OpenRouter provider
-          slugs when you need endpoint-level routing.
-        </HelpItem>
-        <HelpItem>
-          OpenRouter BYOK is handled by your OpenRouter account and routing
-          settings. ALTER EGO only needs your OpenRouter API key for the
-          OpenRouter provider.
-        </HelpItem>
-        <HelpItem>
-          OpenRouter's default routing weighs stable low-cost providers most
-          heavily. Setting provider order or sort makes routing more explicit.
-        </HelpItem>
-      </HelpList>
+      <Disclosure
+        id="model-settings-choosing"
+        summary="Not sure which provider to pick?"
+      >
+        <GuideGrid>
+          {recommendationPanels.map(panel => (
+            <GuidePanel key={panel.title}>
+              <GuideTitle>{panel.title}</GuideTitle>
+              <GuideText>{panel.text}</GuideText>
+            </GuidePanel>
+          ))}
+        </GuideGrid>
+        <ul>
+          <li>
+            <strong>Temperature</strong> controls variation. Lower is steadier,
+            higher is more exploratory.
+          </li>
+          <li>
+            <strong>Max output tokens</strong> caps response length. Higher caps
+            allow longer answers but cost more and take longer.
+          </li>
+          <li>
+            OpenRouter model choices are restricted to the <code>openai/</code>{' '}
+            namespace. Provider order and allowed providers use OpenRouter
+            provider slugs when you need endpoint-level routing.
+          </li>
+          <li>
+            OpenRouter BYOK is handled by your OpenRouter account and routing
+            settings; ALTER EGO only needs the OpenRouter API key.
+          </li>
+          <li>
+            OpenRouter's default routing favours stable low-cost providers.
+            Setting provider order or sort makes routing explicit.
+          </li>
+        </ul>
+      </Disclosure>
 
       <StatusGrid>
         <StatusCell>
-          <StatusLabel>Detected provider</StatusLabel>
-          <StatusValue>{AI_PROVIDER_LABELS[provider]}</StatusValue>
+          <StatusLabel>Active provider</StatusLabel>
+          <StatusValue status={activeProviderNeedsKey ? 'warning' : undefined}>
+            {AI_PROVIDER_LABELS[provider]}
+            {activeProviderNeedsKey && ' -- key missing'}
+          </StatusValue>
         </StatusCell>
         <StatusCell>
-          <StatusLabel>Detected model</StatusLabel>
+          <StatusLabel>Active model</StatusLabel>
           <StatusValue>{activeModel}</StatusValue>
         </StatusCell>
-        <StatusCell>
-          <StatusLabel>OpenAI key</StatusLabel>
-          <StatusValue
-            status={openAIKeyStatus.status as 'good' | 'warning' | undefined}
-          >
-            {openAIKeyStatus.label}
-          </StatusValue>
-        </StatusCell>
-        <StatusCell>
-          <StatusLabel>OpenRouter key</StatusLabel>
-          <StatusValue
-            status={
-              openRouterKeyStatus.status as 'good' | 'warning' | undefined
-            }
-          >
-            {openRouterKeyStatus.label}
-          </StatusValue>
-        </StatusCell>
       </StatusGrid>
+
+      {activeProviderNeedsKey && (
+        <Notice $tone="warn">
+          {AI_PROVIDER_LABELS[provider]} has no API key yet. Add one under{' '}
+          <strong>Settings -&gt; API Keys</strong> before sending a message.
+        </Notice>
+      )}
 
       <ProviderGrid>
         {(Object.keys(AI_PROVIDER_LABELS) as AIProvider[]).map(item => (
@@ -988,7 +1000,14 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({ onBack }) => {
             aria-pressed={provider === item}
             onClick={() => setProvider(item)}
           >
-            <ProviderName>{AI_PROVIDER_LABELS[item]}</ProviderName>
+            <ProviderName>
+              {AI_PROVIDER_LABELS[item]}
+              {/* Key readiness sits on the choice itself rather than in a
+                  separate status grid, so it is visible while deciding. */}
+              <ProviderReady $ready={providerKeyReady[item]}>
+                {providerKeyReady[item] ? 'ready' : 'needs key'}
+              </ProviderReady>
+            </ProviderName>
             <ProviderMeta>{providerNotes[item]}</ProviderMeta>
           </ProviderButton>
         ))}

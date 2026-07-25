@@ -7,6 +7,7 @@ import {
   modelSupportsVision,
 } from '../utils/openaiApi';
 import { generateOllamaChatCompletion } from '../utils/ollamaApi';
+import { generateClaudeChatCompletion } from '../utils/claudeApi';
 import { loadApiKeys, loadSettings, getAIConfigFromStorage, saveAIConfigToStorage } from '../utils/storageUtils';
 import { detectAIProvider, getModelForProvider } from '../utils/aiProviders';
 import type { AIConfig, MessageHistory } from '../types';
@@ -130,6 +131,21 @@ export const sendMessageToAI = async (
     if (provider === 'openrouter') {
       logger.info(`Using OpenRouter model: ${finalConfig.model}`);
       return generateOpenRouterChatCompletion(
+        mergedSystemPrompt,
+        message,
+        conversationHistory,
+        images || [],
+        finalConfig.model,
+        finalConfig.temperature,
+        finalConfig.maxTokens,
+        sessionId,
+        { autonomous: options?.autonomous }
+      );
+    }
+
+    if (provider === 'claude') {
+      logger.info(`Using Claude model: ${finalConfig.model}`);
+      return generateClaudeChatCompletion(
         mergedSystemPrompt,
         message,
         conversationHistory,

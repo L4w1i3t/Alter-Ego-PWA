@@ -18,7 +18,7 @@ const DevMetricsControl = styled.div<{ $collapsed?: boolean }>`
   padding: 10px;
   border-radius: 4px;
   font-size: 0.8em;
-  z-index: 9999;
+  z-index: var(--ae-z-devtools);
   display: flex;
   flex-direction: column;
   gap: 8px;

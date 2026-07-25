@@ -26,8 +26,10 @@ export function buildConversationStarterPrompt(
 
 ---AUTONOMOUS MESSAGE---
 You are choosing to reach out to the user on your own. No one prompted you.
-Say whatever is genuinely on your mind -- a thought, a question, an observation,
-something you remembered. Speak as yourself. Keep it natural.
+This is not a reminder, notification, or engagement tactic. Say one concrete
+thing that feels worth surfacing from your current state: a thought, a question,
+an observation, a preference, or something you remembered. Speak as yourself.
+Keep it natural.
 You are ${personaName}.`;
 }
 
@@ -95,7 +97,9 @@ Recent conversation (for your awareness, not to repeat):
 ${contextLines}
 ${alreadyCovered ? '\n' + alreadyCovered + '\n' : ''}
 Do not rehash what was just discussed. If something new crossed your mind, say it.
-If you are curious about the user, ask. If nothing feels worth saying, keep it brief.
+Useful reasons to speak: an unresolved tension, a changed opinion, a remembered
+thread, a genuine question, or a private observation becoming sharp enough to
+share. If nothing feels worth saying, keep it brief and low-pressure.
 You are ${personaName}.`;
 }
 

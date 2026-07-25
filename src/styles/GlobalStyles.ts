@@ -37,8 +37,45 @@ export const GlobalStyles = createGlobalStyle`  * {
     --ae-radius-sm: 4px;
     --ae-radius-md: 8px;
     --ae-focus-ring: 0 0 0 2px #000, 0 0 0 4px var(--ae-color-cyan);
+
+    /*
+     * Device safe areas (notch, status bar, gesture nav bar).
+     *
+     * These MUST stay outside any @supports(-webkit-touch-callout) block:
+     * that condition is true only on iOS Safari, so gating on it left Android
+     * -- including the Capacitor APK, which runs edge-to-edge under the status
+     * and navigation bars on Android 15+ -- with no inset at all. That is what
+     * put the header behind the system clock and the footer behind the gesture
+     * bar. env() resolves to the 0px fallback anywhere insets do not apply, so
+     * applying it unconditionally is safe on desktop and in the browser.
+     */
+    --ae-safe-top: env(safe-area-inset-top, 0px);
+    --ae-safe-right: env(safe-area-inset-right, 0px);
+    --ae-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --ae-safe-left: env(safe-area-inset-left, 0px);
+
+    /*
+     * Stacking order for every top-level layer, lowest to highest.
+     *
+     * These had drifted into hand-picked magic numbers (1000, 9000, 9999,
+     * 10000, 12000, 99999, 999999) chosen per component with no shared scale,
+     * which is how toasts at 10000 ended up rendering underneath the settings
+     * overlay at 12000. Anything that escapes normal flow should pick a token
+     * here rather than inventing a number.
+     *
+     * Only layers that are siblings in the app shell need to agree. A modal
+     * creates its own stacking context, so z-index inside one is scoped to it
+     * and is free to start over at 1.
+     */
+    --ae-z-banner: 900;      /* install / donation prompts */
+    --ae-z-overlay: 1000;    /* splash, warm-up, character picker */
+    --ae-z-modal: 1200;      /* settings and other full-screen panels */
+    --ae-z-dialog: 1400;     /* confirmations raised above a modal */
+    --ae-z-toast: 1600;      /* transient notifications -- must clear modals */
+    --ae-z-devtools: 1800;   /* development-only instrumentation */
+    --ae-z-critical: 2000;   /* blocking, app-level interrupts */
   }
-  
+
   html, body {
     margin: 0;
     padding: 0;

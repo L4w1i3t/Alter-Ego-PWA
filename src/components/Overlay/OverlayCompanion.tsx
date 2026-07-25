@@ -277,7 +277,8 @@ const OverlayCompanion: React.FC = () => {
     const provider = detectAIProvider(settings, keys);
     const missingProviderKey =
       (provider === 'openai' && !keys.OPENAI_API_KEY) ||
-      (provider === 'openrouter' && !keys.OPENROUTER_API_KEY);
+      (provider === 'openrouter' && !keys.OPENROUTER_API_KEY) ||
+      (provider === 'claude' && !keys.ANTHROPIC_API_KEY);
     const personaName = getActivePersona();
     const existing = getPersonaChatHistory(personaName);
 

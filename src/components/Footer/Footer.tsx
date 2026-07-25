@@ -4,6 +4,7 @@ import { loadVoiceModels, VoiceModel } from '../../utils/storageUtils';
 import { EVENTS } from '../../utils/events';
 import { HeadphonesIcon, WaveIcon } from '../Common/Icons';
 
+/* Device safe areas are handled once by AppContainer, not here. */
 const FooterContainer = styled.footer`
   display: flex;
   justify-content: space-between;
@@ -14,12 +15,16 @@ const FooterContainer = styled.footer`
   font-size: 0.8em;
   flex-shrink: 0;
 
+  /*
+   * MainContent is order 1 and QuerySection is order 2 on phones, so the footer
+   * has to be ordered explicitly too -- an unset order of 0 would float it
+   * above both of them.
+   */
   @media (max-width: 768px) {
-    flex-direction: row;
-    flex-wrap: wrap;
+    order: 3;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.4rem 0.75rem;
+    padding: 0.35rem 0.75rem;
     font-size: 0.75rem;
   }
 `;
@@ -31,15 +36,16 @@ const FooterLeft = styled.div`
   flex: 1;
 `;
 
+/*
+ * The active character now lives in the header, next to the control that
+ * changes it. Repeating it here is only useful on wide screens where the space
+ * is free anyway.
+ */
 const FooterRight = styled.div`
   flex-shrink: 0;
 
   @media (max-width: 768px) {
-    font-size: 0.9em;
-    max-width: 40%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: none;
   }
 `;
 

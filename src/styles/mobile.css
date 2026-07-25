@@ -1,39 +1,22 @@
-/* Mobile-specific styles for better virtual keyboard support */
+/* Mobile-specific styles: safe areas, touch targets, virtual keyboard. */
 
-/* Safe area insets for iOS devices including iPad */
-:root {
-  --safe-area-inset-top: env(safe-area-inset-top, 0px);
-  --safe-area-inset-right: env(safe-area-inset-right, 0px);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-inset-left: env(safe-area-inset-left, 0px);
-}
+/*
+ * Safe-area insets are declared as --ae-safe-* in GlobalStyles and consumed by
+ * the individual chrome components (header, footer, overlays) so each one can
+ * decide whether its background bleeds under the system bar or not.
+ *
+ * Nothing here may be gated behind `@supports (-webkit-touch-callout: none)`.
+ * That query is iOS-only; the previous version of this file put every inset
+ * rule inside it, which is why the Android build drew its header under the
+ * status bar and its footer under the gesture navigation bar.
+ */
 
-/* iOS and iPadOS specific adjustments */
+/* iOS zoom-on-focus guard: any font-size below 16px makes Safari zoom the
+   viewport when an input takes focus, which then never zooms back out. */
 @supports (-webkit-touch-callout: none) {
-  /* Ensure body respects safe areas */
-  body {
-    padding-top: var(--safe-area-inset-top);
-    padding-left: var(--safe-area-inset-left);
-    padding-right: var(--safe-area-inset-right);
-    padding-bottom: var(--safe-area-inset-bottom);
-  }
-
-  /* Header adjustments for safe area */
-  header {
-    padding-top: calc(0.8em + var(--safe-area-inset-top));
-    padding-left: calc(0.8em + var(--safe-area-inset-left));
-    padding-right: calc(0.8em + var(--safe-area-inset-right));
-  }
-
-  /* Footer adjustments for safe area */
-  footer {
-    padding-bottom: calc(0.5em + var(--safe-area-inset-bottom));
-    padding-left: calc(1em + var(--safe-area-inset-left));
-    padding-right: calc(1em + var(--safe-area-inset-right));
-  }
-
   input,
-  textarea {
+  textarea,
+  select {
     font-size: 16px !important;
     -webkit-appearance: none !important;
     appearance: none !important;
@@ -46,20 +29,12 @@
   }
 }
 
-/* iPad specific adjustments */
-@media screen and (min-device-width: 768px) and (max-device-width: 1024px) {
-  input,
-  textarea {
-    font-size: 16px !important;
-    -webkit-user-select: text !important;
-    user-select: text !important;
-  }
-
-  /* Ensure touch targets are large enough */
+/* Touch-target floor. Applies to every touch device, not just tablets. */
+@media (pointer: coarse) {
   button,
+  select,
   input:not([type='checkbox']):not([type='range']) {
     min-height: 44px;
-    min-width: 44px;
   }
 
   input[type='checkbox'] {
@@ -101,7 +76,7 @@
     position: sticky;
     bottom: 0;
     background: inherit;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: var(--ae-safe-bottom, 0px);
   }
 
   /* Handle virtual keyboard appearance */

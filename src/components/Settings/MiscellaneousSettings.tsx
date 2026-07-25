@@ -11,6 +11,7 @@ import {
   disconnectFromPeer,
 } from '../../services/lanService';
 import type { LanPeer, LanStatus } from '../../services/lanService';
+import { Hint, ScreenIntro } from '../Common/Disclosure';
 
 const Container = styled.div`
   display: flex;
@@ -31,24 +32,6 @@ const Title = styled.h2`
     margin-bottom: 1.5em;
     font-size: 1.3em;
     text-align: center;
-  }
-`;
-
-const InfoBox = styled.div`
-  padding: 1em;
-  border: 1px solid #00f;
-  background-color: #000020;
-  margin-bottom: 2em;
-  font-size: 0.9em;
-  line-height: 1.5;
-
-  @media (max-width: 768px) {
-    padding: 1.5em;
-    margin-bottom: 2.5em;
-    font-size: 1em;
-    line-height: 1.6;
-    border-width: 2px;
-    border-radius: 0.3em;
   }
 `;
 
@@ -383,19 +366,17 @@ const LanPeerName = styled.div`
   overflow-wrap: anywhere;
 `;
 
-const InfoText = styled.p`
-  margin: 1em 0;
-  font-size: 0.9em;
-  color: #0f08;
-  text-align: center;
-  font-style: italic;
-
-  @media (max-width: 768px) {
-    margin: 1.5em 0;
-    font-size: 1em;
-    line-height: 1.5;
-    padding: 0 0.5em;
-  }
+const ExperimentalTag = styled.span`
+  display: inline-block;
+  padding: 0.1em 0.45em;
+  border: 1px solid var(--ae-color-warning);
+  border-radius: var(--ae-radius-sm);
+  color: var(--ae-color-warning);
+  font-size: 0.65em;
+  font-weight: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
 `;
 
 const PreviewSection = styled.div`
@@ -822,11 +803,7 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
   return (
     <Container>
       <Title>Miscellaneous Settings</Title>
-      <InfoBox>
-        Customize your ALTER EGO experience with these additional settings.
-        These options allow you to fine-tune how the application behaves and
-        feels during use.
-      </InfoBox>{' '}
+      <ScreenIntro>Fine-tune how ALTER EGO looks and behaves.</ScreenIntro>
       <SettingRow>
         <Label htmlFor="overallScale">Overall Text Size:</Label>
         <InputContainer>
@@ -924,16 +901,16 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
           </span>
         </InputContainer>
       </SettingRow>
-      <InfoText>
-        {isInstantText
-          ? "Instant text will show ALTER EGO's complete responses immediately without any typing animation."
-          : `Text speed controls how fast ALTER EGO's responses appear on screen (${textSpeed} characters per second). 
-             Slower speeds create a more dramatic, visual novel-like experience, while faster speeds 
-             provide quicker response delivery.`}
-      </InfoText>
       <PreviewSection>
         <PreviewLabel>Preview Text Speed:</PreviewLabel>
         <PreviewText>{previewText}</PreviewText>
+        {/* The old paragraph here restated the control above it in three lines.
+            The preview shows the effect directly; one line is enough. */}
+        <Hint>
+          {isInstantText
+            ? 'Responses appear all at once.'
+            : `Slower speeds feel like a visual novel; faster ones deliver quicker.`}
+        </Hint>
         <ButtonContainer style={{ marginTop: '1em' }}>
           <Button onClick={handlePreview} disabled={isPreviewRunning}>
             {isPreviewRunning ? 'Playing Preview...' : 'Test Speed'}
@@ -1041,7 +1018,11 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
       {isElectron && (
         <>
           <SettingRow>
-            <Label htmlFor="lanEnabled">LAN Peer Chat:</Label>
+            {/* The "experimental" caveat was a full-width warning panel. It is
+                a property of this one feature, so it rides on its label. */}
+            <Label htmlFor="lanEnabled">
+              LAN Peer Chat: <ExperimentalTag>experimental</ExperimentalTag>
+            </Label>
             <CheckboxContainer>
               <Checkbox
                 type="checkbox"
@@ -1063,26 +1044,23 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
               </InfoButton>
             </CheckboxContainer>
           </SettingRow>
-          <WarningInfoBox>
-            <strong>Early testing:</strong> LAN Peer Chat is experimental.
-            Discovery, connection stability, and turn timing may be buggy while
-            this feature is being tested across different local networks.
-          </WarningInfoBox>
           {showLanInfo && (
             <ImmersiveInfoBox>
-              <strong>LAN Peer Chat:</strong> When enabled, ALTER EGO will
-              broadcast its presence on the local network and listen for other
-              ALTER EGO instances. When two instances find each other, their AI
-              personas will have a live conversation. One is randomly chosen to
-              speak first so neither user has to initiate.
+              <strong>Experimental.</strong> Discovery, connection stability and
+              turn timing may be buggy across different local networks.
               <br />
               <br />
-              <strong>Two-peer limit:</strong> Only one connection at a time is
-              allowed to keep the conversation natural and avoid multiple AIs
-              talking over each other.
+              When enabled, ALTER EGO broadcasts its presence on the local
+              network and listens for other instances. When two find each other,
+              their personas hold a live conversation; one is picked at random to
+              speak first so neither user has to start it.
               <br />
-              <strong>Desktop only:</strong> This feature requires the Electron
-              desktop app and a local network connection.
+              <br />
+              <strong>Two-peer limit:</strong> one connection at a time, so
+              multiple AIs never talk over each other.
+              <br />
+              <strong>Desktop only:</strong> requires the Electron desktop app
+              and a local network connection.
             </ImmersiveInfoBox>
           )}
           <SettingRow>
@@ -1208,10 +1186,6 @@ const MiscellaneousSettings: React.FC<MiscellaneousSettingsProps> = ({
           </CheckboxContainer>
         </SettingRow>
       )}
-      <InfoText style={{ fontSize: '0.9em', color: '#0f06' }}>
-        {process.env.NODE_ENV === 'development' &&
-          'In development mode, you can toggle this feature on/off above.'}
-      </InfoText>
       <ButtonContainer>
         <Button onClick={onBack}>Cancel</Button>
         <Button onClick={handleSave}>Save Settings</Button>

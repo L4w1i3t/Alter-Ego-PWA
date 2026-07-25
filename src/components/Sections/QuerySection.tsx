@@ -2,8 +2,14 @@ import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useApi } from '../../context/ApiContext';
 import { validateImageFile } from '../../utils/imageUtils';
-import { ImageIcon } from '../Common/Icons';
+import { ImageIcon, SendIcon } from '../Common/Icons';
 
+/*
+ * On phones the composer sits at the bottom of the screen, directly above the
+ * footer, where the thumb and the virtual keyboard already are -- `order` moves
+ * it visually without disturbing the reading order of the DOM. On wider screens
+ * it keeps its original position under the header.
+ */
 const QuerySectionContainer = styled.section`
   display: flex;
   align-items: flex-start;
@@ -12,9 +18,11 @@ const QuerySectionContainer = styled.section`
   flex-shrink: 0;
 
   @media (max-width: 768px) {
-    padding: 0.5rem 0.75rem;
-    gap: 0.5rem;
+    order: 2;
     align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid #0f03;
   }
 `;
 
@@ -93,11 +101,31 @@ const SendQueryButton = styled.button`
     }
   }
 
+  /* Phones get a square icon button: the words "Send Query" cost roughly a
+     third of the composer row without saying anything the arrow does not. */
   @media (max-width: 768px) {
-    padding: 0.6rem 0.9rem;
-    font-size: 14px;
-    min-height: 40px;
+    padding: 0;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    flex: none;
     touch-action: manipulation;
+  }
+`;
+
+/* Wide screens keep the words; phones fall back to the icon below. */
+const SendLabel = styled.span`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const SendGlyph = styled.span`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: inline-flex;
+    align-items: center;
   }
 `;
 
@@ -314,7 +342,8 @@ const QuerySection: React.FC<QuerySectionProps> = ({
         <InputRow>
           <QueryInput
             type="text"
-            placeholder="Insert Query Here..."
+            placeholder={`Message ${activeCharacter}...`}
+            aria-label={`Message ${activeCharacter}`}
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyPress}
@@ -334,8 +363,13 @@ const QuerySection: React.FC<QuerySectionProps> = ({
               disabled={
                 isLoading || (!query.trim() && selectedImages.length === 0)
               }
+              title={isLoading ? 'Waiting for a response' : 'Send'}
+              aria-label={isLoading ? 'Waiting for a response' : 'Send message'}
             >
-              {isLoading ? 'Processing...' : 'Send Query'}
+              <SendLabel>{isLoading ? 'Processing...' : 'Send Query'}</SendLabel>
+              <SendGlyph aria-hidden="true">
+                <SendIcon size={18} />
+              </SendGlyph>
             </SendQueryButton>
           </ButtonContainer>
         </InputRow>

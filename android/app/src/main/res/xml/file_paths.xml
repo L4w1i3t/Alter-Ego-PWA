@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="my_images" path="." />
+    <cache-path name="my_cache_images" path="." />
+    <!--
+        Downloaded release APKs. The package installer runs in a separate
+        process, so it can only read the file through a content:// URI handed
+        out by this provider. AppUpdaterPlugin writes into
+        getExternalCacheDir()/updates, which external-cache-path covers.
+    -->
+    <external-cache-path name="app_updates" path="updates/" />
+</paths>

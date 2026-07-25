@@ -50,6 +50,11 @@ import {
 } from '../memory/associativeMemory';
 import { buildShortTermContext } from '../utils/contextBuilder';
 import { buildIdentityContext, onUserMessage as onIdentityUserMessage } from '../services/identityEvolution';
+import {
+  buildCognitivePulseContext,
+  settleCognitivePulseFromResponse,
+  updateCognitivePulseFromInput,
+} from '../services/cognitivePulse';
 import { logger } from '../utils/logger';
 import { experimentTelemetry } from '../utils/experimentTelemetry';
 import type { Message } from '../types';
@@ -798,6 +803,16 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         onIdentityUserMessage(effectivePersona);
       }
 
+      updateCognitivePulseFromInput(
+        effectivePersona,
+        query,
+        conversationHistory,
+        {
+          autonomous: isAutonomous,
+          imageCount: imageUrls.length,
+        }
+      );
+
       // Apply memory buffer limitation ONLY for the AI context
       const memoryBuffer = normalizeMemoryBuffer(loadSettings().memoryBuffer);
       const cognitiveProfile = getCognitiveContextProfile(
@@ -997,6 +1012,15 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         logger.warn('Identity context build failed (non-fatal):', idErr);
       }
 
+      try {
+        const pulseBlock = buildCognitivePulseContext(effectivePersona);
+        if (pulseBlock) {
+          effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n${pulseBlock}`;
+        }
+      } catch (pulseErr) {
+        logger.warn('Cognitive pulse build failed (non-fatal):', pulseErr);
+      }
+
       // Call the AI service with the combined context (including images)
       let response = await sendMessageToAI(
         query,
@@ -1032,6 +1056,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
         };
         response = stripStockClosers(stripEmojis(response));
       } catch {}
+
+      settleCognitivePulseFromResponse(effectivePersona, response);
 
       // Update conversation history with the AI's response
       const assistantMessageBase: Message = {

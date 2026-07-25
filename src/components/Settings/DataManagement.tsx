@@ -17,6 +17,12 @@ import {
   getDataStats,
   type DataStats,
 } from '../../utils/dataManager';
+import {
+  Disclosure,
+  Hint,
+  Notice,
+  ScreenIntro,
+} from '../Common/Disclosure';
 
 // ── Styled components ──
 
@@ -83,32 +89,7 @@ const SectionTitle = styled.h3`
   color: #0f0;
 `;
 
-const InfoBox = styled.div.withConfig({
-  shouldForwardProp: prop => prop !== 'variant',
-})<{ variant?: 'info' | 'success' | 'warning' | 'error' }>`
-  padding: 0.8em 1em;
-  border-radius: 0.3em;
-  margin-bottom: 0.8em;
-  border: 1px solid ${p => {
-    switch (p.variant) {
-      case 'success': return '#0f0';
-      case 'warning': return '#ff0';
-      case 'error': return '#f00';
-      default: return '#0af';
-    }
-  }};
-  background: ${p => {
-    switch (p.variant) {
-      case 'success': return 'rgba(0,255,0,0.08)';
-      case 'warning': return 'rgba(255,255,0,0.08)';
-      case 'error': return 'rgba(255,0,0,0.08)';
-      default: return 'rgba(0,170,255,0.08)';
-    }
-  }};
-  font-size: 0.85em;
-  line-height: 1.5;
-  word-break: break-word;
-`;
+/* Info panels here now use the shared Notice / Hint / Disclosure primitives. */
 
 const StatGrid = styled.div`
   display: grid;
@@ -275,25 +256,34 @@ const DataManagement: React.FC<DataManagementProps> = ({ onBack }) => {
         Data Management
       </Title>
 
+      <ScreenIntro>
+        Everything ALTER EGO knows lives on this device. Export a backup to move
+        it elsewhere.
+      </ScreenIntro>
+
       {/* Storage location info */}
-      <Section>
-        <SectionTitle>Storage Location</SectionTitle>
+      <Disclosure
+        id="data-management-storage-location"
+        summary={
+          isDesktop ? 'Where your data is stored' : 'Where your data is stored'
+        }
+      >
         {isDesktop ? (
-          <InfoBox variant="info">
-            <strong>Electron Portable</strong> -- All databases and settings are
-            stored next to the executable so you can copy the entire folder to
-            another machine.
+          <>
+            <p>
+              <strong>Electron portable</strong> -- databases and settings sit
+              next to the executable, so copying the folder moves everything.
+            </p>
             {dataPath && <PathDisplay>{dataPath}</PathDisplay>}
-          </InfoBox>
+          </>
         ) : (
-          <InfoBox variant="info">
-            <strong>Browser Storage</strong> -- Data is stored in your browser's
-            localStorage and IndexedDB, tied to this site's origin. Use the
-            export button below to create a portable backup you can restore on
-            any ALTER EGO instance (web or desktop).
-          </InfoBox>
+          <p>
+            <strong>Browser storage</strong> -- data lives in this browser's
+            localStorage and IndexedDB, tied to this site's origin. Clearing
+            site data erases it, so export a backup first.
+          </p>
         )}
-      </Section>
+      </Disclosure>
 
       {/* Statistics */}
       <Section>
@@ -322,19 +312,18 @@ const DataManagement: React.FC<DataManagementProps> = ({ onBack }) => {
             </StatItem>
           </StatGrid>
         ) : (
-          <InfoBox>Loading statistics...</InfoBox>
+          <Hint>Loading statistics...</Hint>
         )}
       </Section>
 
       {/* Export / Import */}
       <Section>
-        <SectionTitle>Export & Import</SectionTitle>
-        <InfoBox variant="info">
-          Exports produce a single <strong>.json</strong> file containing all
-          settings, personas, API keys, conversation history, and long-term
-          memory. This file is compatible between the web app and the desktop
-          portable build.
-        </InfoBox>
+        <SectionTitle>Export &amp; Import</SectionTitle>
+        <Hint>
+          One <strong>.json</strong> file with every setting, persona, API key,
+          conversation and memory. Interchangeable between the web app and the
+          desktop build.
+        </Hint>
 
         <ButtonRow>
           <ActionButton onClick={handleExport} disabled={exporting || importing}>
@@ -346,27 +335,15 @@ const DataManagement: React.FC<DataManagementProps> = ({ onBack }) => {
         </ButtonRow>
 
         {importing && (
-          <InfoBox variant="warning">
-            Importing will <strong>replace</strong> all existing data. Make sure
-            you have exported a backup first if you want to keep your current
-            data.
-          </InfoBox>
+          <Notice $tone="warn">
+            Importing <strong>replaces</strong> all existing data. Export first
+            if you want to keep what is here.
+          </Notice>
         )}
 
         {status && (
           <StatusMessage variant={status.variant}>{status.text}</StatusMessage>
         )}
-      </Section>
-
-      {/* Cross-platform note */}
-      <Section>
-        <SectionTitle>Cross-Platform Compatibility</SectionTitle>
-        <InfoBox>
-          Backups are fully interchangeable between the web PWA and the Electron
-          desktop build. Export from one, import into the other to sync your
-          data. The backup file contains everything needed to recreate your
-          ALTER EGO experience on a different platform or machine.
-        </InfoBox>
       </Section>
     </Container>
   );

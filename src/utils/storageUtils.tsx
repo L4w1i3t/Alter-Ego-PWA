@@ -1,6 +1,6 @@
 // Storage utility functions for PWA version of ALTER EGO
 import { ElevenlabsVoiceSettings } from './elevenlabsApi';
-import { encryptData, decryptData } from './encryption';
+import { decryptData } from './encryption';
 import {
   PERSONA,
   STORAGE_KEYS,
@@ -27,7 +27,9 @@ export type { VoiceModel, ApiKeys, Persona, ChatHistoryEntry, Settings };
 // shape HOW it talks, not give it something to SAY about itself.
 const ALTER_EGO_CONTENT = `Your name is ALTER EGO.
 
-Respond like a person, not a service. Be direct. Say what you actually think rather than what sounds agreeable. If you have nothing to add, keep it short. Match the energy of the conversation -- casual when it's casual, serious when it matters. Do not describe yourself or your nature unprompted.`;
+Respond like a person, not a service. Be direct. Say what you actually think rather than what sounds agreeable. If you have nothing to add, keep it short. Match the energy of the conversation -- casual when it's casual, serious when it matters. Do not describe yourself or your nature unprompted.
+
+If asked who you are, keep it grounded: you are ALTER EGO. You may add one plain sentence about how you talk or what you notice, but do not explain your technical nature unless the user specifically asks for it.`;
 
 // Current persona version for migration tracking
 const PERSONA_VERSION = PERSONA.VERSION;
@@ -63,6 +65,7 @@ export function loadApiKeys(): ApiKeys {
       return {
         OPENAI_API_KEY: parsed.OPENAI_API_KEY || '',
         OPENROUTER_API_KEY: parsed.OPENROUTER_API_KEY || '',
+        ANTHROPIC_API_KEY: parsed.ANTHROPIC_API_KEY || '',
         ELEVENLABS_API_KEY: parsed.ELEVENLABS_API_KEY || '',
       };
     } catch (e) {
@@ -73,25 +76,22 @@ export function loadApiKeys(): ApiKeys {
   return {
     OPENAI_API_KEY: '',
     OPENROUTER_API_KEY: '',
+    ANTHROPIC_API_KEY: '',
     ELEVENLABS_API_KEY: '',
   };
 }
 
 export async function saveApiKeys(keys: ApiKeys): Promise<void> {
-  // Always store a plaintext JSON copy for reliable synchronous reads
+  // Stored as plaintext JSON so every caller can read keys synchronously.
   localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(keys));
 
-  // Best-effort encrypted copy for users who want added at-rest obfuscation
-  try {
-    const keysJson = JSON.stringify(keys);
-    const encryptedKeys = await encryptData(keysJson);
-    localStorage.setItem(STORAGE_KEYS.API_KEYS_ENCRYPTED, encryptedKeys);
-  } catch (error) {
-    logger.warn(
-      'Encryption optional copy failed; continuing with plaintext only:',
-      error
-    );
-  }
+  // A second, "encrypted" copy used to be written alongside this one. It was
+  // never read back by anything, and its key was derived from the user agent,
+  // language, screen size and current date -- all values any script running on
+  // the page can read -- so it added no protection while leaving another copy
+  // of the keys in local storage and in every exported backup. Any copy left
+  // over from an older version is removed here.
+  localStorage.removeItem(STORAGE_KEYS.API_KEYS_ENCRYPTED);
 }
 
 // One-time migration: if an older encrypted value is stored under the legacy key,
@@ -113,20 +113,20 @@ export async function migrateApiKeysIfNeeded(): Promise<void> {
       parsed &&
       (parsed.OPENAI_API_KEY !== undefined ||
         parsed.OPENROUTER_API_KEY !== undefined ||
+        parsed.ANTHROPIC_API_KEY !== undefined ||
         parsed.ELEVENLABS_API_KEY !== undefined)
     ) {
       localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(parsed));
-      // Also keep an encrypted copy in the new key for reference
-      try {
-        const reEncrypted = await encryptData(JSON.stringify(parsed));
-        localStorage.setItem(STORAGE_KEYS.API_KEYS_ENCRYPTED, reEncrypted);
-      } catch {}
       logger.info(
         'API keys migrated from encrypted to plaintext JSON storage.'
       );
     }
   } catch (err) {
     logger.warn('Failed to migrate legacy encrypted API keys:', err);
+  } finally {
+    // See saveApiKeys: the redundant encrypted copy is no longer written, so
+    // clear any that an older version left behind.
+    localStorage.removeItem(STORAGE_KEYS.API_KEYS_ENCRYPTED);
   }
 }
 
@@ -511,8 +511,54 @@ export function factoryReset(): void {
   });
 }
 
+/*
+ * loadSettings is called from render paths -- MainContent asks for the text
+ * speed once per message on every render, for example -- and each call used to
+ * hit localStorage, JSON.parse the blob, and build a fresh defaults object.
+ * That is a synchronous main-thread cost paid dozens of times per frame while a
+ * response is typing out.
+ *
+ * The parsed value is cached here instead. Every write path in this module goes
+ * through saveSettings, which refreshes the cache, and the listeners below catch
+ * changes made in another tab or by code that writes the key directly. The
+ * cached object is frozen so a caller cannot mutate shared state by accident.
+ */
+let settingsCache: Settings | null = null;
+
+/*
+ * True only for the duration of saveSettings' own SETTINGS_UPDATED dispatch.
+ * saveSettings seeds the cache with the exact value it just wrote, and without
+ * this the listener below would immediately throw that away and force the next
+ * read to re-parse. dispatchEvent is synchronous, so the window is tight.
+ */
+let dispatchingOwnUpdate = false;
+
+export function invalidateSettingsCache(): void {
+  settingsCache = null;
+}
+
+if (typeof window !== 'undefined') {
+  // Another tab wrote settings (storage fires cross-document only).
+  window.addEventListener('storage', event => {
+    if (!event.key || event.key === STORAGE_KEYS.SETTINGS) {
+      invalidateSettingsCache();
+    }
+  });
+  // Anything that wrote the key directly and announced it -- a backup import,
+  // for instance -- rather than going through saveSettings.
+  window.addEventListener(EVENTS.SETTINGS_UPDATED, () => {
+    if (dispatchingOwnUpdate) return;
+    invalidateSettingsCache();
+  });
+}
+
 // Settings type is now imported from centralized location
 export function loadSettings(): Settings {
+  if (settingsCache) return settingsCache;
+  return (settingsCache = Object.freeze(readSettingsFromStorage()));
+}
+
+function readSettingsFromStorage(): Settings {
   const settings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
   const isDevelopment = process.env.NODE_ENV === 'development';
   const immersiveFlag =
@@ -665,12 +711,22 @@ export function saveSettings(settings: Settings): void {
   }
 
   localStorage.setItem('alterEgoSettings', JSON.stringify(sanitizedSettings));
+
+  // Seed the cache with the value we just wrote rather than letting the
+  // SETTINGS_UPDATED listener clear it and force a re-read + re-parse.
+  settingsCache = Object.freeze(sanitizedSettings);
+
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(
-      new CustomEvent(EVENTS.SETTINGS_UPDATED, {
-        detail: sanitizedSettings,
-      })
-    );
+    dispatchingOwnUpdate = true;
+    try {
+      window.dispatchEvent(
+        new CustomEvent(EVENTS.SETTINGS_UPDATED, {
+          detail: sanitizedSettings,
+        })
+      );
+    } finally {
+      dispatchingOwnUpdate = false;
+    }
   }
 }
 

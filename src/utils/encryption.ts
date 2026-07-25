@@ -1,9 +1,21 @@
 /**
- * Client-side encryption utilities for sensitive data
- * Uses Web Crypto API for secure encryption/decryption
+ * Legacy at-rest obfuscation for locally stored data.
+ *
+ * DO NOT use this for anything new, and do not treat it as encryption in the
+ * security sense. The AES-GCM call is fine; the key is not. It is derived
+ * entirely from values any script running on the page can read for itself --
+ * user agent, language, screen dimensions and today's date -- so anyone able
+ * to read the ciphertext can also reconstruct the key. It protects against
+ * someone eyeballing localStorage, and nothing else.
+ *
+ * Two consequences worth knowing:
+ *   - Because the date is part of the seed, ciphertext written on one day
+ *     cannot be decrypted on the next.
+ *   - API keys are no longer stored this way. `decryptData` is kept only so
+ *     `migrateApiKeysIfNeeded` can still read values written by older builds.
  */
 
-// Generate a key from user's browser fingerprint + timestamp
+// Derives a key from browser characteristics. See the caveat above.
 const generateEncryptionKey = async (): Promise<CryptoKey> => {
   // Create a unique but reproducible seed for this browser session
   const browserData = [

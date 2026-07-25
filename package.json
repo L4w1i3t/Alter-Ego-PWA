@@ -1,7 +1,30 @@
 {
   "name": "alter-ego-pwa",
   "version": "0.1.0",
-  "description": "A PWA + Electron Desktop variant of L4w1i3t's ALTER EGO program.",
+  "description": "Converse textually or verbally with an AI character of your own making. Runs as a web app, an installable PWA, a portable desktop app, and an Android app -- all with your data kept on your own device.",
+  "keywords": [
+    "ai",
+    "chatbot",
+    "llm",
+    "persona",
+    "pwa",
+    "electron",
+    "capacitor",
+    "openai",
+    "anthropic",
+    "openrouter",
+    "ollama",
+    "text-to-speech",
+    "offline-first"
+  ],
+  "homepage": "https://github.com/L4w1i3t/Alter-Ego-PWA",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/L4w1i3t/Alter-Ego-PWA.git"
+  },
+  "bugs": {
+    "url": "https://github.com/L4w1i3t/Alter-Ego-PWA/issues"
+  },
   "main": "electron/main.js",
   "scripts": {
     "dev": "webpack serve --mode development",
@@ -24,6 +47,7 @@
     "electron:dev": "cross-env BUILD_TARGET=electron npm run build-dev && electron .",
     "electron:start": "electron .",
     "electron:overlay": "electron . --overlay",
+    "electron:repair": "node scripts/repair-electron-binary.js",
     "electron:signing:check": "node scripts/prepare-electron-signing.js",
     "electron:build": "cross-env BUILD_TARGET=electron npm run build-prod && npm run electron:signing:check && electron-builder --config electron-builder.json",
     "electron:build:win": "cross-env BUILD_TARGET=electron npm run build-prod && node scripts/prepare-electron-signing.js --platform=win && electron-builder --config electron-builder.json --win",
@@ -31,19 +55,31 @@
     "electron:build:linux:arch": "cross-env BUILD_TARGET=electron npm run build-prod && node scripts/prepare-electron-signing.js --platform=linux && electron-builder --config electron-builder.json --linux pacman",
     "electron:build:linux:tar": "cross-env BUILD_TARGET=electron npm run build-prod && node scripts/prepare-electron-signing.js --platform=linux && electron-builder --config electron-builder.json --linux tar.gz",
     "electron:build:unsigned": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false ELECTRON_SKIP_SIGNING=true npm run electron:build",
+    "cap:build": "cross-env BUILD_TARGET=capacitor npm run build-prod",
+    "cap:sync": "npm run cap:build && cap sync android",
+    "cap:open": "cap open android",
+    "android:apk": "npm run cap:sync && cd android && gradlew.bat assembleDebug",
+    "android:apk:release": "npm run cap:sync && cd android && gradlew.bat assembleRelease",
+    "android:icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-android-icons.ps1",
+    "android:keystore": "node scripts/setup-android-keystore.js",
     "experiment:collect": "cd experiments && npm run collect",
     "experiment:status": "cd experiments && npm run status",
     "experiment:export": "cd experiments && npm run export",
     "experiment:analyze": "cd experiments && npm run analyze",
     "experiment:build": "cd experiments && npm install && npm run build"
   },
-  "author": "L4w1i3t",
+  "author": {
+    "name": "L4w1i3t",
+    "url": "https://github.com/L4w1i3t"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=20.9.0",
     "npm": ">=11.0.0"
   },
   "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
     "dexie": "^4.4.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -54,6 +90,7 @@
     "uuid": "^14.0.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -61,7 +98,6 @@
     "copy-webpack-plugin": "^14.0.0",
     "cross-env": "^10.1.0",
     "css-loader": "^7.1.4",
-    "depcheck": "^1.4.7",
     "dotenv": "^17.4.2",
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
@@ -79,6 +115,11 @@
   "overrides": {
     "sockjs": {
       "uuid": "^14.0.0"
+    },
+    "minimatch": "^10.2.5",
+    "brace-expansion": "^5.0.8",
+    "temp": {
+      "rimraf": "^6.1.3"
     }
   }
 }
